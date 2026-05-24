@@ -155,20 +155,33 @@ The `:latest`, `:core`, and `:plus` image tags on
 
 ## Hall of thanks
 
-Researchers who have reported security issues in P3 Portal. Credit
-here is for the bug report — the implementations of the fixes
-shipping in the current supported release are independent
-re-implementations written from the bug description only.
+Researchers who have reported security issues in P3 Portal.
+
+**About the credit given here:** acknowledgment is for the bug
+**report** — for finding the issue, describing it precisely, and
+reporting it through an appropriate channel. **Code suggestions that
+appeared inside the reports are not used in the current supported
+release.** The fixes shipping in v1.74.8-beta are independent
+re-implementations written from the bug description only, using a
+different design, different APIs, and different test structure. See
+the [v1.74.8-beta release notes](https://github.com/P3Portal-org/p3portal/releases/tag/v1.74.8-beta)
+and [`docs/release-notes/v1.74.8-beta.md`](docs/release-notes/v1.74.8-beta.md)
+for the technical detail. This separation exists because GitHub
+Issues are not automatically covered by the repository's licence
+(GitHub Terms of Service § D.5 grants only display rights on the
+platform, not redistribution rights inside this codebase), so any
+code from issue text needs an explicit contributor licence agreement
+that the project does not currently have in place.
 
 - [@cutetux](https://github.com/cutetux) – reported the SQLite
   `database is locked` concurrency issue
   ([#3](https://github.com/P3Portal-org/p3portal/issues/3)) and the
   Zip-Slip + `require_admin` / `require_operator` proxmox-auth
   bypass class
-  ([#4](https://github.com/P3Portal-org/p3portal/issues/4)). Both
-  issues were addressed in v1.74.5-beta and v1.74.6-beta
-  respectively, then independently re-implemented in v1.74.8-beta
-  (see [release notes](https://github.com/P3Portal-org/p3portal/releases/tag/v1.74.8-beta)).
+  ([#4](https://github.com/P3Portal-org/p3portal/issues/4)). The
+  bugs themselves were originally addressed in v1.74.5-beta and
+  v1.74.6-beta using code adopted from the reports; both are now
+  independently re-implemented in v1.74.8-beta.
 
 Thank you. Open source is only as safe as the people who take the
 time to look at the code.
