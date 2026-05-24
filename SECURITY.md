@@ -137,18 +137,38 @@ Out of scope:
 
 ## Supported versions
 
-Only the most recent `:latest` and `:core` images on
-`ghcr.io/p3portal-org` receive security patches. Older tags are kept
+Only **v1.74.8-beta and later** receive security patches and are
+supported. Earlier tags remain available on `ghcr.io/p3portal-org`
 for reproducibility but are not patched.
+
+Specifically, **v1.74.5-beta through v1.74.7-beta are superseded** by
+v1.74.8-beta. Those releases contained security-fix code adopted
+directly from GitHub issue "Suggested Fix" blocks; v1.74.8-beta
+re-implements the same protections independently. Functional
+behaviour is identical. New deployments should use v1.74.8-beta or
+later. See the
+[v1.74.8-beta release notes](https://github.com/P3Portal-org/p3portal/releases/tag/v1.74.8-beta)
+for details.
+
+The `:latest`, `:core`, and `:plus` image tags on
+`ghcr.io/p3portal-org` follow the supported version automatically.
 
 ## Hall of thanks
 
-Researchers who have helped harden P3 Portal:
+Researchers who have reported security issues in P3 Portal. Credit
+here is for the bug report — the implementations of the fixes
+shipping in the current supported release are independent
+re-implementations written from the bug description only.
 
-- [@cutetux](https://github.com/cutetux) – Zip-Slip in playbook upload
-  + `require_admin` bypass (GitHub
-  [#4](https://github.com/P3Portal-org/p3portal/issues/4), fixed in
-  [`v1.74.6-beta`](https://github.com/P3Portal-org/p3portal/releases/tag/v1.74.6-beta))
+- [@cutetux](https://github.com/cutetux) – reported the SQLite
+  `database is locked` concurrency issue
+  ([#3](https://github.com/P3Portal-org/p3portal/issues/3)) and the
+  Zip-Slip + `require_admin` / `require_operator` proxmox-auth
+  bypass class
+  ([#4](https://github.com/P3Portal-org/p3portal/issues/4)). Both
+  issues were addressed in v1.74.5-beta and v1.74.6-beta
+  respectively, then independently re-implemented in v1.74.8-beta
+  (see [release notes](https://github.com/P3Portal-org/p3portal/releases/tag/v1.74.8-beta)).
 
-Thank you. Open source is only as safe as the people who take the time
-to look at the code.
+Thank you. Open source is only as safe as the people who take the
+time to look at the code.
