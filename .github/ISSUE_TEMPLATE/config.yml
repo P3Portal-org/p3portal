@@ -1,0 +1,21 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security vulnerability
+    url: https://github.com/P3Portal-org/p3portal/security/advisories/new
+    about: |
+      Report a security issue privately via GitHub Private Vulnerability
+      Reporting. Please do not open a public issue for security
+      problems — see SECURITY.md for the full disclosure policy.
+  - name: 📖 Documentation, deployment, configuration questions
+    url: https://github.com/P3Portal-org/p3portal/discussions
+    about: |
+      Questions about setup, configuration, deployment, or how a
+      feature is supposed to work belong in Discussions rather
+      than as a bug report.
+  - name: ⚖ Contribution policy
+    url: https://github.com/P3Portal-org/p3portal/blob/main/CONTRIBUTING.md
+    about: |
+      P3 Portal is currently a sole-maintainer project. External
+      pull requests are auto-closed. See CONTRIBUTING.md for what
+      kinds of contribution are welcome (bug reports yes, code
+      snippets in issues no).

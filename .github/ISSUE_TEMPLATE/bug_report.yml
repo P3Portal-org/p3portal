@@ -1,0 +1,106 @@
+name: Bug report
+description: Report a problem that is NOT a security vulnerability.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠ **Security issues should NOT be reported here.** Use
+        [GitHub Private Vulnerability Reporting](https://github.com/P3Portal-org/p3portal/security/advisories/new)
+        instead — see [`SECURITY.md`](https://github.com/P3Portal-org/p3portal/blob/main/SECURITY.md).
+
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠ Please do not paste implementation code in this issue
+
+        Describe the bug, the reproducer, and the root cause in prose.
+        Do **not** include "Suggested Fix" code blocks, patch snippets,
+        or full implementation sketches in the issue text.
+
+        Code in issue text creates a contribution-licensing ambiguity
+        that the project then has to clean up (see
+        [`CONTRIBUTING.md`](https://github.com/P3Portal-org/p3portal/blob/main/CONTRIBUTING.md)
+        for the project's sole-maintainer / sole-copyright-holder
+        posture).
+
+        What IS welcome and licence-safe:
+        - Behaviour descriptions (what happened vs what you expected)
+        - Reproducer commands, request payloads, file contents
+        - Affected file paths, function names, line numbers
+        - A prose description of the root cause, if you've identified it
+        - Suggested mitigations described in words
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What happened? What did you expect to happen?
+      placeholder: |
+        Describe the bug in prose. Include what you tried, what
+        happened instead, and (if you know) why.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Reproducer
+      description: Smallest possible steps that reliably trigger the bug.
+      placeholder: |
+        1. ...
+        2. ...
+        3. Bug appears
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: P3 Portal version
+      description: Output of the version banner or the image tag you pulled.
+      placeholder: "v1.74.8-beta"
+    validations:
+      required: true
+
+  - type: input
+    id: host_os
+    attributes:
+      label: Host OS
+      description: Distribution and version.
+      placeholder: "Debian 12.5"
+    validations:
+      required: true
+
+  - type: input
+    id: runtime
+    attributes:
+      label: Container runtime + version
+      description: Podman or Docker, with version. Compose tool + version if used.
+      placeholder: "podman 5.0.3, podman-compose 1.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root cause (optional, prose only)
+      description: |
+        If you've identified the root cause, describe it in prose.
+        Reference affected files / functions / lines.
+        Do NOT paste implementation code.
+      placeholder: |
+        Example: "In `backend/services/foo.py` the function
+        `bar()` assumes X but does not validate Y, so when Z
+        happens it crashes."
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested mitigation (optional, prose only)
+      description: |
+        If you have an idea how to fix it, describe the approach
+        in prose. Do NOT include implementation code or patches.
+      placeholder: |
+        Example: "Validate Y before proceeding; if invalid,
+        return a 400 with a clear error message."
