@@ -5,9 +5,29 @@
 
 > **This repository is the Core Edition (100 % AGPLv3).**
 >
-> Plus Edition source was part of this repository **up to and including release `v1.74.9-beta`** (in `backend/plus/` and `frontend/src/plus/`). With release `v1.75.0-beta` it has been moved to a separate **private** repository (`P3Portal-org/p3portal-plus`) under [`LICENSE-PLUS`](LICENSE-PLUS). Plus-related historical commits remain reachable in this repo's git history (each historical Plus source file carries its own `SPDX-License-Identifier: LicenseRef-LICENSE-PLUS` header — `LICENSE-PLUS` text stays at the repo root for transparent resolution).
+> Plus Edition source was part of this repository **up to and including release `v1.74.9-beta`** (in `backend/plus/` and `frontend/src/plus/`). With release `v1.75.0-beta` it has been moved to a separate **Source-Available** repository at https://github.com/P3Portal-org/p3portal-plus under [`LICENSE-PLUS`](LICENSE-PLUS) (proprietary, license-key gated; the source can be read for review and audit, but modification and redistribution are prohibited). Plus-related historical commits remain reachable in this repo's git history (each historical Plus source file carries its own `SPDX-License-Identifier: LicenseRef-LICENSE-PLUS` header — `LICENSE-PLUS` text stays at the repo root for transparent resolution).
 >
 > The Plus image is published independently at `ghcr.io/p3portal-org/p3portal-plus` and is **not** built from this repository. See [docs/repo-split-migration.md](docs/repo-split-migration.md) for the image-tag migration if you used the previous combined image.
+
+### P3 Portal Plus Edition (briefly)
+
+Plus is the commercial superset of Core. It adds (non-exhaustive list):
+
+- **Pools with resource quotas** — own portal pools with CPU/RAM/disk limits
+- **Approval workflow** — four-eyes principle for playbook runs, packer builds, template deletions, owner-change requests
+- **Git-Sync** — auto-sync of playbooks and packer templates from external Git repos (HTTPS+PAT or SSH key)
+- **Scheduled Jobs** — cron-based Ansible / SSH / VM-power-action automation
+- **Theme Editor** — visual theme customisation (Plus-only)
+- **Extended User-API-Keys** — Plus-only scopes
+- **Owner auto-assignment on deploy** — deployer becomes VM owner via resolver pipeline, with co-ownership and external-VM adoption
+- **Node-scope permissions** — preset rules for all VMs/LXCs on a chosen node
+- **Functional permissions** — playbook whitelist per user/group, ISO-upload gate
+- **Multi-node dashboard** — independent Proxmox installations side by side
+- **VM/LXC monitoring & alerting** — threshold alerts (webhook / e-mail / banner), preset rules
+
+Plus image: `ghcr.io/p3portal-org/p3portal-plus:latest`
+Plus source: https://github.com/P3Portal-org/p3portal-plus
+License: requires a valid `plus.lic` key to activate Plus features at runtime. See `LICENSE-PLUS` and `COMMERCIAL.md` for terms. Plus-Verkauf is currently inactive (`LEGAL_ENTITY = None`); no new commercial licenses are being issued at this time.
 
 **P3 Portal** is a self-contained Docker/Podman container that provides a web GUI for managing Proxmox clusters. Users are managed locally in the portal; Proxmox API tokens are used by the backend to execute operations on the cluster.
 
