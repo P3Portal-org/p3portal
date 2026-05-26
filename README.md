@@ -3,6 +3,12 @@
 [![Core: AGPLv3](https://img.shields.io/badge/Core-AGPLv3-blue.svg)](LICENSE)
 [![Plus: Source-Available](https://img.shields.io/badge/Plus-Source--Available%20%2B%20Key-orange.svg)](LICENSE-PLUS)
 
+> **This repository is the Core Edition (100 % AGPLv3).**
+>
+> Plus Edition source was part of this repository **up to and including release `v1.74.9-beta`** (in `backend/plus/` and `frontend/src/plus/`). With release `v1.75.0-beta` it has been moved to a separate **private** repository (`P3Portal-org/p3portal-plus`) under [`LICENSE-PLUS`](LICENSE-PLUS). Plus-related historical commits remain reachable in this repo's git history (each historical Plus source file carries its own `SPDX-License-Identifier: LicenseRef-LICENSE-PLUS` header — `LICENSE-PLUS` text stays at the repo root for transparent resolution).
+>
+> The Plus image is published independently at `ghcr.io/p3portal-org/p3portal-plus` and is **not** built from this repository. See [docs/repo-split-migration.md](docs/repo-split-migration.md) for the image-tag migration if you used the previous combined image.
+
 **P3 Portal** is a self-contained Docker/Podman container that provides a web GUI for managing Proxmox clusters. Users are managed locally in the portal; Proxmox API tokens are used by the backend to execute operations on the cluster.
 
 ![Cluster dashboard](docs/screenshots/dashboard.png)

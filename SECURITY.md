@@ -120,12 +120,23 @@ be named (handle, real name, link). Anonymous reports are also fine.
 
 ## Scope
 
+This security policy covers the **Core Edition only** — the AGPLv3 source
+in this repository and the container image `ghcr.io/p3portal-org/p3portal`.
+
 In scope:
 
-- The portal backend (`backend/`), frontend (`frontend/src/`), and the
-  container image published at `ghcr.io/p3portal-org/p3portal`
+- The portal backend (`backend/`, excluding `backend/plus/` which now
+  contains only Stubs in this repo), frontend (`frontend/src/`, excluding
+  `frontend/src/plus/` which is a Stub here), and the container image
+  published at `ghcr.io/p3portal-org/p3portal`
 - Default configuration and the bundled `examples/starter-pack`
 - Authentication, authorization, file upload paths, secret handling
+
+**Plus Edition security issues** affect a separate, private repository
+(`P3Portal-org/p3portal-plus`) and the image `ghcr.io/p3portal-org/p3portal-plus`.
+Those are **not in scope here**. Report Plus-specific issues privately to
+the maintainer at `license@p3portal.org` instead. See the Plus repository's
+own `SECURITY.md` for that policy (visible to license-key holders).
 
 Out of scope:
 
@@ -134,6 +145,7 @@ Out of scope:
 - Denial of service from a fully privileged admin user
 - Findings against forks or significantly modified deployments
 - **Public-internet exposure** (see "Important context" above)
+- Plus Edition specific findings (see above)
 
 ## Supported versions
 
