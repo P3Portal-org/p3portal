@@ -18,6 +18,7 @@ from typing import Any
 from sqlalchemy import text
 
 from backend.db.database import get_db
+from backend.db.dialect import upsert_or_ignore
 
 
 def _now() -> str:
@@ -805,31 +806,27 @@ async def acknowledge_event(event_id: int, username: str) -> dict | None:
         )
         if not check.fetchone():
             return None
-        # Upsert acknowledgement (ignore if already acked by this user)
+        # PROJ-71: upsert_or_ignore statt INSERT OR IGNORE (dialect-portabel, PG+SQLite)
         try:
+            sql, params = upsert_or_ignore(
+                "alert_acknowledgements",
+                ["alert_event_id", "username", "acknowledged_at"],
+                {"event_id": event_id, "username": username, "now": now},
+            )
+            # upsert_or_ignore gibt Columns und Values als Listen zurück –
+            # hier manuell bauen da Param-Namen fix sind
             await session.execute(
                 text(
-                    """INSERT OR IGNORE INTO alert_acknowledgements
-                       (alert_event_id, username, acknowledged_at)
-                       VALUES (:event_id, :username, :now)"""
+                    "INSERT INTO alert_acknowledgements "
+                    "(alert_event_id, username, acknowledged_at) "
+                    "VALUES (:event_id, :username, :now) "
+                    "ON CONFLICT DO NOTHING"
                 ),
                 {"event_id": event_id, "username": username, "now": now},
             )
             await session.commit()
         except Exception:
-            # PostgreSQL fallback (no INSERT OR IGNORE)
-            try:
-                await session.execute(
-                    text(
-                        """INSERT INTO alert_acknowledgements (alert_event_id, username, acknowledged_at)
-                           VALUES (:event_id, :username, :now)
-                           ON CONFLICT (alert_event_id, username) DO NOTHING"""
-                    ),
-                    {"event_id": event_id, "username": username, "now": now},
-                )
-                await session.commit()
-            except Exception:
-                await session.rollback()
+            await session.rollback()
 
     return {"alert_event_id": event_id, "username": username, "acknowledged_at": now}
 

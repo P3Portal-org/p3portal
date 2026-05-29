@@ -11,6 +11,8 @@ VALID_NODE_ACTIONS: frozenset[str] = frozenset({
     "node:view_tasks",
     "node:view_backups",
     "node:upload_iso",
+    "node:view_updates",    # PROJ-73: APT-Update-Stand lesen
+    "node:refresh_updates", # PROJ-73: APT-Update-Fetch auslösen
 })
 
 

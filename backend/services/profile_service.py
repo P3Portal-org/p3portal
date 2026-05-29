@@ -4,6 +4,7 @@ from __future__ import annotations
 from sqlalchemy import text
 
 from backend.db.database import get_db
+from backend.db.dialect import upsert_or_ignore
 
 
 async def get_user_profile(username: str) -> dict | None:
@@ -17,13 +18,13 @@ async def get_user_profile(username: str) -> dict | None:
 
 
 async def _ensure_profile(session, username: str, auth_type: str) -> None:
-    await session.execute(
-        text(
-            "INSERT OR IGNORE INTO user_profiles (username, auth_type) "
-            "VALUES (:username, :auth_type)"
-        ),
+    # PROJ-71: upsert_or_ignore statt INSERT OR IGNORE (dialect-portabel)
+    sql, params = upsert_or_ignore(
+        "user_profiles",
+        ["username", "auth_type"],
         {"username": username, "auth_type": auth_type},
     )
+    await session.execute(text(sql), params)
 
 
 async def get_ssh_key(username: str) -> str | None:

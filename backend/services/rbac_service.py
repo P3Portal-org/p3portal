@@ -47,6 +47,8 @@ def _row_to_assignment(row) -> AssignmentResponse:
         user_id=row["user_id"],
         resource_type=row["resource_type"],
         resource_id=row["resource_id"],
+        portal_node_id=row["portal_node_id"],
+        node_name=row.get("node_name"),
         preset_id=row["preset_id"],
         preset_name=row["preset_name"],
         permissions=json.loads(row["permissions"]),
@@ -185,9 +187,11 @@ async def list_assignments(user_id: int) -> list[AssignmentResponse]:
             text("""
                 SELECT a.*,
                        p.name AS preset_name,
-                       p.permissions AS permissions
+                       p.permissions AS permissions,
+                       n.name AS node_name
                   FROM resource_assignments a
                   JOIN role_presets p ON p.id = a.preset_id
+             LEFT JOIN nodes n ON n.id = a.portal_node_id
                  WHERE a.user_id = :user_id
                  ORDER BY a.created_at ASC
             """),
@@ -203,20 +207,24 @@ async def create_assignment(
     resource_id: int,
     preset_id: int,
     created_by: str,
+    portal_node_id: int | None = None,
 ) -> AssignmentResponse:
     now = datetime.now(timezone.utc).isoformat()
     async with get_db() as session:
         result = await session.execute(
             text("""
                 INSERT INTO resource_assignments
-                    (user_id, resource_type, resource_id, preset_id, created_at, created_by)
-                VALUES (:user_id, :resource_type, :resource_id, :preset_id, :created_at, :created_by)
+                    (user_id, resource_type, resource_id, portal_node_id,
+                     preset_id, created_at, created_by)
+                VALUES (:user_id, :resource_type, :resource_id, :portal_node_id,
+                        :preset_id, :created_at, :created_by)
                 RETURNING id
             """),
             {
                 "user_id": user_id,
                 "resource_type": resource_type,
                 "resource_id": resource_id,
+                "portal_node_id": portal_node_id,
                 "preset_id": preset_id,
                 "created_at": now,
                 "created_by": created_by,
@@ -228,9 +236,11 @@ async def create_assignment(
             text("""
                 SELECT a.*,
                        p.name AS preset_name,
-                       p.permissions AS permissions
+                       p.permissions AS permissions,
+                       n.name AS node_name
                   FROM resource_assignments a
                   JOIN role_presets p ON p.id = a.preset_id
+             LEFT JOIN nodes n ON n.id = a.portal_node_id
                  WHERE a.id = :id
             """),
             {"id": assignment_id},
@@ -252,11 +262,11 @@ async def delete_assignment(user_id: int, assignment_id: int) -> bool:
 # ── Permission helpers ────────────────────────────────────────────────────────
 
 async def get_user_permissions(user_id: int) -> list[dict]:
-    """Returns list of {resource_type, resource_id, permissions} for a user."""
+    """Returns list of {resource_type, resource_id, portal_node_id, permissions} for a user."""
     async with get_db() as session:
         result = await session.execute(
             text("""
-                SELECT a.resource_type, a.resource_id, p.permissions
+                SELECT a.resource_type, a.resource_id, a.portal_node_id, p.permissions
                   FROM resource_assignments a
                   JOIN role_presets p ON p.id = a.preset_id
                  WHERE a.user_id = :user_id
@@ -268,6 +278,7 @@ async def get_user_permissions(user_id: int) -> list[dict]:
         {
             "resource_type": r["resource_type"],
             "resource_id": r["resource_id"],
+            "portal_node_id": r["portal_node_id"],
             "permissions": json.loads(r["permissions"]),
         }
         for r in rows

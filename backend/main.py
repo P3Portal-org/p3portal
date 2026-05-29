@@ -94,6 +94,10 @@ async def lifespan(_: FastAPI):
     from backend.features.tooling.lifespan import register_startup_check
     register_startup_check()
 
+    # PROJ-73: Node-Update-Cron – Daily asyncio background loop (fire-and-forget).
+    from backend.features.node_updates.cron import start_node_updates_cron
+    asyncio.ensure_future(start_node_updates_cron())
+
     await seed_default_presets()
     await cleanup_expired_sessions()
     await seed_builtin_themes()
@@ -114,7 +118,7 @@ _openapi_url = "/api/openapi.json" if settings.expose_api_docs else None
 
 app = FastAPI(
     title="P3 Portal",
-    version="v1.75.1-beta",
+    version="v1.78.1-beta",
     docs_url=_docs_url,
     redoc_url=None,
     openapi_url=_openapi_url,
@@ -212,6 +216,9 @@ app.include_router(notifications_router)
 from backend.features.tooling.router import router as tooling_router
 app.include_router(tooling_router)
 
+from backend.features.node_updates.router import router as node_updates_router
+app.include_router(node_updates_router)
+
 # PROJ-67 Phase 1 – F-002: Webhook-Allowlist
 from backend.routers.webhook_allowlist import router as webhook_allowlist_router
 app.include_router(webhook_allowlist_router)
@@ -224,6 +231,13 @@ try:
     app.include_router(git_sync_webhook_router)
 except ImportError:
     logger.info("PROJ-68: backend.plus.git_sync nicht gefunden – Git-Sync-Endpunkte nicht registriert")
+
+# PROJ-74: Config-Snapshots Router (Plus-only; 404 für Core-Nutzer und unlizenziertes Plus)
+try:
+    from backend.plus.config_snapshots.router import router as config_snapshots_router
+    app.include_router(config_snapshots_router)
+except ImportError:
+    logger.info("PROJ-74: backend.plus.config_snapshots nicht gefunden – Config-Snapshot-Endpunkte nicht registriert")
 
 
 @app.get("/api/health", tags=["meta"])

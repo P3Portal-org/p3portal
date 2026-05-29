@@ -69,6 +69,10 @@ async def _build_auth_for_node(current_user: CurrentUser, node) -> ProxmoxAuth:
             csrf=session.get("csrf", ""),
         )
     token = _extract_token(node, current_user.role)
+    if current_user.role in ("viewer", "restricted"):
+        # RBAC users may have a viewer token but it lacks write permissions.
+        # Always prefer operator/admin so the portal's RBAC layer controls access.
+        token = _extract_token(node, "operator") or _extract_token(node, "admin") or token
     if not token:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -326,6 +330,18 @@ async def delete_vm(
         try:
             from backend.core.plus_protocol import plus_behavior
             await plus_behavior.on_vm_lxc_deleted_approval_workflow(pve_node, vmid, current_user.username)
+        except Exception:
+            pass
+        # PROJ-74: Config-Snapshots orphan-markieren (Plus-Protocol-Hook)
+        try:
+            from backend.core.plus_protocol import plus_behavior as _pb
+            from backend.services.nodes_service import get_node_for_proxmox_name as _gnfpn
+            _node_row = await _gnfpn(pve_node)
+            if _node_row is not None:
+                await _pb.on_vm_lxc_deleted_config_snapshots(
+                    _node_row.id, pve_node, vmid, vm_type,
+                    None, current_user.username,
+                )
         except Exception:
             pass
         return VmTaskResponse(task_id=task_id)

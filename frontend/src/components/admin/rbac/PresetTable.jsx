@@ -11,9 +11,11 @@ const ACTION_LABELS = {
 }
 
 const NODE_ACTION_LABELS = {
-  'node:view_tasks':   'Events',
-  'node:view_backups': 'Backups',
-  'node:upload_iso':   'ISO-Upload',
+  'node:view_tasks':      'Events',
+  'node:view_backups':    'Backups',
+  'node:upload_iso':      'ISO-Upload',
+  'node:view_updates':    'Updates ansehen',
+  'node:refresh_updates': 'Updates aktualisieren',
 }
 
 function ActionPill({ action }) {

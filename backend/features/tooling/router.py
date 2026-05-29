@@ -14,7 +14,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.core.deps import CurrentUser, get_current_user
-from backend.db.database import get_db
+from backend.db.database import get_db, get_engine_dialect
+from backend.db.dialect import json_path_extract
 from backend.features.tooling.schemas import AuditHistoryItem, AuditHistoryResponse
 from backend.features.tooling.service import tooling_service
 from sqlalchemy import text
@@ -85,15 +86,16 @@ async def get_tooling_audit_history(
     Filtert auf event_type='tooling_status_changed' und payload.tool=<tool>.
     Kein Admin-Gate (AC-API-1).
     """
+    _dialect = get_engine_dialect()
     async with get_db() as session:
         result = await session.execute(
             text(
-                """
+                f"""
                 SELECT id, created_at, detail
                 FROM audit_logs
                 WHERE event_type = 'tooling_status_changed'
                   AND auth_type = 'tooling'
-                  AND JSON_EXTRACT(detail, '$.tool') = :tool
+                  AND {json_path_extract('detail', 'tool', _dialect)} = :tool
                 ORDER BY created_at DESC
                 LIMIT :limit
                 """

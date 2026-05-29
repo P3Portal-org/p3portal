@@ -1,6 +1,9 @@
 // p3portal.org
 import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import VmTable from './VmTable'
+import { fetchMyPermissions } from '../../api/rbac'
+import { useAuth } from '../../hooks/useAuth'
 
 const SKELETON_ROWS = 4
 
@@ -97,6 +100,31 @@ function NodeFilter({ vms, statusFilter, onStatusChange, selectedNode, onNodeSel
 }
 
 export default function VmSection({ vms, loading, userRole, onRefresh, selectedNode, onNodeSelect }) {
+  const { auth_type } = useAuth()
+  const { data: rbacPerms } = useQuery({
+    queryKey: ['rbac-my-permissions'],
+    queryFn: fetchMyPermissions,
+    enabled: auth_type === 'local',
+    staleTime: 120_000,
+  })
+
+  // Merge RBAC permissions into each VM for users without global operator/admin role.
+  // bypass=true means admin or proxmox-user → canDo logic handles them via isOperator.
+  const enrichedVms = useMemo(() => {
+    if (!rbacPerms || rbacPerms.bypass) return vms
+    return vms.map(vm => {
+      const vmType = vm.type === 'lxc' ? 'lxc' : 'vm'
+      const matching = rbacPerms.assignments.filter(a =>
+        a.resource_type === vmType &&
+        a.resource_id === vm.vmid &&
+        (a.portal_node_id == null || a.portal_node_id === vm.portal_node_id)
+      )
+      if (matching.length === 0) return vm
+      const merged = [...new Set(matching.flatMap(a => a.permissions))]
+      return { ...vm, permissions: merged }
+    })
+  }, [vms, rbacPerms])
+
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('widget_vms_collapsed') === 'true'
   )
@@ -135,8 +163,8 @@ export default function VmSection({ vms, loading, userRole, onRefresh, selectedN
     localStorage.setItem('widget_templates_collapsed', String(next))
   }
 
-  const regularVms  = vms.filter(vm => !isTmpl(vm))
-  const templateVms = vms.filter(vm => isTmpl(vm)).sort((a, b) => a.vmid - b.vmid)
+  const regularVms  = enrichedVms.filter(vm => !isTmpl(vm))
+  const templateVms = enrichedVms.filter(vm => isTmpl(vm)).sort((a, b) => a.vmid - b.vmid)
 
   const filteredVms = useMemo(() => {
     let result = regularVms

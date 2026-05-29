@@ -92,6 +92,7 @@ class AssignmentCreateRequest(BaseModel):
     resource_type: str
     resource_id: int
     preset_id: int
+    portal_node_id: int | None = None
 
     @field_validator("resource_type")
     @classmethod
@@ -113,6 +114,8 @@ class AssignmentResponse(BaseModel):
     user_id: int
     resource_type: str
     resource_id: int
+    portal_node_id: int | None
+    node_name: str | None
     preset_id: int
     preset_name: str
     permissions: list[str]
@@ -123,6 +126,7 @@ class AssignmentResponse(BaseModel):
 class ResourcePermission(BaseModel):
     resource_type: str
     resource_id: int
+    portal_node_id: int | None = None
     permissions: list[str]
 
 

@@ -240,6 +240,9 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
   const isAdmin    = userRole === 'admin'
   const isCompact  = viewMode === 'compact'
 
+  // True for VMs where the user has explicit RBAC permissions (non-null means assigned)
+  const vmHasRbac = (vm) => Array.isArray(vm.permissions)
+
   const showOk  = (msg) => setFeedback({ type: 'ok',  msg })
   const showErr = (msg) => setFeedback({ type: 'err', msg })
 
@@ -384,7 +387,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
               )}
               {!isCompact && <th className={thBase}>IP</th>}
               <th className={thBase}>Eigentümer</th>
-              {isOperator && <th className={thBase}>Aktionen</th>}
+              {(isOperator || sortedVms.some(vmHasRbac)) && <th className={thBase}>Aktionen</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-zinc-700/50">
@@ -487,7 +490,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
                     })()}
                   </td>
 
-                  {isOperator && (
+                  {(isOperator || vmHasRbac(vm)) && (
                     <td className="px-4 py-3">
                       {tmpl ? (
                         <span className="text-xs text-gray-400 dark:text-zinc-600">–</span>
@@ -501,7 +504,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
                           />
                           <OverflowMenu items={[
                             ...(canDo(vm, 'snapshot') ? [{ label: 'Snapshots', onClick: () => setSnapshotVm(vm) }] : []),
-                            ...(isAdmin && canDo(vm, 'delete') ? [{ label: 'Löschen', onClick: () => setDeleteTarget(vm), danger: true }] : []),
+                            ...((isAdmin || vmHasRbac(vm)) && canDo(vm, 'delete') ? [{ label: 'Löschen', onClick: () => setDeleteTarget(vm), danger: true }] : []),
                           ]} />
                         </div>
                       ) : (
@@ -516,7 +519,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
                               Snapshots
                             </button>
                           )}
-                          {isAdmin && canDo(vm, 'delete') && (
+                          {(isAdmin || vmHasRbac(vm)) && canDo(vm, 'delete') && (
                             <DeleteVmButton
                               vm={vm}
                               onRequestDelete={setDeleteTarget}

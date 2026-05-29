@@ -1,0 +1,51 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: ["main", "feat/**", "fix/**"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: pytest (${{ matrix.db }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db: [sqlite, postgres]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run tests (SQLite)
+        if: matrix.db == 'sqlite'
+        env:
+          SECRET_KEY: test_secret_key_32_chars_for_tests
+        run: |
+          cd backend
+          python -m pytest -x -q --tb=short
+
+      - name: Run tests (PostgreSQL)
+        if: matrix.db == 'postgres'
+        env:
+          SECRET_KEY: test_secret_key_32_chars_for_tests
+          TEST_DB: postgres
+        run: |
+          cd backend
+          python -m pytest -x -q --tb=short --db=postgres

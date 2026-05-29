@@ -14,9 +14,11 @@ const ALL_ACTIONS = [
 ]
 
 const ALL_NODE_ACTIONS = [
-  { id: 'node:view_tasks',   label: 'Aufgaben/Events ansehen' },
-  { id: 'node:view_backups', label: 'Backups ansehen' },
-  { id: 'node:upload_iso',   label: 'ISO hochladen' },
+  { id: 'node:view_tasks',      label: 'Aufgaben/Events ansehen' },
+  { id: 'node:view_backups',    label: 'Backups ansehen' },
+  { id: 'node:upload_iso',      label: 'ISO hochladen' },
+  { id: 'node:view_updates',    label: 'Update-Liste ansehen' },
+  { id: 'node:refresh_updates', label: 'Update-Liste aktualisieren' },
 ]
 
 const GROUP_LABELS = { basis: 'Basis', betrieb: 'Betrieb', admin: 'Admin' }

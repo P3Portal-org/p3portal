@@ -72,6 +72,18 @@ async def _alert_vms_callback(node_id: int, _endpoint: str, data: list) -> None:
         await reconcile_for_node(node_id, data or [])
     except Exception:
         pass
+    # PROJ-74: Config-Snapshots orphan-markieren für verschwundene VMs
+    try:
+        still_visible: set[tuple[int, str, str]] = {
+            (int(r.get("vmid", -1)), str(r.get("node", "")), str(r.get("type", "qemu")))
+            for r in (data or [])
+            if r.get("vmid") is not None
+        }
+        await plus_behavior.on_cluster_refresh_vanished_resources_config_snapshots(
+            still_visible, node_id
+        )
+    except Exception:
+        pass
 
 
 def _cluster_http_exc(exc: httpx.HTTPStatusError, auth: ProxmoxAuth) -> HTTPException:
@@ -162,6 +174,22 @@ async def _get_all_portal_clients(
     return result
 
 
+async def _filter_nodes_for_rbac_user(user_id: int, nodes: list[NodeInfo]) -> list[NodeInfo]:
+    """Return only nodes where the viewer has at least one RBAC assignment.
+
+    Protects against information disclosure: a viewer without assignments on a
+    node should not know that node exists. Falls back to the full list when the
+    user has no portal_node_id-specific assignments (NULL assignments match any
+    node, so every node is relevant in that case).
+    """
+    perms = await get_user_permissions(user_id)
+    assigned_node_ids = {p["portal_node_id"] for p in perms if p.get("portal_node_id") is not None}
+    if not assigned_node_ids:
+        # Only null-scoped assignments → every node could host assigned resources
+        return nodes
+    return [n for n in nodes if n.portal_node_id in assigned_node_ids]
+
+
 @router.get("/nodes", response_model=list[NodeInfo])
 async def get_nodes(
     force: bool = False,
@@ -192,6 +220,7 @@ async def get_nodes(
             for r in res:
                 info = NodeInfo.model_validate(r)
                 info.portal_node_name = node_row.name
+                info.portal_node_id = node_row.id
                 info.response_time_ms = duration_ms
                 nodes.append(info)
         if not nodes:
@@ -199,6 +228,9 @@ async def get_nodes(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not reach any Proxmox installation",
             )
+        # PROJ-12: viewer-only sees nodes they have RBAC assignments on
+        if current_user.auth_type == "local" and current_user.role == "viewer":
+            nodes = await _filter_nodes_for_rbac_user(current_user.user_id, nodes)
         return nodes
 
     # PROJ-33: Basis + local → single default node with cache
@@ -229,6 +261,11 @@ async def get_nodes(
         result = [NodeInfo.model_validate(r) for r in raw]
         for info in result:
             info.response_time_ms = duration_ms
+            if default_node:
+                info.portal_node_id = default_node.id
+        # PROJ-12: viewer-only sees nodes they have RBAC assignments on
+        if current_user.role == "viewer":
+            result = await _filter_nodes_for_rbac_user(current_user.user_id, result)
         return result
 
     # Proxmox-login → no cache, direct call

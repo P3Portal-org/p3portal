@@ -111,10 +111,11 @@ resource_assignments = Table(
     Column("user_id", Integer, ForeignKey("local_users.id", ondelete="CASCADE"), nullable=False),
     Column("resource_type", String(10), nullable=False),
     Column("resource_id", Integer, nullable=False),
+    Column("portal_node_id", Integer, ForeignKey("nodes.id", ondelete="SET NULL"), nullable=True),
     Column("preset_id", Integer, ForeignKey("role_presets.id"), nullable=False),
     Column("created_at", String, nullable=False),
     Column("created_by", String, nullable=False),
-    UniqueConstraint("user_id", "resource_type", "resource_id", name="uq_resource_assignments"),
+    UniqueConstraint("user_id", "resource_type", "portal_node_id", "resource_id", name="uq_resource_assignments"),
     CheckConstraint(
         "resource_type IN ('vm', 'lxc')",
         name="ck_resource_assignments_type",
@@ -718,3 +719,19 @@ webhook_allowlist = Table(
     Column("created_by", String(100), nullable=False, server_default=""),
 )
 Index("idx_webhook_allowlist_pattern", webhook_allowlist.c.pattern)
+
+# ── node_updates (PROJ-73 – APT-Update-Stand pro Proxmox-Member) ─────────────
+
+node_updates = Table(
+    "node_updates", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("portal_node_id", Integer, ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False),
+    Column("proxmox_node_name", String(100), nullable=False),
+    Column("last_check_at", String, nullable=True),
+    Column("last_success_at", String, nullable=True),
+    Column("last_error", Text, nullable=True),
+    Column("payload_json", Text, nullable=False, server_default="[]"),
+    UniqueConstraint("portal_node_id", "proxmox_node_name", name="uq_node_updates_member"),
+)
+Index("idx_node_updates_portal_node_id", node_updates.c.portal_node_id)
+Index("idx_node_updates_last_success_at", node_updates.c.last_success_at)

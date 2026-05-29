@@ -15,6 +15,7 @@ class NodeInfo(BaseModel):
     maxdisk: int = 0      # bytes total
     uptime: int = 0       # seconds
     portal_node_name: str | None = None  # PROJ-30: Portal-Node-Name (z.B. "Production"); None im Single-Node-Betrieb
+    portal_node_id: int | None = None    # PROJ-73: Portal-DB-Node-ID für Updates-Tab; None im Single-Node-Betrieb ohne konfigurierte Node
     response_time_ms: float | None = None  # Letzte Cache-Fetch-Dauer in ms; None für Proxmox-Login-User
 
 

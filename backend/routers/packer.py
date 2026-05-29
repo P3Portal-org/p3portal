@@ -481,6 +481,14 @@ async def delete_proxmox_template(
                     await node_client.delete_vm(node_auth, match["node"], vmid, match.get("type", "qemu"))
                 except Exception as exc:
                     raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Proxmox API Fehler: {exc}")
+                # PROJ-74: Config-Snapshots orphan-markieren
+                try:
+                    await plus_behavior.on_vm_lxc_deleted_config_snapshots(
+                        node_row.id, match["node"], vmid,
+                        match.get("type", "qemu"), None, current_user.username,
+                    )
+                except Exception:
+                    pass
                 return Response(status_code=204)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Template-VM {vmid} nicht gefunden")
 
@@ -502,6 +510,18 @@ async def delete_proxmox_template(
         await client.delete_vm(auth, match["node"], vmid, match.get("type", "qemu"))
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Proxmox API Fehler: {exc}")
+
+    # PROJ-74: Config-Snapshots orphan-markieren (Core-path)
+    try:
+        from backend.services.nodes_service import get_default_node as _gdn
+        _node_row = await _gdn()
+        if _node_row is not None:
+            await plus_behavior.on_vm_lxc_deleted_config_snapshots(
+                _node_row.id, match["node"], vmid,
+                match.get("type", "qemu"), None, current_user.username,
+            )
+    except Exception:
+        pass
 
     return Response(status_code=204)
 

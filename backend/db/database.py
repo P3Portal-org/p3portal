@@ -66,6 +66,18 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+def get_engine_dialect() -> str:
+    """Gibt den Dialect-Namen der aktuellen Engine zurück ('sqlite' oder 'postgresql').
+
+    Immer verfügbar nach init_db(). Davor: SQLite-Fallback.
+    Wird von Dialect-Helper-Aufrufen in Services genutzt, die keinen
+    direkten Connection-Zugriff haben.
+    """
+    if _engine is None:
+        return "sqlite"
+    return _engine.dialect.name
+
+
 def get_sync_engine():
     """Gibt eine echte Sync-Engine für Plus-MetaData create_all zurück.
 
@@ -145,6 +157,8 @@ async def _migrate_db(conn) -> None:
         # PROJ-34 Bug-Fix: VM-Typ und Proxmox-Node-Name für Alert-Events
         ("alert_events", "vm_type TEXT NOT NULL DEFAULT 'qemu'"),
         ("alert_events", "proxmox_node TEXT NOT NULL DEFAULT ''"),
+        # PROJ-12 Bug-Fix: Node-Disambiguierung in resource_assignments
+        ("resource_assignments", "portal_node_id INTEGER"),
     ]
 
     def _get_existing_columns(sync_conn, table: str) -> set[str]:
@@ -159,52 +173,147 @@ async def _migrate_db(conn) -> None:
         if col_name not in existing:
             await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column_def}"))
 
-    # PROJ-65: announcements-Tabelle: type→severity umbenennen + Werte-Mapping + notification_reads anlegen.
-    # SQLite-CREATE-NEW-Pattern (analog user_sidebar_pins): Tabelle umbenennen + neu anlegen.
+    # PROJ-65: announcements-Tabelle: type→severity umbenennen + Werte-Mapping.
+    # PROJ-71: Dialect-Branch – SQLite-CREATE-NEW-Pattern bleibt, PG bekommt ALTER TABLE.
     try:
-        result = await conn.execute(
-            text("SELECT sql FROM sqlite_master WHERE type='table' AND name='announcements'")
-        )
-        row = result.fetchone()
-        if row and row[0] and "severity" not in row[0]:
-            # BEGIN IMMEDIATE für Schreibsicherheit bei gleichzeitigem Zugriff
-            await conn.execute(text("""
-                CREATE TABLE announcements_new (
-                    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    message TEXT NOT NULL,
-                    severity TEXT NOT NULL DEFAULT 'info',
-                    active INTEGER NOT NULL DEFAULT 1,
-                    expires_at TEXT,
-                    created_by TEXT NOT NULL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    CONSTRAINT ck_announcements_severity CHECK (
-                        severity IN ('info', 'warn', 'critical', 'success')
+        from backend.db.dialect import _dialect_is_sqlite, _dialect_is_postgresql
+
+        def _check_announcements_needs_migration(sync_conn) -> bool:
+            try:
+                cols = {c["name"] for c in sa_inspect(sync_conn).get_columns("announcements")}
+                return "type" in cols and "severity" not in cols
+            except Exception:
+                return False
+
+        needs_migration = await conn.run_sync(_check_announcements_needs_migration)
+        if needs_migration:
+            dialect_name = await conn.run_sync(lambda c: c.dialect.name)
+            if dialect_name == "sqlite":
+                # SQLite: kein DROP COLUMN → CREATE-NEW-Pattern
+                await conn.execute(text("""
+                    CREATE TABLE announcements_new (
+                        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        message TEXT NOT NULL,
+                        severity TEXT NOT NULL DEFAULT 'info',
+                        active INTEGER NOT NULL DEFAULT 1,
+                        expires_at TEXT,
+                        created_by TEXT NOT NULL,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL,
+                        CONSTRAINT ck_announcements_severity CHECK (
+                            severity IN ('info', 'warn', 'critical', 'success')
+                        )
                     )
-                )
-            """))
-            await conn.execute(text("""
-                INSERT INTO announcements_new
-                    (id, message, severity, active, expires_at, created_by, created_at, updated_at)
-                SELECT id, message,
-                       CASE type
-                           WHEN 'info'  THEN 'info'
-                           WHEN 'warn'  THEN 'warn'
-                           WHEN 'error' THEN 'critical'
-                           ELSE 'info'
-                       END,
-                       active, expires_at, created_by, created_at, updated_at
-                FROM announcements
-            """))
-            await conn.execute(text("DROP TABLE announcements"))
-            await conn.execute(text(
-                "ALTER TABLE announcements_new RENAME TO announcements"
-            ))
-            await conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(active)"
-            ))
+                """))
+                await conn.execute(text("""
+                    INSERT INTO announcements_new
+                        (id, message, severity, active, expires_at, created_by, created_at, updated_at)
+                    SELECT id, message,
+                           CASE type
+                               WHEN 'info'  THEN 'info'
+                               WHEN 'warn'  THEN 'warn'
+                               WHEN 'error' THEN 'critical'
+                               ELSE 'info'
+                           END,
+                           active, expires_at, created_by, created_at, updated_at
+                    FROM announcements
+                """))
+                await conn.execute(text("DROP TABLE announcements"))
+                await conn.execute(text("ALTER TABLE announcements_new RENAME TO announcements"))
+                await conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(active)"
+                ))
+            else:
+                # PostgreSQL: ALTER TABLE + UPDATE + DROP COLUMN
+                await conn.execute(text(
+                    "ALTER TABLE announcements ADD COLUMN severity TEXT NOT NULL DEFAULT 'info'"
+                ))
+                await conn.execute(text("""
+                    UPDATE announcements SET severity =
+                        CASE type
+                            WHEN 'info'  THEN 'info'
+                            WHEN 'warn'  THEN 'warn'
+                            WHEN 'error' THEN 'critical'
+                            ELSE 'info'
+                        END
+                """))
+                await conn.execute(text(
+                    "ALTER TABLE announcements DROP COLUMN type"
+                ))
+                await conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(active)"
+                ))
     except Exception:
-        pass  # Nicht SQLite oder Tabelle noch nicht vorhanden
+        pass  # Tabelle noch nicht vorhanden oder Migration bereits durchgeführt
+
+    # PROJ-12 Bug-Fix: resource_assignments UNIQUE-Constraint um portal_node_id erweitern.
+    # Alter Constraint: (user_id, resource_type, resource_id) – blockiert gleiche VMID auf unterschiedl. Nodes.
+    # Neuer Constraint: (user_id, resource_type, portal_node_id, resource_id)
+    try:
+        from backend.db.dialect import _dialect_is_sqlite
+
+        def _check_resource_assignments_needs_migration(sync_conn) -> bool:
+            try:
+                for idx in sa_inspect(sync_conn).get_unique_constraints("resource_assignments"):
+                    if set(idx.get("column_names", [])) == {"user_id", "resource_type", "resource_id"}:
+                        return True
+                return False
+            except Exception:
+                return False
+
+        needs_ra_migration = await conn.run_sync(_check_resource_assignments_needs_migration)
+        if needs_ra_migration:
+            dialect_name = await conn.run_sync(lambda c: c.dialect.name)
+            if dialect_name == "sqlite":
+                await conn.execute(text("""
+                    CREATE TABLE resource_assignments_new (
+                        id              INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        user_id         INTEGER NOT NULL REFERENCES local_users(id) ON DELETE CASCADE,
+                        resource_type   TEXT NOT NULL,
+                        resource_id     INTEGER NOT NULL,
+                        portal_node_id  INTEGER REFERENCES nodes(id) ON DELETE SET NULL,
+                        preset_id       INTEGER NOT NULL REFERENCES role_presets(id),
+                        created_at      TEXT NOT NULL,
+                        created_by      TEXT NOT NULL,
+                        CONSTRAINT uq_resource_assignments
+                            UNIQUE (user_id, resource_type, portal_node_id, resource_id),
+                        CONSTRAINT ck_resource_assignments_type
+                            CHECK (resource_type IN ('vm', 'lxc'))
+                    )
+                """))
+                await conn.execute(text("""
+                    INSERT INTO resource_assignments_new
+                        (id, user_id, resource_type, resource_id, portal_node_id,
+                         preset_id, created_at, created_by)
+                    SELECT id, user_id, resource_type, resource_id, portal_node_id,
+                           preset_id, created_at, created_by
+                    FROM resource_assignments
+                """))
+                await conn.execute(text("DROP TABLE resource_assignments"))
+                await conn.execute(text(
+                    "ALTER TABLE resource_assignments_new RENAME TO resource_assignments"
+                ))
+                await conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS idx_resource_assignments_user_id "
+                    "ON resource_assignments(user_id)"
+                ))
+                await conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS idx_resource_assignments_preset_id "
+                    "ON resource_assignments(preset_id)"
+                ))
+            else:
+                # PostgreSQL: Constraint droppen + neu anlegen
+                await conn.execute(text(
+                    "ALTER TABLE resource_assignments "
+                    "DROP CONSTRAINT IF EXISTS uq_resource_assignments"
+                ))
+                await conn.execute(text(
+                    "ALTER TABLE resource_assignments "
+                    "ADD CONSTRAINT uq_resource_assignments "
+                    "UNIQUE (user_id, resource_type, portal_node_id, resource_id)"
+                ))
+    except Exception:
+        pass
 
     # PROJ-65: notification_reads Tabelle anlegen (idempotent via CREATE TABLE IF NOT EXISTS)
     try:
@@ -231,15 +340,74 @@ async def _migrate_db(conn) -> None:
     except Exception:
         pass
 
-    # PROJ-54 SQLite-only: user_sidebar_pins CHECK-Constraint um 'node_tab' erweitern.
-    # SQLite erlaubt kein ALTER TABLE für Constraints → Tabelle neu erstellen (idempotent).
+    # PROJ-73: node_updates Tabelle anlegen (idempotent via CREATE TABLE IF NOT EXISTS)
     try:
-        result = await conn.execute(
-            text("SELECT sql FROM sqlite_master WHERE type='table' AND name='user_sidebar_pins'")
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS node_updates (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                portal_node_id      INTEGER NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
+                proxmox_node_name   TEXT NOT NULL,
+                last_check_at       TEXT,
+                last_success_at     TEXT,
+                last_error          TEXT,
+                payload_json        TEXT NOT NULL DEFAULT '[]',
+                CONSTRAINT uq_node_updates_member UNIQUE (portal_node_id, proxmox_node_name)
+            )
+        """))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_node_updates_portal_node_id "
+            "ON node_updates(portal_node_id)"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS idx_node_updates_last_success_at "
+            "ON node_updates(last_success_at)"
+        ))
+    except Exception:
+        pass
+
+    # PROJ-54: user_sidebar_pins CHECK-Constraint um 'node_tab' erweitern.
+    # PROJ-71: Dialect-Branch – SQLite-CREATE-NEW-Pattern bleibt, PG bekommt DROP+ADD CONSTRAINT.
+    try:
+        _PIN_KINDS = (
+            "'system_settings_tab', 'system_settings_sub_tab', "
+            "'vm', 'lxc', 'node', 'node_tab', 'pool', 'group', 'other'"
         )
-        row = result.fetchone()
-        if row and row[0] and "'node_tab'" not in row[0]:
-            await conn.execute(text("""
+
+        def _check_pins_needs_migration(sync_conn) -> str | None:
+            """Gibt den Dialect-Namen zurück wenn Migration nötig, sonst None."""
+            try:
+                cols = {c["name"] for c in sa_inspect(sync_conn).get_columns("user_sidebar_pins")}
+                if "pin_kind" not in cols:
+                    return None  # Tabelle zu alt oder nicht vorhanden
+            except Exception:
+                return None
+            dialect = sync_conn.dialect.name
+            if dialect == "sqlite":
+                # SQLite: DDL-String prüfen ob 'node_tab' schon vorhanden
+                row = sync_conn.execute(
+                    text("SELECT sql FROM sqlite_master WHERE type='table' AND name='user_sidebar_pins'")
+                ).fetchone()
+                if row and row[0] and "'node_tab'" not in row[0]:
+                    return "sqlite"
+                return None
+            else:
+                # PostgreSQL: information_schema-Check ob Constraint das richtige Set hat
+                row = sync_conn.execute(
+                    text(
+                        "SELECT 1 FROM information_schema.check_constraints "
+                        "WHERE constraint_schema='public' "
+                        "AND constraint_name='ck_sidebar_pins_kind' "
+                        "AND check_clause LIKE '%node_tab%'"
+                    )
+                ).fetchone()
+                if row is None:
+                    return "postgresql"
+                return None
+
+        dialect_for_pins = await conn.run_sync(_check_pins_needs_migration)
+
+        if dialect_for_pins == "sqlite":
+            await conn.execute(text(f"""
                 CREATE TABLE user_sidebar_pins_new (
                     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL REFERENCES local_users(id) ON DELETE CASCADE,
@@ -251,10 +419,7 @@ async def _migrate_db(conn) -> None:
                     created_at TEXT NOT NULL,
                     UNIQUE (user_id, route),
                     CONSTRAINT ck_sidebar_pins_kind CHECK (
-                        pin_kind IN (
-                            'system_settings_tab', 'system_settings_sub_tab',
-                            'vm', 'lxc', 'node', 'node_tab', 'pool', 'group', 'other'
-                        )
+                        pin_kind IN ({_PIN_KINDS})
                     )
                 )
             """))
@@ -269,11 +434,19 @@ async def _migrate_db(conn) -> None:
                 )
             """))
             await conn.execute(text("DROP TABLE user_sidebar_pins"))
+            await conn.execute(text("ALTER TABLE user_sidebar_pins_new RENAME TO user_sidebar_pins"))
+
+        elif dialect_for_pins == "postgresql":
+            # PostgreSQL: CHECK-Constraint via DROP + ADD (ALTER TABLE in einer Transaktion)
             await conn.execute(text(
-                "ALTER TABLE user_sidebar_pins_new RENAME TO user_sidebar_pins"
+                "ALTER TABLE user_sidebar_pins DROP CONSTRAINT IF EXISTS ck_sidebar_pins_kind"
+            ))
+            await conn.execute(text(
+                f"ALTER TABLE user_sidebar_pins ADD CONSTRAINT ck_sidebar_pins_kind "
+                f"CHECK (pin_kind IN ({_PIN_KINDS}))"
             ))
     except Exception:
-        pass  # Nicht SQLite oder Tabelle noch nicht vorhanden
+        pass  # Tabelle noch nicht vorhanden oder Migration bereits durchgeführt
 
 
 async def init_db() -> None:
@@ -284,7 +457,13 @@ async def init_db() -> None:
 
     url = _db_url()
     Path(settings.data_dir).mkdir(parents=True, exist_ok=True)
-    _engine = create_async_engine(url, echo=False)
+    # PROJ-71: pool_pre_ping=True – überlebt idle-Timeouts, PG-Reload, Netzwerk-Glitches.
+    # pool_size/max_overflow nur für PostgreSQL; aiosqlite ignoriert diese Parameter.
+    engine_kwargs: dict = {"echo": False, "pool_pre_ping": True}
+    if not url.startswith("sqlite"):
+        engine_kwargs["pool_size"] = settings.db_pool_size
+        engine_kwargs["max_overflow"] = settings.db_pool_max_overflow
+    _engine = create_async_engine(url, **engine_kwargs)
 
     if url.startswith("sqlite"):
         event.listen(_engine.sync_engine, "connect", _set_sqlite_pragma)

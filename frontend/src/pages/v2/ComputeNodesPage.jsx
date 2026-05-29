@@ -10,6 +10,7 @@ import ComputeVmSection from '../../components/computenodes/ComputeVmSection'
 import ComputeTemplatesTab from '../../components/computenodes/ComputeTemplatesTab'
 import ComputeEventsTab from '../../components/computenodes/ComputeEventsTab'
 import ComputeBackupsTab from '../../components/computenodes/ComputeBackupsTab'
+import UpdatesTab from '../../features/node_updates/components/UpdatesTab'
 import TokenMissingBanner from '../../components/ui/TokenMissingBanner'
 import NodeDetailSection from '../../components/compute/NodeDetailSection'
 import VmSection from '../../components/dashboard/VmSection'
@@ -54,13 +55,15 @@ function ErrorBanner({ error }) {
 }
 
 const TABS = [
-  { id: 'info',      label: 'Node Details' },
-  { id: 'vms',       label: 'VM & LXC' },
-  { id: 'templates', label: 'Templates' },
-  { id: 'events',    label: 'Ereignisse' },
-  { id: 'backups',   label: 'Backups' },
-  { id: 'alerting',  label: 'Alerting',       capKey: 'compute_alerting' },
-  { id: 'schedules', label: 'Scheduled Jobs', capKey: 'compute_scheduled_jobs' },
+  { id: 'info',             label: 'Node Details' },
+  { id: 'vms',              label: 'VM & LXC' },
+  { id: 'templates',        label: 'Templates' },
+  { id: 'events',           label: 'Ereignisse' },
+  { id: 'updates',          label: 'Updates',          nodeAction: 'node:view_updates' },
+  { id: 'backups',          label: 'Backups' },
+  { id: 'alerting',         label: 'Alerting',         capKey: 'compute_alerting' },
+  { id: 'schedules',        label: 'Scheduled Jobs',   capKey: 'compute_scheduled_jobs' },
+  { id: 'config-snapshots', label: 'Config-Snapshots', capKey: 'config_snapshots' },
 ]
 
 export default function ComputeNodesPage() {
@@ -72,6 +75,7 @@ export default function ComputeNodesPage() {
   const ComputeAlertingTab = PlusComponents.ComputeAlertingTab
   const ComputeScheduledJobsTab = PlusComponents.ComputeScheduledJobsTab
   const AddNodeCard = PlusComponents.AddNodeCard
+  const ConfigSnapshotsNodeTab = PlusComponents.ConfigSnapshotsNodeTab
 
   const isLocalUser = auth_type === 'local'
   const is503 = error?.response?.status === 503
@@ -180,9 +184,13 @@ export default function ComputeNodesPage() {
         <section>
           {selectedNode ? (
             <>
-              {/* Tab bar – Plus-Tabs nur bei Plus-Lizenz sichtbar */}
+              {/* Tab bar – Plus-Tabs nur bei Plus-Lizenz, nodeAction-Tabs nur für Admins/Operators */}
               <div className="flex items-center border-b border-gray-200 dark:border-zinc-700 mb-4 overflow-x-auto">
-                {TABS.filter(t => !t.capKey || (caps[t.capKey] ?? false)).map(tab => {
+                {TABS.filter(t => {
+                  if (t.capKey && !(caps[t.capKey] ?? false)) return false
+                  if (t.nodeAction && !isAdmin && role !== 'operator') return false
+                  return true
+                }).map(tab => {
                   const isActive = activeTab === tab.id
                   return (
                     <button
@@ -231,6 +239,7 @@ export default function ComputeNodesPage() {
               {activeTab === 'info'      && <NodeDetailSection nodeName={selectedNode.node} />}
               {activeTab === 'templates' && <ComputeTemplatesTab vms={nodeVms} loading={loading} />}
               {activeTab === 'events'    && <ComputeEventsTab nodeName={selectedNode.node} active={activeTab === 'events'} />}
+              {activeTab === 'updates'   && <UpdatesTab portalNodeId={selectedNode.portal_node_id} active={activeTab === 'updates'} />}
               {activeTab === 'backups'   && <ComputeBackupsTab nodeName={selectedNode.node} active={activeTab === 'backups'} />}
               {activeTab === 'alerting' && (caps.compute_alerting ?? false) && ComputeAlertingTab && (
                 <Suspense fallback={null}>
@@ -240,6 +249,11 @@ export default function ComputeNodesPage() {
               {activeTab === 'schedules' && (caps.compute_scheduled_jobs ?? false) && ComputeScheduledJobsTab && (
                 <Suspense fallback={null}>
                   <ComputeScheduledJobsTab nodeName={selectedNode.node} active={activeTab === 'schedules'} />
+                </Suspense>
+              )}
+              {activeTab === 'config-snapshots' && (caps.config_snapshots ?? false) && ConfigSnapshotsNodeTab && (
+                <Suspense fallback={null}>
+                  <ConfigSnapshotsNodeTab portalNodeId={selectedNode.portal_node_id} active={activeTab === 'config-snapshots'} />
                 </Suspense>
               )}
             </>

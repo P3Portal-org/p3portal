@@ -41,6 +41,8 @@ const PlaybookPermissionsPage = PlusComponents.PlaybookPermissionsPage
 const ApprovalRulesAdminPage = PlusComponents.ApprovalRulesAdminPage
 // PROJ-68: Git-Sync via Plus-Registry
 const GitSyncSection = PlusComponents.GitSyncSection
+// PROJ-74: Config-Snapshot Orphan-Admin via Plus-Registry
+const ConfigSnapshotOrphanPage = PlusComponents.ConfigSnapshotOrphanPage
 // PROJ-57: Help-Admin-Sektion
 import HelpAdminSection from '../../features/help/components/HelpAdminSection'
 import WebhookAllowlistSection from '../../components/admin/WebhookAllowlistSection'
@@ -846,6 +848,14 @@ export default function SystemSettingsPage() {
                   <PlusBadge />
                   <Suspense fallback={null}>
                     <AlertSmtpSection />
+                  </Suspense>
+                </div>
+              )}
+              {isPlus && ConfigSnapshotOrphanPage && (
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
+                  <PlusBadge />
+                  <Suspense fallback={null}>
+                    <ConfigSnapshotOrphanPage embedded />
                   </Suspense>
                 </div>
               )}

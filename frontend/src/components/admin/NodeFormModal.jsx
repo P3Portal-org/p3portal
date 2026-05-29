@@ -7,7 +7,7 @@ import ModalHelpButton from '../../features/help/components/ModalHelpButton'
 
 const VIEWER_PRIVS   = 'VM.Audit,VM.GuestAgent.Audit,Pool.Audit,Sys.Audit'
 const OPERATOR_PRIVS = 'VM.Audit,VM.GuestAgent.Audit,VM.PowerMgmt,VM.Snapshot,Pool.Audit'
-const ADMIN_PRIVS    = 'VM.Audit,VM.GuestAgent.Audit,VM.PowerMgmt,VM.Snapshot,VM.Allocate,VM.Clone,VM.Config.CPU,VM.Config.Memory,VM.Config.Disk,VM.Config.Network,VM.Config.HWType,VM.Config.Options,VM.Config.Cloudinit,VM.Config.CDROM,Datastore.AllocateSpace,Datastore.Audit,SDN.Use,Pool.Audit'
+const ADMIN_PRIVS    = 'VM.Audit,VM.GuestAgent.Audit,VM.PowerMgmt,VM.Snapshot,VM.Allocate,VM.Clone,VM.Config.CPU,VM.Config.Memory,VM.Config.Disk,VM.Config.Network,VM.Config.HWType,VM.Config.Options,VM.Config.Cloudinit,VM.Config.CDROM,Datastore.AllocateSpace,Datastore.Audit,SDN.Use,Pool.Audit,Sys.Audit,Sys.Modify'
 const PACKER_PRIVS   = 'VM.Allocate,VM.Clone,VM.Config.CPU,VM.Config.Memory,VM.Config.Disk,VM.Config.HWType,VM.Config.Network,VM.Config.Options,VM.Config.Cloudinit,VM.Config.CDROM,VM.Console,VM.PowerMgmt,VM.Audit,VM.GuestAgent.Audit,Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit,SDN.Use'
 
 function parseNodeUrl(fullUrl) {

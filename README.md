@@ -230,6 +230,25 @@ docker compose up -d   # adjust image: in docker-compose.yml to p3portal:local
 
 Database schema migrations run automatically on startup.
 
+### PostgreSQL (optional)
+
+SQLite is the default and works well for single-server deployments. For multi-user team setups or when you need concurrent write access, PostgreSQL 14+ is supported as a production database.
+
+Quick setup — add to `.env` and start with the overlay:
+
+```bash
+# .env
+DB_URL=postgresql+asyncpg://p3portal:changeme@postgres:5432/p3portal
+POSTGRES_PASSWORD=changeme
+
+# start
+docker-compose -f docker-compose.yml -f docker-compose.postgres.yml up -d
+```
+
+The overlay adds a `postgres:17-alpine` service and a `postgres-backup` sidecar that runs nightly `pg_dump` into `./data/db-backup/` (keeps the last 7 dumps by default).
+
+See [docs/postgres-deployment.md](docs/postgres-deployment.md) for full details including backup, restore, and pool tuning.
+
 ---
 
 ## Proxmox Setup

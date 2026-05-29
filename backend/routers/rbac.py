@@ -140,6 +140,7 @@ async def create_assignment(
         return await rbac_service.create_assignment(
             user_id, body.resource_type, body.resource_id, body.preset_id,
             created_by=current_user.username,
+            portal_node_id=body.portal_node_id,
         )
     except Exception as exc:
         if "UNIQUE constraint failed" in str(exc):
@@ -181,6 +182,7 @@ async def my_permissions(
         ResourcePermission(
             resource_type=p["resource_type"],
             resource_id=p["resource_id"],
+            portal_node_id=p.get("portal_node_id"),
             permissions=p["permissions"],
         )
         for p in raw

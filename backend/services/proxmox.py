@@ -462,6 +462,32 @@ class ProxmoxClient:
             resp.raise_for_status()
             return resp.json().get("data", {})
 
+    async def put_vm_config(
+        self,
+        auth: ProxmoxAuth,
+        node: str,
+        vmid: int,
+        updates: dict,
+        delete_keys: list[str] | None = None,
+        vm_type: str = "qemu",
+    ) -> None:
+        """Apply a config diff to a VM or LXC via a single PUT request.
+
+        ``updates`` contains keys to set/change; ``delete_keys`` lists keys
+        to remove (passed as the ``delete`` query parameter to Proxmox).
+        """
+        params: dict = {}
+        if delete_keys:
+            params["delete"] = ",".join(delete_keys)
+        async with self._client() as client:
+            resp = await client.put(
+                f"{self._vm_base(node, vmid, vm_type)}/config",
+                json=updates,
+                params=params,
+                **self._auth_kwargs(auth),
+            )
+            resp.raise_for_status()
+
     async def get_node_backup_storages(self, auth: ProxmoxAuth, node: str) -> list[dict]:
         """Return all storages on *node* that have backup content enabled."""
         async with self._client() as client:
@@ -677,6 +703,45 @@ class ProxmoxClient:
                 hwaddr=hwaddr,
             ).model_dump())
         return interfaces
+
+
+    # ── APT update methods (PROJ-73) ──────────────────────────────────────────
+
+    async def apt_update_post(self, auth: ProxmoxAuth, node: str) -> str:
+        """Trigger `apt-get update` on a Proxmox node; returns the UPID string.
+
+        Requires Sys.Modify on the node (admin token).
+        """
+        async with self._client() as client:
+            resp = await client.post(
+                f"{self._base}/api2/json/nodes/{node}/apt/update",
+                **self._auth_kwargs(auth),
+            )
+            resp.raise_for_status()
+            return resp.json().get("data", "")
+
+    async def get_task_status(self, auth: ProxmoxAuth, node: str, upid: str) -> dict:
+        """Return the current status dict for a Proxmox task (UPID)."""
+        async with self._client() as client:
+            resp = await client.get(
+                f"{self._base}/api2/json/nodes/{node}/tasks/{upid}/status",
+                **self._auth_kwargs(auth),
+            )
+            resp.raise_for_status()
+            return resp.json().get("data", {})
+
+    async def apt_get_updates(self, auth: ProxmoxAuth, node: str) -> list[dict]:
+        """Return the list of available APT updates for a Proxmox node.
+
+        Requires Sys.Audit on the node (viewer token sufficient).
+        """
+        async with self._client() as client:
+            resp = await client.get(
+                f"{self._base}/api2/json/nodes/{node}/apt/update",
+                **self._auth_kwargs(auth),
+            )
+            resp.raise_for_status()
+            return resp.json().get("data", [])
 
 
 proxmox_client = ProxmoxClient()

@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     #   mysql+aiomysql://user:pass@host/dbname
     db_url: str = ""
 
+    # PROJ-71: Connection-Pool-Tuning (PostgreSQL; ignoriert von SQLite/aiosqlite)
+    db_pool_size: int = 10
+    db_pool_max_overflow: int = 20
+
     packer_dir: str = "/app/packer"
     # PROJ-6: Proxmox API-Token für Packer-Builds (beide optional – Build-Start schlägt fehl wenn nicht gesetzt)
     packer_token_id: str | None = None

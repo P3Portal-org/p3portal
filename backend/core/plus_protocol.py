@@ -134,6 +134,7 @@ class PlusProtocol(Protocol):
     def can_use_node_assignments(self) -> bool: ...
     def can_use_owners_unlimited(self) -> bool: ...
     def can_use_git_sync(self) -> bool: ...
+    def can_use_config_snapshots(self) -> bool: ...
 
     # ── Limit-Hooks (int | None) ─────────────────────────────────────────────
 
@@ -284,6 +285,30 @@ class PlusProtocol(Protocol):
         self, node_id, actor_username: str
     ) -> int: ...
 
+    # ── PROJ-74: Config-Snapshot Lifecycle-Hooks ─────────────────────────────
+
+    async def on_vm_lxc_deleted_config_snapshots(
+        self,
+        portal_node_id: int,
+        proxmox_node: str,
+        vmid: int,
+        kind: str,
+        vm_name,
+        username: str,
+    ) -> int: ...
+
+    async def on_user_deleted_config_snapshots(self, user_id: int) -> None: ...
+
+    async def on_cluster_refresh_vanished_resources_config_snapshots(
+        self,
+        still_visible_vmids: set,
+        portal_node_id: int,
+    ) -> None: ...
+
+    async def on_config_snapshot_deleted_cancel_approvals(
+        self, snapshot_id: str
+    ) -> int: ...
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CorePlusBehavior – vollständige Core-Edition-Defaults
@@ -359,6 +384,9 @@ class CorePlusBehavior:
         return False
 
     def can_use_git_sync(self) -> bool:
+        return False
+
+    def can_use_config_snapshots(self) -> bool:
         return False
 
     # ── Limit-Hooks ──────────────────────────────────────────────────────────
@@ -598,6 +626,26 @@ class CorePlusBehavior:
     ) -> int:
         return 0
 
+    # ── PROJ-74: Config-Snapshot Lifecycle-Hooks (Core: no-ops) ─────────────
+
+    async def on_vm_lxc_deleted_config_snapshots(
+        self, portal_node_id, proxmox_node, vmid, kind, vm_name, username
+    ) -> int:
+        return 0
+
+    async def on_user_deleted_config_snapshots(self, user_id: int) -> None:
+        return
+
+    async def on_cluster_refresh_vanished_resources_config_snapshots(
+        self, still_visible_vmids, portal_node_id
+    ) -> None:
+        return
+
+    async def on_config_snapshot_deleted_cancel_approvals(
+        self, snapshot_id: str
+    ) -> int:
+        return 0
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Dispatcher – schaltet pro Aufruf zwischen Core und Plus
@@ -714,6 +762,7 @@ CAPABILITIES: dict[str, str] = {
     "node_assignments":               "can_use_node_assignments",
     "owners_unlimited":               "can_use_owners_unlimited",
     "playbook_permissions":           "can_use_playbook_permissions",
+    "config_snapshots":               "can_use_config_snapshots",
     # PROJ-64: Self-Approval-Gate (sync, editions-abhängig)
     "allow_self_approval_supported":  "allow_self_approval_supported",
 }

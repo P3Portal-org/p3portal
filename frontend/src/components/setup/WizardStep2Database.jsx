@@ -126,8 +126,8 @@ export default function WizardStep1Database({ initial, onNext }) {
       <div className="grid grid-cols-2 gap-3">
         {[
           { value: 'sqlite', label: 'SQLite', desc: t('setup.s2_sqlite_desc'), experimental: false },
-          { value: 'postgresql', label: 'PostgreSQL', desc: t('setup.s2_postgres_desc'), experimental: true },
-        ].map(({ value, label, desc, experimental }) => (
+          { value: 'postgresql', label: 'PostgreSQL', desc: t('setup.s2_postgres_desc') },
+        ].map(({ value, label, desc }) => (
           <button
             key={value}
             type="button"
@@ -142,11 +142,6 @@ export default function WizardStep1Database({ initial, onNext }) {
               <p className={`text-sm font-semibold ${form.db_type === value ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
                 {label}
               </p>
-              {experimental && (
-                <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                  {t('setup.s2_experimental_badge')}
-                </span>
-              )}
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{desc}</p>
           </button>
@@ -156,12 +151,6 @@ export default function WizardStep1Database({ initial, onNext }) {
       {/* PostgreSQL-Felder */}
       {isPostgres && (
         <div className="space-y-4">
-          <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2.5">
-            <span className="text-amber-500 shrink-0 text-sm mt-0.5">⚠</span>
-            <p className="text-xs text-amber-700 dark:text-amber-400">
-              <strong>{t('setup.s2_experimental_title')}:</strong> {t('setup.s2_postgres_experimental_warn')}
-            </p>
-          </div>
           <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2.5">
             <span className="text-amber-500 shrink-0 text-sm mt-0.5">⚠</span>
             <p className="text-xs text-amber-700 dark:text-amber-400">

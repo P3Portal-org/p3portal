@@ -129,9 +129,11 @@ function ProxmoxView({ perms }) {
 }
 
 const NODE_ACTION_LABELS_PROFILE = {
-  'node:view_tasks':   'node_assignments.action_view_tasks',
-  'node:view_backups': 'node_assignments.action_view_backups',
-  'node:upload_iso':   'node_assignments.action_upload_iso',
+  'node:view_tasks':      'node_assignments.action_view_tasks',
+  'node:view_backups':    'node_assignments.action_view_backups',
+  'node:upload_iso':      'node_assignments.action_upload_iso',
+  'node:view_updates':    'node_assignments.action_view_updates',
+  'node:refresh_updates': 'node_assignments.action_refresh_updates',
 }
 
 function NodeAssignmentsSection() {

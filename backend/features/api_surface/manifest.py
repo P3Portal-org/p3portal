@@ -224,6 +224,37 @@ SCOPE_MANIFEST: tuple[ScopeManifestEntry, ...] = (
             "<HOST>/api/approvals/APPROVAL_ID/approve"
         ),
     ),
+    ScopeManifestEntry(
+        name="config_snapshots:read",
+        description_key="scope.config_snapshots_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/config-snapshots", "scope.config_snapshots_read.ep.list"),
+            ScopeEndpoint("GET", "/api/config-snapshots/{id}", "scope.config_snapshots_read.ep.detail"),
+            ScopeEndpoint("GET", "/api/config-snapshots/{id}/diff-live", "scope.config_snapshots_read.ep.diff_live"),
+            ScopeEndpoint("GET", "/api/config-snapshots/by-node/{portal_node_id}", "scope.config_snapshots_read.ep.by_node"),
+        ),
+        plus_only=True,
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/config-snapshots"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="config_snapshots:write",
+        description_key="scope.config_snapshots_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/config-snapshots/{pni}/{pn}/{vmid}/create", "scope.config_snapshots_write.ep.create"),
+            ScopeEndpoint("POST", "/api/config-snapshots/{id}/restore", "scope.config_snapshots_write.ep.restore"),
+            ScopeEndpoint("DELETE", "/api/config-snapshots/{id}", "scope.config_snapshots_write.ep.delete"),
+        ),
+        plus_only=True,
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            '-H "Content-Type: application/json" '
+            '-d \'{"note":"before maintenance"}\' '
+            "<HOST>/api/config-snapshots/1/pve/100/create"
+        ),
+    ),
 )
 
 # Lookup-Dict für schnellen Zugriff per Name

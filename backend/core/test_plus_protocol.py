@@ -125,6 +125,7 @@ class TestCapabilitiesMap:
             "approval_workflow", "help_global_overrides", "pools_quotas",
             "groups_unlimited", "node_assignments", "owners_unlimited",
             "playbook_permissions",
+            "config_snapshots",
             # PROJ-64: Self-Approval-Gate (sync, editions-abhängig)
             "allow_self_approval_supported",
         }

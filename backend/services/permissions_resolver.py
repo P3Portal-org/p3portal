@@ -103,6 +103,7 @@ async def resolve_user_permissions(
         permissions: set[str] = set()
 
         # Pfad 1: PROJ-12 direkter VM/LXC-Zugriff
+        # portal_node_id IS NULL = legacy-Eintrag gilt für alle Nodes (Backward-Compat)
         direct_result = await db.execute(
             text("""
                 SELECT rp.permissions
@@ -111,8 +112,9 @@ async def resolve_user_permissions(
                  WHERE ra.user_id = :uid
                    AND ra.resource_type = :rtype
                    AND ra.resource_id = :vmid
+                   AND (ra.portal_node_id IS NULL OR ra.portal_node_id = :node_id)
             """),
-            {"uid": user_id, "rtype": resource_type, "vmid": vmid},
+            {"uid": user_id, "rtype": resource_type, "vmid": vmid, "node_id": node_id},
         )
         for row in direct_result.fetchall():
             permissions.update(json.loads(row[0] or "[]"))
@@ -283,19 +285,20 @@ async def resolve_user_visible_vms(user_id: int, resources: list[dict]) -> set[t
         visible: set[tuple[int, int]] = set()
 
         # Pfad 1: PROJ-12 direkte Zuweisungen
+        # Key: (resource_type, portal_node_id_or_None, vmid) – None = legacy, gilt für alle Nodes
         direct_result = await db.execute(
             text("""
-                SELECT ra.resource_type, ra.resource_id, rp.permissions
+                SELECT ra.resource_type, ra.resource_id, ra.portal_node_id, rp.permissions
                   FROM resource_assignments ra
                   JOIN role_presets rp ON rp.id = ra.preset_id
                  WHERE ra.user_id = :uid
             """),
             {"uid": user_id},
         )
-        direct_perms: dict[tuple[str, int], set[str]] = {}
+        direct_perms: dict[tuple[str, int | None, int], set[str]] = {}
         for row in direct_result.fetchall():
-            key = (row[0], row[1])
-            direct_perms.setdefault(key, set()).update(json.loads(row[2] or "[]"))
+            key = (row[0], row[2], row[1])  # (resource_type, portal_node_id, vmid)
+            direct_perms.setdefault(key, set()).update(json.loads(row[3] or "[]"))
 
         # Pfad 2: PROJ-62 Pool-Permissions via Protocol-Hook (ersetzt direkte SQL-JOINs)
         pool_grants = await plus_behavior.get_pool_permissions(user_id)
@@ -349,8 +352,9 @@ async def resolve_user_visible_vms(user_id: int, resources: list[dict]) -> set[t
         resource_type = r.get("resource_type", "vm")
 
         combined: set[str] = set()
-        # Pfad 1
-        combined.update(direct_perms.get((resource_type, vmid), set()))
+        # Pfad 1: Node-spezifischer Eintrag + legacy NULL-Node-Eintrag (Backward-Compat)
+        combined.update(direct_perms.get((resource_type, node_id, vmid), set()))
+        combined.update(direct_perms.get((resource_type, None, vmid), set()))
         # Pfad 2
         combined.update(pool_perms.get((node_id, vmid), set()))
         # Pfad 3

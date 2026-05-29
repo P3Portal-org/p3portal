@@ -1,7 +1,8 @@
 // p3portal.org
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useCapability } from '../hooks/useCapability'
 import { useScheduledJobs } from '../hooks/useScheduledJobs'
 import { getVmDetail, getVmBackups, getSnapshots, getVmGuestInfo, getLxcInterfaces } from '../api/vms'
 import PinIcon from '../components/common/PinIcon'
@@ -16,6 +17,7 @@ import VmLxcNetworkSection from '../components/vms/VmLxcNetworkSection'
 import VmAlertsTab from '../components/vms/VmAlertsTab'
 import OwnerSection from '../features/owners/components/OwnerSection'
 import Watermark from '../components/common/Watermark'
+import { PlusComponents } from '../plus'
 
 const ACTION_LABEL = { start: 'Starten', stop: 'Stoppen', reboot: 'Neustarten' }
 
@@ -99,6 +101,8 @@ function errLabel(err) {
 export default function VmDetailPage() {
   const { node, type, vmid } = useParams()
   const { role, username } = useAuth()
+  const hasConfigSnapshots = useCapability('config_snapshots')
+  const ConfigSnapshotsTab = PlusComponents.ConfigSnapshotsTab
   const [activeTab, setActiveTab] = useState('overview')
 
   const pinRoute = `/vm/${node}/${type}/${vmid}`
@@ -282,6 +286,11 @@ export default function VmDetailPage() {
         <button onClick={() => setActiveTab('scheduled')} className={tabCls('scheduled')}>
           Zeitgesteuert
         </button>
+        {hasConfigSnapshots && ConfigSnapshotsTab && (
+          <button onClick={() => setActiveTab('config-snapshots')} className={tabCls('config-snapshots')}>
+            Config-Snapshots
+          </button>
+        )}
       </div>
 
       <main className="flex-1 overflow-y-auto px-6 py-6 bg-transparent">
@@ -370,6 +379,19 @@ export default function VmDetailPage() {
                 </h2>
                 <VmScheduledJobsTab vmid={vmid} />
               </div>
+            )}
+
+            {activeTab === 'config-snapshots' && hasConfigSnapshots && ConfigSnapshotsTab && detail?.portal_node_id != null && (
+              <Suspense fallback={null}>
+                <ConfigSnapshotsTab
+                  portalNodeId={detail.portal_node_id}
+                  proxmoxNode={node}
+                  vmid={vmid}
+                  kind={type}
+                  vmName={detail.name ?? `${type === 'qemu' ? 'VM' : 'CT'} ${vmid}`}
+                  vmStatus={detail.status}
+                />
+              </Suspense>
             )}
           </>
         ) : null}

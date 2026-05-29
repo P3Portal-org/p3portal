@@ -167,6 +167,8 @@ async def test_get_nodes_local_user_success(client: AsyncClient, local_viewer_he
             "backend.routers.cluster.proxmox_client.get_cluster_resources_v2",
             new=AsyncMock(return_value=_FAKE_NODES_CLUSTER),
         ),
+        # viewer has no node-specific assignments → fallback shows all nodes
+        patch("backend.routers.cluster.get_user_permissions", new=AsyncMock(return_value=[])),
     ):
         resp = await client.get("/api/cluster/nodes", headers=local_viewer_headers)
     assert resp.status_code == 200
@@ -1489,6 +1491,7 @@ async def test_get_nodes_local_user_uses_cache(client: AsyncClient, local_viewer
         patch("backend.core.plus_protocol.is_plus_edition", return_value=False),
         patch("backend.routers.cluster.cluster_cache") as mock_cache,
         patch("backend.services.nodes_service.get_default_node", new=AsyncMock(return_value=None)),
+        patch("backend.routers.cluster.get_user_permissions", new=AsyncMock(return_value=[])),
     ):
         mock_cache.get_or_fetch = AsyncMock(return_value=[_FAKE_NODE_STATUS])
         resp = await client.get("/api/cluster/nodes", headers=local_viewer_headers)

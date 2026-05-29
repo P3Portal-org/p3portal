@@ -1,4 +1,6 @@
 // p3portal.org
+import UpdatesBadge from '../../features/node_updates/components/UpdatesBadge'
+
 function fmt(bytes) {
   if (bytes == null) return '?'
   const gb = bytes / (1024 ** 3)
@@ -87,6 +89,13 @@ export default function NodeCard({ node }) {
           </div>
         )}
       </div>
+
+      {/* Update-Badge (PROJ-73) */}
+      {node.portal_node_id && (
+        <div className="mt-2 mb-1">
+          <UpdatesBadge portalNodeId={node.portal_node_id} nodeName={node.node} />
+        </div>
+      )}
 
       {/* Resource bars */}
       {isOnline && (
