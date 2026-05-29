@@ -365,6 +365,21 @@ async def _migrate_db(conn) -> None:
     except Exception:
         pass
 
+    # PROJ-12 Bug-Fix: partial-unique index für portal_node_id IS NULL anlegen.
+    # SQLite und PostgreSQL behandeln NULL ≠ NULL in UNIQUE-Constraints, der Constraint
+    # uq_resource_assignments greift daher nicht bei portal_node_id IS NULL (Singleton-Setup).
+    # Der partial index erzwingt Eindeutigkeit von (user_id, resource_type, resource_id)
+    # genau dann, wenn portal_node_id IS NULL.
+    # Idempotent: CREATE UNIQUE INDEX IF NOT EXISTS schlägt nicht fehl falls der Index schon existiert.
+    try:
+        await conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_resource_assignments_no_node "
+            "ON resource_assignments (user_id, resource_type, resource_id) "
+            "WHERE portal_node_id IS NULL"
+        ))
+    except Exception:
+        pass
+
     # PROJ-54: user_sidebar_pins CHECK-Constraint um 'node_tab' erweitern.
     # PROJ-71: Dialect-Branch – SQLite-CREATE-NEW-Pattern bleibt, PG bekommt DROP+ADD CONSTRAINT.
     try:

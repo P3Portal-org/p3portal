@@ -125,6 +125,21 @@ resource_assignments = Table(
 Index("idx_resource_assignments_user_id",   resource_assignments.c.user_id)
 Index("idx_resource_assignments_preset_id", resource_assignments.c.preset_id)
 
+# Partial-Unique-Index für den NULL-Fall: SQLite und PostgreSQL behandeln beide
+# NULL ≠ NULL in UNIQUE-Constraints, d.h. uq_resource_assignments greift nicht wenn
+# portal_node_id IS NULL (Singleton-Installation ohne Multi-Node).
+# Semantik: (user_id, resource_type, resource_id) WHERE portal_node_id IS NULL → kein Duplikat.
+# Der bestehende Constraint uq_resource_assignments bleibt und deckt den Multi-Node-Fall ab.
+Index(
+    "uq_resource_assignments_no_node",
+    resource_assignments.c.user_id,
+    resource_assignments.c.resource_type,
+    resource_assignments.c.resource_id,
+    unique=True,
+    sqlite_where=resource_assignments.c.portal_node_id.is_(None),
+    postgresql_where=resource_assignments.c.portal_node_id.is_(None),
+)
+
 # ── user_profiles ─────────────────────────────────────────────────────────────
 
 user_profiles = Table(

@@ -143,7 +143,12 @@ async def create_assignment(
             portal_node_id=body.portal_node_id,
         )
     except Exception as exc:
-        if "UNIQUE constraint failed" in str(exc):
+        exc_str = str(exc)
+        if (
+            "UNIQUE constraint failed" in exc_str           # SQLite
+            or "uq_resource_assignments" in exc_str         # PostgreSQL (multi-node constraint)
+            or "uq_resource_assignments_no_node" in exc_str # PostgreSQL (null portal_node_id)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Assignment already exists for this user + resource",
