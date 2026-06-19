@@ -27,3 +27,10 @@ export async function deactivateLicense() {
   const { data } = await client.delete('/api/license/deactivate')
   return data
 }
+
+// PROJ-94: Admin-only — start the one-time, 30-day Plus trial.
+// 409 if a valid license is active or the trial was already used.
+export async function startTrial() {
+  const { data } = await client.post('/api/license/trial/start')
+  return data
+}

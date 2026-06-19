@@ -324,6 +324,9 @@ const CORE_PORTAL_PERMISSIONS = [
   'manage_api_keys',
   'manage_help',
   'manage_backup_jobs',
+  'manage_networks',
+  'manage_sdn',
+  'manage_firewall',
   'view_logs',
 ]
 

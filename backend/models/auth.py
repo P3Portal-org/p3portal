@@ -113,7 +113,7 @@ class PortalPermissionsRequest(BaseModel):
     def valid_permissions(cls, v: list[str]) -> list[str]:
         from backend.core.plus_protocol import plus_behavior
         # PROJ-64: approve_jobs ist Plus-only → kommt via get_extra_portal_permissions()
-        core_perms = {"view_logs", "manage_users", "manage_nodes", "manage_settings", "manage_api_keys", "manage_announcements", "manage_groups", "manage_help", "manage_backup_jobs"}
+        core_perms = {"view_logs", "manage_users", "manage_nodes", "manage_settings", "manage_api_keys", "manage_announcements", "manage_groups", "manage_help", "manage_backup_jobs", "manage_networks", "manage_sdn", "manage_firewall"}
         try:
             extra = set(plus_behavior.get_extra_portal_permissions())
         except Exception:

@@ -1,10 +1,16 @@
 // p3portal.org
 import api from './client'
 
-export async function startJob(playbook, params, autoAssignOwner = false, poolId = null) {
+export async function startJob(playbook, params, autoAssignOwner = false, poolId = null, opts = {}) {
   const body = { playbook, params, auto_assign_owner: autoAssignOwner }
   // PROJ-62: Pool-Quota-Check – pool_id nur senden wenn gesetzt
   if (poolId != null) body.pool_id = poolId
+  // PROJ-83: In-Guest-Run – guest_scope + target_hosts nur bei Gast-Playbooks
+  if (opts.guestScope) body.guest_scope = opts.guestScope
+  if (opts.targetHosts != null) body.target_hosts = opts.targetHosts
+  // PROJ-83: Deploy-Onboarding-Haken (nur bei Deploy-Playbooks relevant)
+  if (opts.manageForAnsible != null) body.manage_for_ansible = opts.manageForAnsible
+  if (opts.globalOptIn != null) body.global_opt_in = opts.globalOptIn
   const { data } = await api.post('/api/jobs', body)
   return data
 }

@@ -126,8 +126,8 @@ export default function WizardStep1Database({ initial, onNext }) {
       <div className="grid grid-cols-2 gap-3">
         {[
           { value: 'sqlite', label: 'SQLite', desc: t('setup.s2_sqlite_desc'), experimental: false },
-          { value: 'postgresql', label: 'PostgreSQL', desc: t('setup.s2_postgres_desc') },
-        ].map(({ value, label, desc }) => (
+          { value: 'postgresql', label: 'PostgreSQL', desc: t('setup.s2_postgres_desc'), experimental: true },
+        ].map(({ value, label, desc, experimental }) => (
           <button
             key={value}
             type="button"
@@ -142,6 +142,11 @@ export default function WizardStep1Database({ initial, onNext }) {
               <p className={`text-sm font-semibold ${form.db_type === value ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
                 {label}
               </p>
+              {experimental && (
+                <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                  {t('setup.s2_experimental_badge')}
+                </span>
+              )}
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{desc}</p>
           </button>

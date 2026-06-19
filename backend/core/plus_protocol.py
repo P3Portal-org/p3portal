@@ -16,11 +16,23 @@ Warum Dispatcher statt statischem Singleton?
 - Edge Case 6: Plus-Code vorhanden, Lizenz abgelaufen → Dispatcher schaltet
   automatisch auf Core-Defaults zurück, ohne Boilerplate in jedem Mixin.
 - monkeypatch funktioniert unverändert: `setattr(plus_behavior, "method", ...)`
-  setzt ein Attribut direkt auf der Dispatcher-Instanz; `__getattr__` wird
-  nur gerufen, wenn das Attribut *nicht* im __dict__ ist.
+  setzt ein Attribut direkt auf der Dispatcher-Instanz; das gepatchte
+  Instance-Attribut überschattet die generierte Dispatcher-Methode.
+
+PROJ-95 (Dispatcher-Refactor):
+- Die früheren `__getattr__`-Magie + 5 handgeschriebene Lifecycle-Overrides sind
+  durch **explizit generierte Methoden** ersetzt. Jede der 101 CorePlusBehavior-
+  Methoden trägt einen Pflicht-Stempel `@gate` ODER `@lifecycle`; der Generator
+  (`_build_dispatch_methods`) erzeugt daraus pro Methode genau einen von vier
+  Wrappern (sync/async × gate/lifecycle). Eine unklassifizierte Methode bricht
+  hart beim Import (RuntimeError) – „Lifecycle-Hook vergessen" (BUG-70-4) ist
+  damit strukturell unmöglich.
+- Der monkeypatch-Vorrang bleibt erhalten, weil generierte Methoden normale
+  Non-Data-Descriptors sind: Instance-`__dict__` schlägt das Klassen-Attribut.
 """
 from __future__ import annotations
 
+import inspect
 import logging
 from datetime import datetime
 from enum import Enum
@@ -100,6 +112,23 @@ class ApprovalDecision(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PROJ-83 Datenmodell – Gast-Run-Scope (Pool/Global, Plus)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class GuestScope(BaseModel):
+    """Auflösung eines Pool-/Global-Scopes für einen In-Guest-Playbook-Run.
+
+    Wird vom Plus-Mediator zurückgegeben. `private_key` ist der Klartext-Private-Key
+    des Scopes (Pool- bzw. Global-Key) und bleibt IN-PROCESS – wird nie serialisiert
+    oder in API-Responses/Logs ausgegeben (konsistent mit get_ssh_job_key_decrypted).
+    """
+    scope: str                                     # "pool" | "global"
+    scope_ref: int | None = None                   # pool_id bei scope="pool"
+    private_key: str                               # OpenSSH-Private-Key (in-process)
+    candidate_hosts: list[tuple[int, int, str]] = []  # (portal_node_id, vmid, kind)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Protocol (Schnittstelle) – definiert alle Plus-Capability-Methoden
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -137,6 +166,10 @@ class PlusProtocol(Protocol):
     def can_use_config_snapshots(self) -> bool: ...
     def can_use_auto_snapshots(self) -> bool: ...
     def can_use_stacks(self) -> bool: ...
+    def can_use_ansible_inventory(self) -> bool: ...
+    def can_use_topology(self) -> bool: ...
+    def can_use_packer_editor(self) -> bool: ...
+    def can_use_ansible_editor(self) -> bool: ...
 
     # ── Limit-Hooks (int | None) ─────────────────────────────────────────────
 
@@ -346,6 +379,68 @@ class PlusProtocol(Protocol):
 
     def cancel_stack_job(self, stack_id: int) -> bool: ...
 
+    # ── PROJ-91: stack-firewall mutations-block lookup ───────────────────────
+    async def get_stack_firewall_for_vm(
+        self, portal_node_id: int, vmid: int
+    ) -> dict | None: ...
+
+    # ── PROJ-83: Ansible-Inventory-Hooks ─────────────────────────────────────
+
+    async def resolve_guest_scope(
+        self, scope: str, scope_ref: int | None, user_id: int
+    ) -> "GuestScope | None": ...
+
+    async def get_injection_public_keys_extra(
+        self, pool_id: int | None, global_opt_in: bool
+    ) -> list[str]: ...
+
+    # ── PROJ-96: VM-Abhängigkeiten & Aktions-Impact-Warnung ──────────────────
+
+    def can_use_dependencies(self) -> bool: ...
+
+    async def get_dependents_of_vm(
+        self, portal_node_id: int, vmid: int
+    ) -> list[dict]: ...
+
+    async def on_vm_lxc_deleted_dependencies(
+        self, portal_node_id: int, vmid: int, username: str
+    ) -> int: ...
+
+    async def on_cluster_refresh_vanished_resources_dependencies(
+        self, still_visible_vmids: set, portal_node_id: int
+    ) -> int: ...
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PROJ-95: Dispatch-Klassifikation (Pflicht-Stempel, KEIN Default)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Jede CorePlusBehavior-Methode MUSS mit @gate ODER @lifecycle dekoriert sein.
+# Der Generator (_build_dispatch_methods) liest diesen Stempel und erzeugt pro
+# Methode eine explizite Dispatcher-Methode. Eine Methode OHNE Stempel führt zu
+# einem harten Boot-Fehler (RuntimeError beim Import) – „Lifecycle-Hook vergessen"
+# (BUG-70-4) wird damit strukturell unmöglich. Es gibt KEINEN sicheren Default:
+# „Default = gate" würde einen vergessenen Lifecycle-Hook still zum Gate machen
+# (BUG-70-4 kehrt zurück); „Default = lifecycle" würde einen vergessenen Gate-Hook
+# im Core-Mode aktiv schalten (Lizenz-Bypass). Der Pflicht-Stempel eliminiert beide.
+#
+#   @gate      – Plus-Verhalten NUR mit gültiger Lizenz (is_plus_edition()),
+#                sonst Core-Default. (~96 Feature-/Limit-/Cleanup-Hooks)
+#   @lifecycle – aktive Impl. IMMER sobald registriert – edition-unabhängig,
+#                läuft auch im Plus-Image OHNE Lizenz (Infrastruktur: DB-Setup,
+#                Scheduled-Job-Runner/-Tasks/-Handler, OpenTofu-Tooling-Indikator).
+
+def gate(func):
+    """Stempelt eine CorePlusBehavior-Methode als Feature-Gate (lizenz-abhängig)."""
+    func._plus_dispatch = "gate"
+    return func
+
+
+def lifecycle(func):
+    """Stempelt eine CorePlusBehavior-Methode als Lifecycle-Hook (edition-unabhängig)."""
+    func._plus_dispatch = "lifecycle"
+    return func
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CorePlusBehavior – vollständige Core-Edition-Defaults
@@ -356,126 +451,191 @@ class CorePlusBehavior:
 
     Liefert für jede Methode den Core-Edition-Wert. Plus darf keine Methode
     aufrufen, ohne dass sie hier definiert ist.
+
+    PROJ-95: Jede Methode trägt einen Pflicht-Stempel @gate ODER @lifecycle.
     """
 
     # ── Gate-Hooks ───────────────────────────────────────────────────────────
 
+    @gate
     def can_use_alert_presets(self) -> bool:
         return False
 
+    @gate
     def can_use_alerts_smtp(self) -> bool:
         return False
 
+    @gate
     def can_use_theme_editor(self) -> bool:
         return False
 
+    @gate
     def can_add_multiple_nodes(self) -> bool:
         return False
 
+    @gate
     def can_set_default_node(self) -> bool:
         return False
 
+    @gate
     def can_use_scheduled_jobs(self) -> bool:
         return False
 
+    @gate
     def can_change_language(self) -> bool:
         return False
 
+    @gate
     def can_use_cluster_resources(self) -> bool:
         return False
 
+    @gate
     def can_use_multi_node_dashboard(self) -> bool:
         return False
 
+    @gate
     def can_use_api_key_max_count_override(self) -> bool:
         return False
 
+    @gate
     def can_use_api_key_scopes_full(self) -> bool:
         return False
 
+    @gate
     def can_use_sidebar_pins_extended(self) -> bool:
         return False
 
+    @gate
     def can_use_compute_alerting(self) -> bool:
         return False
 
+    @gate
     def can_use_compute_scheduled_jobs(self) -> bool:
         return False
 
+    @gate
     def can_use_approval_workflow(self) -> bool:
         return False
 
+    @gate
     def can_use_help_global_overrides(self) -> bool:
         return False
 
+    @gate
     def can_use_pools_quotas(self) -> bool:
         return False
 
+    @gate
     def can_use_groups_unlimited(self) -> bool:
         return False
 
+    @gate
     def can_use_node_assignments(self) -> bool:
         return False
 
+    @gate
     def can_use_owners_unlimited(self) -> bool:
         return False
 
+    @gate
     def can_use_git_sync(self) -> bool:
         return False
 
+    @gate
     def can_use_config_snapshots(self) -> bool:
         return False
 
+    @gate
     def can_use_auto_snapshots(self) -> bool:
         return False
 
+    @gate
     def can_use_stacks(self) -> bool:
+        return False
+
+    @gate
+    def can_use_ansible_inventory(self) -> bool:
+        # PROJ-83: Pool-/Global-Scope + Key-Management sind Plus-only.
+        return False
+
+    @gate
+    def can_use_topology(self) -> bool:
+        # PROJ-75: Cluster-Topologie-Ansicht ist Plus-only.
+        return False
+
+    @gate
+    def can_use_packer_editor(self) -> bool:
+        # PROJ-92: Packer Visual Editor ist Plus-only.
+        return False
+
+    @gate
+    def can_use_ansible_editor(self) -> bool:
+        # PROJ-93: Ansible Visual Editor ist Plus-only.
+        return False
+
+    @gate
+    def can_use_dependencies(self) -> bool:
+        # PROJ-96: VM-Abhängigkeiten & Aktions-Impact-Warnung sind Plus-only.
         return False
 
     # ── Limit-Hooks ──────────────────────────────────────────────────────────
 
+    @gate
     def get_max_users(self) -> int | None:
         return _license.CORE_MAX_USERS
 
+    @gate
     def get_max_presets(self) -> int | None:
         return _license.CORE_MAX_PRESETS
 
+    @gate
     def get_max_api_keys(self, user: dict) -> int:
         from backend.services.user_api_key_service import CORE_MAX_KEYS
         return CORE_MAX_KEYS
 
+    @gate
     def get_max_groups(self) -> int | None:
         return _license.CORE_MAX_GROUPS
 
+    @gate
     def get_max_pools(self) -> int | None:
         return _license.CORE_MAX_POOLS
 
+    @gate
     def get_max_node_assignments(self) -> int | None:
         return _license.CORE_MAX_NODE_ASSIGNMENTS
 
+    @gate
     def get_max_sidebar_pins(self) -> int:
         return _license.CORE_MAX_SIDEBAR_PINS
 
+    @gate
     def get_max_ownerships(self) -> int | None:
         return _license.CORE_MAX_OWNERSHIPS
 
+    @gate
     def get_max_approval_rules(self) -> int | None:
         return _license.CORE_MAX_APPROVAL_RULES
 
+    @gate
     def allow_self_approval_supported(self) -> bool:
         return False
 
+    @gate
     def get_max_help_overrides_per_user(self) -> int | None:
         return _license.CORE_MAX_HELP_OVERRIDES_PER_USER
 
+    @gate
     def get_max_help_global_overrides(self) -> int | None:
         return _license.CORE_MAX_HELP_GLOBAL_OVERRIDES
 
+    @gate
     def get_max_scheduled_jobs_per_user(self) -> int | None:
         return _license.CORE_MAX_SCHEDULED_JOBS_PER_USER
 
     # ── Feld-Filter-Hooks ────────────────────────────────────────────────────
 
+    @gate
     def filter_alert_notification_fields(self, fields: dict) -> dict:
         return {
             **fields,
@@ -484,98 +644,121 @@ class CorePlusBehavior:
             "email_recipients": None,
         }
 
+    @gate
     def get_packer_session_fields(self, data: dict) -> dict:
         return {}
 
+    @gate
     def get_cluster_node_extra(self, node_data: dict) -> dict:
         return {}
 
     # ── Pool-Hooks (PROJ-62) ─────────────────────────────────────────────────
 
+    @gate
     async def get_pool_permissions(self, user_id: int) -> list[PoolGrant]:
         return []
 
+    @gate
     async def check_pool_quota(
         self, user_id: int, pool_id: int, deploy_request: dict
     ) -> QuotaResult:
         return QuotaResult(allowed=True)
 
+    @gate
     async def check_pool_quota_bulk(
         self, user_id: int, pool_id: int, vm_count: int,
         total_cores: int, total_ram_mb: int, total_disk_gb: int,
     ) -> QuotaResult:
         return QuotaResult(allowed=True)
 
+    @gate
     async def get_existing_pool_ids(self, candidate_ids: set[int]) -> set[int]:
         return set()
 
+    @gate
     async def on_user_deleted_pools(self, user_id: int, actor_username: str) -> int:
         return 0
 
+    @gate
     async def on_group_deleted_pools(self, group_id: int, actor_username: str) -> int:
         return 0
 
+    @gate
     async def on_node_deleted_pools(self, node_id: int, actor_username: str) -> int:
         return 0
 
+    @gate
     async def on_role_preset_deleted_pools(self, preset_id: int, actor_username: str) -> int:
         return 0
 
+    @gate
     async def on_deploy_success_pool_hook(self, job_id: int) -> None:
         pass
 
     # ── Playbook-Permission-Hooks (PROJ-63) Core-Defaults ───────────────────
 
+    @gate
     def can_use_playbook_permissions(self) -> bool:
         return False
 
+    @gate
     async def can_user_execute_playbook(
         self, user_id: int, playbook_name: str
     ) -> PlaybookPermissionDecision:
         # Core hat keine Meinung → required_role-Fallback im Resolver
         return PlaybookPermissionDecision.FALLBACK
 
+    @gate
     async def get_playbook_can_execute_map(
         self, user_id: int, playbook_names: list[str]
     ) -> dict[str, PlaybookPermissionDecision]:
         return {n: PlaybookPermissionDecision.FALLBACK for n in playbook_names}
 
+    @gate
     async def get_my_allowed_playbooks(
         self, user_id: int
     ) -> list[AllowedPlaybookEntry]:
         return []
 
+    @gate
     async def on_user_deleted_playbook_permissions(
         self, user_id: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_group_deleted_playbook_permissions(
         self, group_id: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_playbook_deleted_playbook_permissions(
         self, playbook_name: str, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def cleanup_stale_playbook_permissions(
         self, known_playbooks: set[str]
     ) -> int:
         return 0
 
+    @gate
     def get_extra_portal_permissions(self) -> list[str]:
         # generischer Permission-Whitelist-Hook (PROJ-63 §C); in Plus via _PlusGateBehavior
         # erweitert (PROJ-64 kann hier z.B. "approve_jobs" hinzufügen)
         return []
 
+    @lifecycle
     def ensure_plus_db_tables(self) -> None:
         # Core-Edition: keine Plus-Tabellen nötig – No-Op.
+        # Lifecycle: läuft auch im Plus-Image ohne Lizenz (DB-Schema-Setup, PROJ-70).
         return
 
     # ── Approval-Workflow-Hooks (PROJ-64) Core-Defaults ─────────────────────
 
+    @gate
     async def requires_approval(
         self,
         action_type: str,
@@ -587,15 +770,18 @@ class CorePlusBehavior:
         # Core: immer sofort ausführen, kein Approval-Konzept
         return None
 
+    @gate
     async def is_approval_workflow_enabled(self) -> bool:
         return False
 
+    @gate
     async def get_approval_blocked_scheduled_job_ids(
         self, candidate_ids: set[str]
     ) -> set[str]:
         # Core: kein Filter, alle Kandidaten laufen durch
         return set()
 
+    @gate
     async def sync_meta_yaml_approval_rule(
         self,
         action_type: str,
@@ -604,72 +790,90 @@ class CorePlusBehavior:
     ) -> None:
         return
 
+    @gate
     async def on_user_deleted_approval_workflow(
         self, user_id: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_group_deleted_approval_workflow(
         self, group_id: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_playbook_deleted_approval_workflow(
         self, playbook_name: str, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_packer_template_deleted_approval_workflow(
         self, template_name: str, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_vm_lxc_deleted_approval_workflow(
         self, node_id: str, vmid: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_approval_rule_updated(
         self, rule_id: int, old: dict, new: dict, actor: str
     ) -> int:
         # Wird nur aus Plus-Code gerufen; Core-Default für Test-Mocking
         return 0
 
+    @gate
     def register_approval_celery_tasks(self, celery_app) -> None:
         # Core: kein expire_overdue-Task
         return
 
     # ── Tooling-Health-Hooks (PROJ-66) Core-Defaults ────────────────────────
 
+    @lifecycle
     def get_additional_tooling_checks(self) -> list:
         # TODO PROJ-66 Phase 2: Terraform, kubectl, sudo, …
         # Plus überschreibt dies und gibt list[ToolCheckConfig] zurück.
+        # Lifecycle: binary-gekoppelt, läuft auch im Plus-Image ohne Lizenz.
         return []
 
     # ── Scheduled-Jobs-Hooks (PROJ-70) Core-Defaults ────────────────────────
 
+    @lifecycle
     async def start_scheduled_job_runner(self) -> None:
         # Core: kein Runner starten (Scheduled Jobs sind Plus-only)
+        # Lifecycle: Runner-Infrastruktur, läuft auch im Plus-Image ohne Lizenz.
         return
 
+    @lifecycle
     def register_scheduled_job_celery_tasks(self, celery_app) -> None:
         # Core: kein Beat-Schedule, keine execute-Tasks
+        # Lifecycle: Celery-Task-Registrierung, edition-unabhängig.
         return
 
+    @lifecycle
     def get_scheduled_job_action_handlers(self) -> dict:
         # Core: kein Handler-Dict (Scheduled Jobs nicht verfügbar)
+        # Lifecycle: Handler-Registry wird vom Runner gebraucht, auch in Core-Mode.
         return {}
 
+    @gate
     async def on_user_deleted_scheduled_jobs(
         self, user_id: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_playbook_deleted_scheduled_jobs(
         self, playbook_name: str, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_node_deleted_scheduled_jobs(
         self, node_id, actor_username: str
     ) -> int:
@@ -677,40 +881,48 @@ class CorePlusBehavior:
 
     # ── Auto-Snapshots-Hooks (PROJ-77) Core-Defaults ────────────────────────
 
+    @gate
     async def on_user_deleted_auto_snapshots(
         self, user_id: int, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_vm_lxc_deleted_auto_snapshots(
         self, portal_node_id: int, vmid: int, kind: str, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     async def on_node_deleted_auto_snapshots(
         self, node_id, actor_username: str
     ) -> int:
         return 0
 
+    @gate
     def get_auto_snapshot_approval_action_types(self) -> list[str]:
         # Core: keine Approval-Integration für Auto-Snapshots
         return []
 
     # ── PROJ-74: Config-Snapshot Lifecycle-Hooks (Core: no-ops) ─────────────
 
+    @gate
     async def on_vm_lxc_deleted_config_snapshots(
         self, portal_node_id, proxmox_node, vmid, kind, vm_name, username
     ) -> int:
         return 0
 
+    @gate
     async def on_user_deleted_config_snapshots(self, user_id: int) -> None:
         return
 
+    @gate
     async def on_cluster_refresh_vanished_resources_config_snapshots(
         self, still_visible_vmids, portal_node_id
     ) -> None:
         return
 
+    @gate
     async def on_config_snapshot_deleted_cancel_approvals(
         self, snapshot_id: str
     ) -> int:
@@ -718,23 +930,72 @@ class CorePlusBehavior:
 
     # ── PROJ-76: Stacks-Hooks (Core: no-ops) ────────────────────────────────
 
+    @gate
     async def on_user_deleted_stacks(self, user_id: int) -> int:
         return 0
 
+    @gate
     def get_stack_approval_action_types(self) -> list[str]:
         return []
 
+    @gate
     async def on_stack_deleted_cancel_approvals(self, stack_id: int) -> int:
         return 0
 
     # ── PROJ-76 Phase 2b: Mutations-Block-Lookup (Core: None, no-op) ─────────
+    @gate
     async def get_stack_for_vm(
         self, portal_node_id: int, vmid: int
     ) -> dict | None:
         return None
 
+    @gate
     def cancel_stack_job(self, stack_id: int) -> bool:
         return False
+
+    # ── PROJ-91: stack-firewall mutations-block lookup (Core: None, no-op) ────
+    @gate
+    async def get_stack_firewall_for_vm(
+        self, portal_node_id: int, vmid: int
+    ) -> dict | None:
+        return None
+
+    # ── PROJ-83: Ansible-Inventory-Hooks (Core-Defaults) ─────────────────────
+
+    @gate
+    async def resolve_guest_scope(
+        self, scope: str, scope_ref: int | None, user_id: int
+    ) -> "GuestScope | None":
+        # Core kennt nur den User-Scope (lokal aufgelöst). Pool/Global sind Plus.
+        return None
+
+    @gate
+    async def get_injection_public_keys_extra(
+        self, pool_id: int | None, global_opt_in: bool
+    ) -> list[str]:
+        # Core: keine Pool-/Global-Pubkeys (nur der User-Key, den der Resolver selbst ergänzt).
+        return []
+
+    # ── PROJ-96: VM-Abhängigkeiten (Core: keine Warnung, keine Kanten) ────────
+
+    @gate
+    async def get_dependents_of_vm(
+        self, portal_node_id: int, vmid: int
+    ) -> list[dict]:
+        # Core: kein Abhängigkeits-Konzept → keine Warnung (Hook No-Op, AC-IMPACT-6).
+        return []
+
+    @gate
+    async def on_vm_lxc_deleted_dependencies(
+        self, portal_node_id: int, vmid: int, username: str
+    ) -> int:
+        return 0
+
+    @gate
+    async def on_cluster_refresh_vanished_resources_dependencies(
+        self, still_visible_vmids: set, portal_node_id: int
+    ) -> int:
+        return 0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -745,67 +1006,105 @@ class _PlusBehaviorDispatcher:
     """Proxy: wählt pro Methodenaufruf Core- oder Plus-Implementierung.
 
     Dispatcher-Instanz ist das öffentliche `plus_behavior`-Singleton.
-    monkeypatch setzt Attribute direkt auf dieser Instanz; `__getattr__`
-    greift nur, wenn das Attribut *nicht* im Instance-Dict ist.
+
+    PROJ-95: Die Dispatch-Methoden werden via `_build_dispatch_methods()` aus den
+    @gate/@lifecycle-gestempelten CorePlusBehavior-Methoden generiert und direkt
+    als Klassen-Attribute gesetzt (kein `__getattr__` mehr). monkeypatch setzt
+    Attribute direkt auf der Instanz; ein Instance-Attribut überschattet die
+    generierte Klassen-Methode (Non-Data-Descriptor-Lookup-Reihenfolge), daher
+    bleibt der monkeypatch-Vorrang ohne Sonder-Logik erhalten.
     """
 
     def __init__(self, core: CorePlusBehavior) -> None:
-        object.__setattr__(self, "_core", core)
-        object.__setattr__(self, "_active", None)
+        self._core = core
+        self._active = None
 
-    def __getattr__(self, name: str):
-        active = object.__getattribute__(self, "_active")
-        core = object.__getattribute__(self, "_core")
-        impl = active if (active is not None and is_plus_edition()) else core
-        return getattr(impl, name)
+    def _resolve_gate(self):
+        """Gate-Routing: aktive Plus-Impl NUR mit gültiger Lizenz, sonst Core-Default.
 
-    def ensure_plus_db_tables(self) -> None:
-        """Lifecycle-Methode – läuft IMMER auf der aktiven Impl., unabhängig von is_plus_edition().
-
-        ensure_plus_db_tables ist kein Feature-Gate sondern DB-Schema-Setup.
-        PROJ-70: scheduled_jobs wurde aus dem Core-Schema entfernt; auch Core-Nutzer
-        (Plus-Build ohne Lizenz) brauchen die Tabelle → kein is_plus_edition()-Gate.
+        is_plus_edition() wird PRO AUFRUF ausgewertet → Lizenz-Upload/-Deaktivierung
+        mid-session schaltet Gate-Methoden sofort ohne Neustart um.
         """
-        active = object.__getattribute__(self, "_active")
-        if active is not None:
-            active.ensure_plus_db_tables()
-        else:
-            core = object.__getattribute__(self, "_core")
-            core.ensure_plus_db_tables()
+        active = self._active
+        return active if (active is not None and is_plus_edition()) else self._core
 
-    async def start_scheduled_job_runner(self) -> None:
-        """Lifecycle-Hook – läuft IMMER auf der aktiven Impl.
+    def _resolve_lifecycle(self):
+        """Lifecycle-Routing: aktive Impl. wenn registriert, edition-unabhängig.
 
-        PROJ-70: Scheduled Jobs sind in Core mit Limit 3/User unterstützt.
-        Der Runner-Loop ist Infrastruktur, kein Feature-Gate. Das Limit selbst
-        kommt weiterhin über get_max_scheduled_jobs_per_user (geht durch __getattr__).
+        Läuft auch im Plus-Image ohne Lizenz (Infrastruktur-Hooks, z.B. DB-Setup,
+        Scheduled-Job-Runner, OpenTofu-Tooling-Indikator). Reines Core-Image
+        (kein backend.plus, _active is None) → Core-Default.
         """
-        active = object.__getattribute__(self, "_active")
-        if active is not None:
-            await active.start_scheduled_job_runner()
-        else:
-            core = object.__getattribute__(self, "_core")
-            await core.start_scheduled_job_runner()
-
-    def register_scheduled_job_celery_tasks(self, celery_app) -> None:
-        """Lifecycle-Hook – läuft IMMER auf der aktiven Impl. (siehe start_scheduled_job_runner)."""
-        active = object.__getattribute__(self, "_active")
-        if active is not None:
-            active.register_scheduled_job_celery_tasks(celery_app)
-        else:
-            core = object.__getattribute__(self, "_core")
-            core.register_scheduled_job_celery_tasks(celery_app)
-
-    def get_scheduled_job_action_handlers(self) -> dict:
-        """Lifecycle-Hook – Handler-Registry wird vom Runner gebraucht, auch in Core-Mode."""
-        active = object.__getattribute__(self, "_active")
-        if active is not None:
-            return active.get_scheduled_job_action_handlers()
-        core = object.__getattribute__(self, "_core")
-        return core.get_scheduled_job_action_handlers()
+        active = self._active
+        return active if active is not None else self._core
 
     def _set_active(self, impl) -> None:
-        object.__setattr__(self, "_active", impl)
+        self._active = impl
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dispatch-Methoden-Generator (PROJ-95)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _make_dispatch_method(name: str, kind: str, is_async: bool):
+    """Erzeugt einen dünnen Wrapper für genau eine Dispatcher-Methode.
+
+    Vier Varianten (sync/async × gate/lifecycle). Late-Binding-frei: `name`,
+    `kind`, `is_async` sind Funktions-Parameter → eigene Closure-Zelle pro Aufruf.
+    """
+    if kind == "gate":
+        if is_async:
+            async def wrapper(self, *args, **kwargs):
+                impl = self._resolve_gate()
+                return await getattr(impl, name)(*args, **kwargs)
+        else:
+            def wrapper(self, *args, **kwargs):
+                impl = self._resolve_gate()
+                return getattr(impl, name)(*args, **kwargs)
+    elif kind == "lifecycle":
+        if is_async:
+            async def wrapper(self, *args, **kwargs):
+                impl = self._resolve_lifecycle()
+                return await getattr(impl, name)(*args, **kwargs)
+        else:
+            def wrapper(self, *args, **kwargs):
+                impl = self._resolve_lifecycle()
+                return getattr(impl, name)(*args, **kwargs)
+    else:  # pragma: no cover – unmöglich (vom Generator geprüft)
+        raise RuntimeError(f"plus_protocol: unbekannte Dispatch-Klasse {kind!r}")
+
+    wrapper.__name__ = name
+    wrapper.__qualname__ = f"_PlusBehaviorDispatcher.{name}"
+    wrapper._plus_dispatch = kind  # für Introspektion/Konformitätstests
+    return wrapper
+
+
+def _build_dispatch_methods(dispatcher_cls, core_cls) -> None:
+    """Generiert für jede CorePlusBehavior-Methode eine explizite Dispatcher-Methode.
+
+    PROJ-95 AC-STRUCT-1/2: Jede public Methode MUSS via @gate/@lifecycle
+    klassifiziert sein – eine unklassifizierte Methode führt zu einem harten
+    Boot-Fehler (RuntimeError beim Import), NICHT zu stillem Falsch-Routing.
+
+    Läuft genau einmal beim Modul-Import. Generierte Methoden sind normale
+    Non-Data-Descriptors → der monkeypatch-Instance-Attribut-Vorrang bleibt erhalten.
+    """
+    for name, member in vars(core_cls).items():
+        if name.startswith("_") or not inspect.isfunction(member):
+            continue
+        kind = getattr(member, "_plus_dispatch", None)
+        if kind not in ("gate", "lifecycle"):
+            raise RuntimeError(
+                f"plus_protocol: CorePlusBehavior.{name} ist nicht klassifiziert. "
+                f"Jede Plus-Behavior-Methode MUSS mit @gate oder @lifecycle dekoriert "
+                f"sein (PROJ-95 AC-STRUCT-2). Aktueller Stempel: {kind!r}."
+            )
+        is_async = inspect.iscoroutinefunction(member)
+        setattr(dispatcher_cls, name, _make_dispatch_method(name, kind, is_async))
+
+
+# Pflicht-Pass: generiert alle Dispatcher-Methoden ODER bricht beim Import hart ab.
+_build_dispatch_methods(_PlusBehaviorDispatcher, CorePlusBehavior)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -855,6 +1154,14 @@ CAPABILITIES: dict[str, str] = {
     "config_snapshots":               "can_use_config_snapshots",
     "auto_snapshots":                 "can_use_auto_snapshots",
     "stacks":                         "can_use_stacks",
+    "ansible_inventory":              "can_use_ansible_inventory",
+    "topology":                       "can_use_topology",
+    # PROJ-92: Packer Visual Editor
+    "packer_editor":                  "can_use_packer_editor",
+    # PROJ-93: Ansible Visual Editor
+    "ansible_editor":                 "can_use_ansible_editor",
+    # PROJ-96: VM-Abhängigkeiten & Aktions-Impact-Warnung
+    "vm_dependencies":                "can_use_dependencies",
     # PROJ-64: Self-Approval-Gate (sync, editions-abhängig)
     "allow_self_approval_supported":  "allow_self_approval_supported",
 }

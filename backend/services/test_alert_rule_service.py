@@ -24,8 +24,9 @@ async def setup_db():
     async with get_db() as session:
         await session.execute(
             text(
-                """INSERT OR IGNORE INTO nodes (id, name, url, proxmox_node, is_default, created_at, created_by)
-                   VALUES (1, 'test-node', 'https://proxmox.test:8006', 'pve', 1, '2026-01-01T00:00:00+00:00', 'system')"""
+                """INSERT INTO nodes (id, name, url, proxmox_node, is_default, created_at, created_by)
+                   VALUES (1, 'test-node', 'https://proxmox.test:8006', 'pve', 1, '2026-01-01T00:00:00+00:00', 'system')
+                   ON CONFLICT DO NOTHING"""
             )
         )
         await session.commit()

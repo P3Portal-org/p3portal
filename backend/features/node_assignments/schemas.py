@@ -14,6 +14,8 @@ VALID_NODE_ACTIONS: frozenset[str] = frozenset({
     "node:view_updates",    # PROJ-73: APT-Update-Stand lesen
     "node:refresh_updates", # PROJ-73: APT-Update-Fetch auslösen
     "node:stack_deploy",    # PROJ-76 Phase 2b: Stack auf diesen Node deployen/zerstören
+    "node:manage_network",  # PROJ-79: Node-Bridges/VLANs lesen + verwalten
+    "node:manage_firewall", # PROJ-90: Node-Firewall (Optionen/Regeln) lesen + verwalten
 })
 
 

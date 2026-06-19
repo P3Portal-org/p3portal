@@ -13,6 +13,11 @@ from fastapi import Depends, HTTPException, Request, status
 from backend.core.deps import CurrentUser, get_current_user
 from backend.features.api_surface.manifest import SCOPE_ALIASES
 
+# PROJ-97: Marker-Attribut, das jede von require_scope_for_upk() erzeugte Dependency
+# trägt. Der Default-Deny-"Türsteher" (default_deny.py) liest dieses Attribut beim
+# Start-Inventar aus, um scope-tragende Routen zu erkennen. Wert = kanonischer Scope.
+UPK_SCOPE_MARKER_ATTR = "_upk_scope_required"
+
 
 def require_scope_for_upk(scope: str):
     """Factory: gibt eine FastAPI-Dependency zurück, die den Scope *scope* erzwingt,
@@ -55,4 +60,8 @@ def require_scope_for_upk(scope: str):
 
         return current_user
 
+    # PROJ-97: Markierung für den Default-Deny-Türsteher (siehe default_deny.py).
+    # Bestehende Endpoints, die das Gate nutzen, werden dadurch automatisch als
+    # "scope-tragend" erkannt – ohne dass sie angefasst werden müssen.
+    setattr(_check, UPK_SCOPE_MARKER_ATTR, canonical)
     return _check

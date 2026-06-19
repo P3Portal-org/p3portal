@@ -59,6 +59,15 @@ const UNKNOWN_DATA = {
   stderr: null,
 }
 
+// PROJ-66 Phase 2: OpenTofu (Plus-only, dritter Indikator)
+const TOFU_DATA = {
+  version: '1.9.1',
+  status: 'ready',
+  last_check: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+  stdout: 'OpenTofu v1.9.1',
+  stderr: '',
+}
+
 function mockSlideOver(overrides = {}) {
   useToolingSlideOver.mockReturnValue({
     openTool: null,
@@ -113,6 +122,12 @@ describe('ToolingIndicator', () => {
     fireEvent.click(screen.getByRole('button'))
     expect(openSlideOver).toHaveBeenCalledWith('ansible')
   })
+
+  // PROJ-66 Phase 2 (AC-P2-UI-2)
+  it('zeigt OpenTofu-Label für opentofu', () => {
+    render(<ToolingIndicator tool="opentofu" toolData={TOFU_DATA} />)
+    expect(screen.getByText('OpenTofu')).toBeTruthy()
+  })
 })
 
 // ─── ToolingIndicators ───────────────────────────────────────────────────────
@@ -136,6 +151,23 @@ describe('ToolingIndicators', () => {
     const packerLabel  = screen.getAllByText('Packer')
     expect(ansibleLabel.length).toBeGreaterThan(0)
     expect(packerLabel.length).toBeGreaterThan(0)
+  })
+
+  // PROJ-66 Phase 2 (AC-P2-UI-1/3): OpenTofu nach Packer einsortiert
+  it('rendert OpenTofu nach Ansible und Packer', () => {
+    useToolingStatus.mockReturnValue({
+      data: {
+        // bewusst unsortierte Reihenfolge im Objekt
+        opentofu: TOFU_DATA,
+        packer:   { ...READY_DATA, version: '1.11.2' },
+        ansible:  READY_DATA,
+      },
+    })
+    const { container } = render(<ToolingIndicators />)
+    const labels = Array.from(container.querySelectorAll('span'))
+      .map(s => s.textContent)
+      .filter(txt => ['Ansible', 'Packer', 'OpenTofu'].includes(txt))
+    expect(labels).toEqual(['Ansible', 'Packer', 'OpenTofu'])
   })
 })
 
@@ -266,5 +298,25 @@ describe('ToolingSlideOver', () => {
     render(<ToolingSlideOver />)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(closeSlideOver).toHaveBeenCalledOnce()
+  })
+
+  // PROJ-66 Phase 2 (AC-P2-UI-2/4/5)
+  it('rendert OpenTofu-Namen und Hilfetext wenn opentofu offen', () => {
+    mockSlideOver({ openTool: 'opentofu', closeSlideOver: vi.fn() })
+    useToolingStatus.mockReturnValue({ data: { opentofu: TOFU_DATA } })
+    useToolingAuditHistory.mockReturnValue({ data: { items: [] }, isLoading: false })
+    useToolingRecheck.mockReturnValue({ mutateAsync: vi.fn(), isPending: false, isSuccess: false })
+    render(<ToolingSlideOver />)
+    expect(screen.getByText('OpenTofu')).toBeTruthy()
+    expect(screen.getByText('tooling.opentofu_hint')).toBeTruthy()
+  })
+
+  it('rendert KEINEN OpenTofu-Hilfetext bei ansible', () => {
+    mockSlideOver({ openTool: 'ansible', closeSlideOver: vi.fn() })
+    useToolingStatus.mockReturnValue({ data: { ansible: READY_DATA } })
+    useToolingAuditHistory.mockReturnValue({ data: { items: [] }, isLoading: false })
+    useToolingRecheck.mockReturnValue({ mutateAsync: vi.fn(), isPending: false, isSuccess: false })
+    render(<ToolingSlideOver />)
+    expect(screen.queryByText('tooling.opentofu_hint')).toBeNull()
   })
 })

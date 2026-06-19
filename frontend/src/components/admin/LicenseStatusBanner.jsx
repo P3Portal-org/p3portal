@@ -53,10 +53,17 @@ export default function LicenseStatusBanner() {
   if (!status) return null
 
   const isValid = status.valid
-  const isError = !status.valid && status.reason !== 'missing'
+  // PROJ-94: an expired trial is a normal fall-back to Core, not an error
+  const isError = !status.valid && status.reason !== 'missing' && status.reason !== 'trial_expired'
 
   let colorClass, tooltip
-  if (isValid) {
+  if (isValid && status.reason === 'trial') {
+    // PROJ-94: active trial — secondary reflection (the CTA lives in LicenseSectionAdmin)
+    colorClass = 'text-green-500'
+    tooltip = status.expiry
+      ? `${t('admin.license.tooltip_trial')} · ${t('admin.license.tooltip_valid_until', { expiry: status.expiry })}`
+      : t('admin.license.tooltip_trial')
+  } else if (isValid) {
     colorClass = 'text-green-500'
     const parts = [status.edition === 'plus_v2' ? 'P3 Plus v2' : 'P3 Plus v1']
     if (status.contact_name) parts.push(status.contact_name)
@@ -70,7 +77,9 @@ export default function LicenseStatusBanner() {
         : t('admin.license.tooltip_invalid')
   } else {
     colorClass = 'text-gray-400 dark:text-zinc-500'
-    tooltip = t('admin.license.tooltip_core')
+    tooltip = status.reason === 'trial_expired'
+      ? t('admin.license.tooltip_trial_expired')
+      : t('admin.license.tooltip_core')
   }
 
   return (

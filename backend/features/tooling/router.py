@@ -47,8 +47,10 @@ async def recheck_tooling(
     """
     user_id = current_user.user_id  # None für Proxmox-Auth-User
 
-    # Rate-Limit prüfen (vor Lock-Akquisition, Service-Methode setzt Timestamp sofort)
-    for tool_id in ["ansible", "packer"]:
+    # Rate-Limit prüfen (vor Lock-Akquisition, Service-Methode setzt Timestamp sofort).
+    # PROJ-66 Phase 2: über known_tools (Core + Plus-Hook) statt hardcoded Liste,
+    # damit auch tofu am Recheck-Pfad rate-limited wird (AC-P2-DISPATCH-3, EC-P2-7).
+    for tool_id in tooling_service.known_tools:
         retry_after = tooling_service.check_rate_limit(user_id, tool_id)
         if retry_after is not None:
             raise HTTPException(

@@ -92,7 +92,16 @@ def get_sync_engine():
         return None
     from sqlalchemy import create_engine as _create_sync_engine
     # async-Treiber aus URL entfernen: sqlite+aiosqlite → sqlite, postgresql+asyncpg → postgresql
-    sync_url = str(_engine.url).replace("+aiosqlite", "").replace("+asyncpg", "")
+    # PROJ-71 Phase 2: render_as_string(hide_password=False) statt str(url) — str()
+    # maskiert das Passwort als '***' (SQLAlchemy-Sicherheitsfeature), wodurch die
+    # Sync-Engine auf einem passwortgeschützten PostgreSQL mit Literal-'***' verbindet
+    # und "FATAL: password authentication failed" wirft (auf SQLite ohne Passwort nie
+    # aufgefallen → ensure_plus_db_tables konnte die Plus-Tabellen nie anlegen).
+    sync_url = (
+        _engine.url.render_as_string(hide_password=False)
+        .replace("+aiosqlite", "")
+        .replace("+asyncpg", "")
+    )
     return _create_sync_engine(sync_url)
 
 
@@ -141,6 +150,9 @@ async def _migrate_db(conn) -> None:
         ("jobs", "deploy_category TEXT"),
         # PROJ-62
         ("jobs", "pool_id INTEGER"),
+        # PROJ-83: Deploy-Onboarding-Flags
+        ("jobs", "ansible_manage INTEGER"),
+        ("jobs", "ansible_global_opt_in INTEGER"),
         # PROJ-70: scheduled_jobs ist jetzt Plus-only → kein Core-ALTER mehr.
         # Upgrade-Installationen: Plus-ensure_plus_db_tables (checkfirst=True) ist idempotent.
         # PROJ-44: external_api_log Erweiterung (upk_ Audit)
@@ -343,30 +355,13 @@ async def _migrate_db(conn) -> None:
     except Exception:
         pass
 
-    # PROJ-73: node_updates Tabelle anlegen (idempotent via CREATE TABLE IF NOT EXISTS)
-    try:
-        await conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS node_updates (
-                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-                portal_node_id      INTEGER NOT NULL REFERENCES nodes(id) ON DELETE CASCADE,
-                proxmox_node_name   TEXT NOT NULL,
-                last_check_at       TEXT,
-                last_success_at     TEXT,
-                last_error          TEXT,
-                payload_json        TEXT NOT NULL DEFAULT '[]',
-                CONSTRAINT uq_node_updates_member UNIQUE (portal_node_id, proxmox_node_name)
-            )
-        """))
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_node_updates_portal_node_id "
-            "ON node_updates(portal_node_id)"
-        ))
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_node_updates_last_success_at "
-            "ON node_updates(last_success_at)"
-        ))
-    except Exception:
-        pass
+    # PROJ-73: node_updates wird von metadata.create_all() angelegt (db/models.py).
+    # Der frühere raw-CREATE-Block hier nutzte SQLite-only-Syntax (INTEGER PRIMARY KEY
+    # AUTOINCREMENT) und war ein Parse-Fehler auf PostgreSQL → poisonte die gesamte
+    # init_db-Transaktion und rollte create_all (alle Tabellen) zurück (S562/S588).
+    # Da node_updates ohnehin in der Metadata steht, ist der raw-Block redundant und
+    # ersatzlos entfernt; create_all ist idempotent (checkfirst) und deckt Neu- wie
+    # Upgrade-Installationen auf beiden Dialekten ab.
 
     # PROJ-12 Bug-Fix: partial-unique index für portal_node_id IS NULL anlegen.
     # SQLite und PostgreSQL behandeln NULL ≠ NULL in UNIQUE-Constraints, der Constraint
@@ -489,8 +484,15 @@ async def init_db() -> None:
     _SessionLocal = async_sessionmaker(_engine, expire_on_commit=False, class_=AsyncSession)
 
     from backend.db.models import metadata
+    # Getrennte Transaktionen: create_all zuerst committen, dann migrieren.
+    # PostgreSQL bricht bei einem fehlerhaften Statement die GANZE Transaktion ab
+    # (anders als SQLite, das nach einem Statement-Fehler weiterläuft). Lägen
+    # create_all und _migrate_db in einer Transaktion, würde ein einzelnes
+    # fehlerhaftes Migrations-Statement das vollständige Schema zurückrollen
+    # (S562/S588). Durch die Trennung bleibt das Basisschema garantiert bestehen.
     async with _engine.begin() as conn:
         await conn.run_sync(metadata.create_all)
+    async with _engine.begin() as conn:
         await _migrate_db(conn)
 
     logger.info("Datenbank initialisiert: %s", url.split("@")[-1] if "@" in url else url)

@@ -30,6 +30,8 @@ import { HelpSlideOverProvider } from './features/help/components/HelpSlideOverC
 // V2 pages
 import ComputeNodesPage from './pages/v2/ComputeNodesPage'
 import NodeDetailPage from './pages/v2/NodeDetailPage'
+import NetworkPage from './pages/v2/NetworkPage'
+import FirewallPage from './pages/v2/FirewallPage'
 import ProvisioningPage from './pages/v2/ProvisioningPage'
 import AutomationPage from './pages/v2/AutomationPage'
 import ImageFactoryPage from './pages/v2/ImageFactoryPage'
@@ -77,6 +79,8 @@ function AppRoutes() {
       {/* ── V2 Routes ────────────────────────────────────────────────────── */}
       <Route path="/compute" element={<ProtectedLayout><ComputeNodesPage /></ProtectedLayout>} />
       <Route path="/compute/:node" element={<ProtectedLayout><NodeDetailPage /></ProtectedLayout>} />
+      <Route path="/network" element={<ProtectedLayout><NetworkPage /></ProtectedLayout>} />
+      <Route path="/firewall" element={<ProtectedLayout><FirewallPage /></ProtectedLayout>} />
       <Route path="/provisioning" element={<ProtectedLayout><ProvisioningPage /></ProtectedLayout>} />
       <Route path="/automation" element={<ProtectedLayout><AutomationPage /></ProtectedLayout>} />
       <Route path="/image-factory" element={<ProtectedLayout><ImageFactoryPage /></ProtectedLayout>} />

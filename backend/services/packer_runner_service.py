@@ -170,11 +170,13 @@ def _sync_run(
     """Synchronous packer build – runs in a thread-pool worker."""
     import os
 
-    from backend.services.packer_service import find_hcl_file
+    from backend.services.packer_service import find_definition_file
 
-    hcl_file = find_hcl_file(template_id)
+    hcl_file = find_definition_file(template_id)
     if hcl_file is None:
-        log_path.write_text(f"[error] No .pkr.hcl file found for template '{template_id}'\n")
+        log_path.write_text(
+            f"[error] No .pkr.hcl/.pkr.json definition file found for template '{template_id}'\n"
+        )
         return False
 
     # Build command — never use shell=True; each arg is a separate list item

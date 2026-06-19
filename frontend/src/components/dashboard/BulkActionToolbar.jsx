@@ -20,10 +20,12 @@ export default function BulkActionToolbar({ selected, vms, vmIps, onDone, onSshU
 
   const bulkAction = async (action) => {
     const labels = { start: 'gestartet', stop: 'gestoppt', reboot: 'neugestartet' }
+    // PROJ-96: Bulk-Aktionen setzen confirm=true (bewusste Mehrfach-Auswahl =
+    // bewusste Bestätigung; kein Per-VM-Impact-Dialog bei Bulk — MVP-Grenze).
     const fns = {
       start: (vm) => startVm(vm.vmid, vm.node),
-      stop: (vm) => stopVm(vm.vmid, vm.node),
-      reboot: (vm) => rebootVm(vm.vmid, vm.node),
+      stop: (vm) => stopVm(vm.vmid, vm.node, { confirm: true }),
+      reboot: (vm) => rebootVm(vm.vmid, vm.node, { confirm: true }),
     }
     setBusy(action)
     const results = await Promise.allSettled(selectedVms.map(fns[action]))

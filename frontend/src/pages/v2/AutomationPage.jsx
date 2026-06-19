@@ -5,6 +5,7 @@ import { usePlaybooks } from '../../hooks/usePlaybooks'
 import { useScheduledJobs } from '../../hooks/useScheduledJobs'
 import { useAuth } from '../../hooks/useAuth'
 import { useLicenseLimits } from '../../hooks/useLicenseLimits'
+import { useCapability } from '../../hooks/useCapability'
 import { getPlaybook, getPlaybookDescription } from '../../api/playbooks'
 import PlaybookForm from '../../components/playbooks/PlaybookForm'
 import DescriptionPanel from '../../components/ui/DescriptionPanel'
@@ -16,6 +17,7 @@ import { usePinToggle } from '../../features/sidebar_pins/hooks/usePinToggle'
 import HelpButton from '../../features/help/components/HelpButton'
 import TabHelpButton from '../../features/help/components/TabHelpButton'
 import Watermark from '../../components/common/Watermark'
+import InventoryView from '../../features/ansible_inventory/components/InventoryView'
 
 function TabPinButton({ tabId, label }) {
   const { isPinned, loading, toggle, atLimit } = usePinToggle({
@@ -61,6 +63,7 @@ function PlaybookCard({ playbook, selected, onSelect, hasConflict }) {
 const TABS = [
   { id: 'playbooks', label: 'Playbooks' },
   { id: 'scheduled', label: 'Zeitgesteuerte Jobs' },
+  { id: 'inventory', label: 'Ansible-Inventar' },
 ]
 
 export default function AutomationPage() {
@@ -80,6 +83,12 @@ export default function AutomationPage() {
   const [editJob, setEditJob] = useState(null)
   const [detailJob, setDetailJob] = useState(null)
   const isAdmin = role === 'admin'
+  // PROJ-93: Playbook-Editor-Tab (Plus + admin), via PlusComponents-Registry.
+  const AnsibleEditorTab = PlusComponents.AnsibleEditorTab
+  const canPlaybookEditor = useCapability('ansible_editor') && isAdmin
+  const visibleTabs = canPlaybookEditor
+    ? [...TABS, { id: 'playbook-editor', label: 'Playbook-Editor' }]
+    : TABS
   const conflictIds = useGitSyncConflictIds('ansible', isAdmin)
   const myJobCount = jobs.filter(j => j.created_by === username).length
   const sjAtLimit = !scheduledJobsLimit?.unlimited && scheduledJobsLimit?.max !== null && scheduledJobsLimit?.max !== undefined && myJobCount >= scheduledJobsLimit?.max
@@ -151,10 +160,12 @@ export default function AutomationPage() {
       </header>
 
       <div className="flex border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-6 shrink-0">
-        {TABS.filter(tab => tab.id !== 'scheduled' || !!ScheduledJobsTable).map(tab => {
+        {visibleTabs.filter(tab => tab.id !== 'scheduled' || !!ScheduledJobsTable).map(tab => {
           const tabHelpKeys = {
             playbooks: 'automation.tabs.playbooks',
             scheduled: 'automation.tabs.scheduled',
+            inventory: 'automation.tabs.inventory',
+            'playbook-editor': 'automation.tabs.playbook_editor',
           }
           return (
             <button key={tab.id} onClick={() => setSearchParams({ tab: tab.id })} className={tabCls(tab.id)}>
@@ -241,6 +252,21 @@ export default function AutomationPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'inventory' && (
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
+          <InventoryView />
+          <Watermark />
+        </div>
+      )}
+
+      {activeTab === 'playbook-editor' && canPlaybookEditor && AnsibleEditorTab && (
+        <div className="flex flex-col flex-1 min-h-0">
+          <Suspense fallback={<div className="p-6 text-sm text-gray-500 dark:text-zinc-400">…</div>}>
+            <AnsibleEditorTab />
+          </Suspense>
         </div>
       )}
 

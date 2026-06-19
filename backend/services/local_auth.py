@@ -56,34 +56,52 @@ async def get_user_by_username(username: str) -> dict | None:
     return dict(row) if row else None
 
 
-_LIST_USERS_SQL = text(
+def _list_users_sql() -> "text":
+    """Baut die list_users-Query dialect-abhängig (PROJ-71).
+
+    SQLite nutzt json_group_array, PostgreSQL kennt diese Funktion nicht und
+    nutzt json_agg. Das PG-Ergebnis wird mit ::text serialisiert, damit es – wie
+    bei SQLite – als JSON-String ankommt; sonst dekodiert der asyncpg-Dialekt
+    json zu Python-Objekten und das nachgelagerte json.loads() in _row_to_user
+    schlüge fehl.
     """
-    SELECT
-        lu.*,
-        COALESCE(g.group_names, '[]') AS group_names,
-        COALESCE(p.preset_names, '[]') AS preset_names
-    FROM local_users lu
-    LEFT JOIN (
-        SELECT gm.user_id, json_group_array(gr.name ORDER BY gr.name) AS group_names
-        FROM group_members gm
-        JOIN groups gr ON gr.id = gm.group_id
-        GROUP BY gm.user_id
-    ) g ON g.user_id = lu.id
-    LEFT JOIN (
-        SELECT ra.user_id, json_group_array(DISTINCT rp.name ORDER BY rp.name) AS preset_names
-        FROM resource_assignments ra
-        JOIN role_presets rp ON rp.id = ra.preset_id
-        WHERE ra.user_id IS NOT NULL
-        GROUP BY ra.user_id
-    ) p ON p.user_id = lu.id
-    ORDER BY lu.created_at ASC
-    """
-)
+    from backend.db.database import get_engine_dialect
+
+    if get_engine_dialect() == "postgresql":
+        g_agg = "json_agg(gr.name ORDER BY gr.name)::text"
+        p_agg = "json_agg(DISTINCT rp.name ORDER BY rp.name)::text"
+    else:
+        g_agg = "json_group_array(gr.name ORDER BY gr.name)"
+        p_agg = "json_group_array(DISTINCT rp.name ORDER BY rp.name)"
+
+    return text(
+        f"""
+        SELECT
+            lu.*,
+            COALESCE(g.group_names, '[]') AS group_names,
+            COALESCE(p.preset_names, '[]') AS preset_names
+        FROM local_users lu
+        LEFT JOIN (
+            SELECT gm.user_id, {g_agg} AS group_names
+            FROM group_members gm
+            JOIN groups gr ON gr.id = gm.group_id
+            GROUP BY gm.user_id
+        ) g ON g.user_id = lu.id
+        LEFT JOIN (
+            SELECT ra.user_id, {p_agg} AS preset_names
+            FROM resource_assignments ra
+            JOIN role_presets rp ON rp.id = ra.preset_id
+            WHERE ra.user_id IS NOT NULL
+            GROUP BY ra.user_id
+        ) p ON p.user_id = lu.id
+        ORDER BY lu.created_at ASC
+        """
+    )
 
 
 async def list_users() -> list[UserResponse]:
     async with get_db() as session:
-        result = await session.execute(_LIST_USERS_SQL)
+        result = await session.execute(_list_users_sql())
         rows = result.mappings().fetchall()
     return [_row_to_user(r) for r in rows]
 

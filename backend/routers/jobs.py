@@ -199,9 +199,11 @@ async def start_job(
             text(
                 """INSERT INTO jobs
                        (id, type, playbook, status, created_at, username, params,
-                        auto_owner_user_id, deploy_category, callback_url, pool_id)
+                        auto_owner_user_id, deploy_category, callback_url, pool_id,
+                        ansible_manage, ansible_global_opt_in)
                    VALUES (:id, 'ansible', :playbook, 'pending', :created_at, :username, :params,
-                           :auto_owner_user_id, :deploy_category, :callback_url, :pool_id)"""
+                           :auto_owner_user_id, :deploy_category, :callback_url, :pool_id,
+                           :ansible_manage, :ansible_global_opt_in)"""
             ),
             {
                 "id": job_id,
@@ -213,6 +215,8 @@ async def start_job(
                 "deploy_category": deploy_category,
                 "callback_url": callback_url_str,
                 "pool_id": body.pool_id,
+                "ansible_manage": 1 if body.manage_for_ansible else 0,
+                "ansible_global_opt_in": 1 if body.global_opt_in else 0,
             },
         )
         await session.commit()
@@ -221,15 +225,55 @@ async def start_job(
         )
         row = result.mappings().fetchone()
 
-    # Proxmox-login users run Ansible in their own user context (no service-account token needed)
-    proxmox_credentials = (
-        get_credentials(current_user.jti)
-        if current_user.auth_type == "proxmox" and current_user.jti
-        else None
-    )
-    asyncio.create_task(
-        run_ansible_job(job_id, body.playbook, body.params, current_user.role, proxmox_credentials)
-    )
+    # PROJ-83: In-Guest-Playbook-Run (meta.targets == "guest") → eigener Runner-Zweig.
+    # Bestehende localhost-Playbooks laufen unverändert über run_ansible_job (AC-INV-6).
+    guest_dispatched = False
+    try:
+        from backend.services.playbook_service import get_playbook as _get_pb_meta
+        _pb_meta = _get_pb_meta(body.playbook)
+    except Exception:
+        _pb_meta = None
+    if _pb_meta is not None and getattr(_pb_meta, "targets", "localhost") == "guest":
+        from backend.features.ansible_inventory.permissions import assert_guest_run_allowed
+        from backend.features.ansible_inventory.runner import run_guest_ansible_job
+
+        gs = body.guest_scope
+        scope = gs.kind if gs is not None else "user"
+        scope_ref = gs.ref if gs is not None else None
+        await assert_guest_run_allowed(current_user, scope, scope_ref, body.target_hosts)
+
+        # `become` lebt im PlaybookMeta (nicht im PlaybookDetail exponiert) → direkt laden
+        try:
+            from backend.services.playbook_service import _load_all_metas as _lm
+            become_flag = next(
+                (m.become for pid, m in _lm() if pid == body.playbook), False
+            )
+        except Exception:
+            become_flag = False
+
+        if current_user.user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="guest_run_requires_local_user"
+            )
+        asyncio.create_task(
+            run_guest_ansible_job(
+                job_id, body.playbook, body.params,
+                scope=scope, scope_ref=scope_ref, target_hosts=body.target_hosts,
+                user_id=current_user.user_id, become=become_flag,
+            )
+        )
+        guest_dispatched = True
+
+    if not guest_dispatched:
+        # Proxmox-login users run Ansible in their own user context (no service-account token needed)
+        proxmox_credentials = (
+            get_credentials(current_user.jti)
+            if current_user.auth_type == "proxmox" and current_user.jti
+            else None
+        )
+        asyncio.create_task(
+            run_ansible_job(job_id, body.playbook, body.params, current_user.role, proxmox_credentials)
+        )
     await write_audit_log(
         "job_started", current_user.username, current_user.auth_type,
         detail=f"Playbook '{body.playbook}' gestartet (Job {job_id[:8]})"

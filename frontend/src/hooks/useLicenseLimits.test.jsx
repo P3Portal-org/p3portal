@@ -28,6 +28,23 @@ const PLUS_RESPONSE = {
   },
 }
 
+// PROJ-94
+const TRIAL_ACTIVE_RESPONSE = {
+  edition: 'plus_trial',
+  valid: true,
+  trial_used: true,
+  trial_active: true,
+  limits: { users: { current: 1, max: null, unlimited: true } },
+}
+
+const TRIAL_EXPIRED_RESPONSE = {
+  edition: 'core',
+  valid: false,
+  trial_used: true,
+  trial_active: false,
+  limits: { users: { current: 1, max: 6, unlimited: false } },
+}
+
 describe('useLicenseLimits', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -84,6 +101,36 @@ describe('useLicenseLimits', () => {
     expect(result.current.presetLimit).toBeNull()
     expect(result.current.userAtLimit).toBe(false)
     expect(result.current.presetAtLimit).toBe(false)
+  })
+
+  // PROJ-94: trial flags
+  it('reports trialActive + isPlus during an active trial', async () => {
+    getLicenseStatus.mockResolvedValue(TRIAL_ACTIVE_RESPONSE)
+    const { result } = renderHook(() => useLicenseLimits(), { wrapper: createQueryWrapper() })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.isPlus).toBe(true)
+    expect(result.current.trialUsed).toBe(true)
+    expect(result.current.trialActive).toBe(true)
+  })
+
+  it('reports trialUsed but not active/plus after expiry', async () => {
+    getLicenseStatus.mockResolvedValue(TRIAL_EXPIRED_RESPONSE)
+    const { result } = renderHook(() => useLicenseLimits(), { wrapper: createQueryWrapper() })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.isPlus).toBe(false)
+    expect(result.current.trialUsed).toBe(true)
+    expect(result.current.trialActive).toBe(false)
+  })
+
+  it('defaults trial flags to false in core (no flags)', async () => {
+    getLicenseStatus.mockResolvedValue(CORE_RESPONSE)
+    const { result } = renderHook(() => useLicenseLimits(), { wrapper: createQueryWrapper() })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.trialUsed).toBe(false)
+    expect(result.current.trialActive).toBe(false)
   })
 
   it('reload re-fetches limits', async () => {

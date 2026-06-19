@@ -13,7 +13,7 @@ function errMsg(err) {
 }
 
 const inputCls =
-  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500'
+  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent'
 
 export default function VmConfigEditModal({ detail, onClose, onSaved }) {
   const isQemu = detail.type === 'qemu'
@@ -109,13 +109,13 @@ export default function VmConfigEditModal({ detail, onClose, onSaved }) {
         {/* Body */}
         <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 p-5 space-y-4">
           {running && isQemu && (
-            <p className="text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded px-3 py-2">
+            <p className="text-xs text-portal-warn bg-portal-warn/10 border border-portal-warn/30 rounded px-3 py-2">
               Die VM läuft. CPU-/RAM-Änderungen werden in der Regel erst nach einem Neustart wirksam (außer Hot-Plug ist aktiviert).
             </p>
           )}
 
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded px-3 py-2">
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded px-3 py-2">
               {error}
             </p>
           )}

@@ -111,6 +111,13 @@ export default function V2Sidebar({ onNavClick }) {
   const showSystemSettings =
     hasPerm('manage_users') || hasPerm('manage_nodes') ||
     hasPerm('manage_settings') || hasPerm('manage_api_keys')
+  // PROJ-80: "Netzwerk" entry – visible if the user may manage node networking
+  // (PROJ-79) OR cluster SDN (PROJ-80). The page itself gates each area finer.
+  const showNetwork = hasPerm('manage_networks') || hasPerm('manage_sdn')
+  // PROJ-90: "Firewall" entry – datacenter/node firewall. Lightweight gate on
+  // manage_firewall (matching the Netzwerk entry); node:manage_firewall-only users
+  // reach the firewall via the Compute-Node tab (AC-UI-3). The server enforces 403.
+  const showFirewall = hasPerm('manage_firewall')
 
   const location = useLocation()
   const acctTab = new URLSearchParams(location.search).get('tab')
@@ -160,6 +167,29 @@ export default function V2Sidebar({ onNavClick }) {
             <span>{labelKey ? t(labelKey) : label}</span>
           </NavLink>
         ))}
+
+        {/* PROJ-80: Netzwerk (Node-Interfaces + SDN), gated admin OR manage_networks OR manage_sdn */}
+        {!isRestricted && showNetwork && (
+          <NavLink to="/network" className={navLinkCls} onClick={handleClick}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 shrink-0">
+              <rect x="9" y="2" width="6" height="6" rx="1" />
+              <rect x="2" y="16" width="6" height="6" rx="1" />
+              <rect x="16" y="16" width="6" height="6" rx="1" />
+              <path d="M12 8v4M12 12H5v4M12 12h7v4" />
+            </svg>
+            <span>Netzwerk</span>
+          </NavLink>
+        )}
+
+        {/* PROJ-90: Firewall (Datacenter + Node), gated admin OR manage_firewall */}
+        {!isRestricted && showFirewall && (
+          <NavLink to="/firewall" className={navLinkCls} onClick={handleClick}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 shrink-0">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <span>Firewall</span>
+          </NavLink>
+        )}
 
         {/* PROJ-76: Stacks (Plus-only) */}
         {!isRestricted && canUseStacks && (

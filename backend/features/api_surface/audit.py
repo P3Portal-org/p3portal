@@ -73,21 +73,30 @@ async def record_scope_denied(
     scope_required: str,
     endpoint: str,
     method: str,
+    note: str | None = None,
 ) -> None:
-    """Schreibt api_scope_denied in audit_logs (AC-20)."""
+    """Schreibt api_scope_denied in audit_logs (AC-20).
+
+    PROJ-97: Der Default-Deny-Türsteher nutzt dasselbe Event, setzt aber
+    scope_required="<no-scope-declared>" (Marker) und liefert über *note* das
+    Key-Präfix mit, damit der Betreiber die Integration zuordnen kann (AC-DENY-4).
+    """
     try:
         import json
+        detail = {
+            "key_id": key_id,
+            "scope_required": scope_required,
+            "endpoint": endpoint,
+            "method": method,
+            "target_user_id": user_id,
+        }
+        if note:
+            detail["note"] = note
         await write_audit_log(
             "api_scope_denied",
             username=f"key:{key_id}",
             auth_type="local",
-            detail=json.dumps({
-                "key_id": key_id,
-                "scope_required": scope_required,
-                "endpoint": endpoint,
-                "method": method,
-                "target_user_id": user_id,
-            }),
+            detail=json.dumps(detail),
         )
     except Exception as exc:
         logger.warning("api_scope_denied audit write failed: %s", exc)

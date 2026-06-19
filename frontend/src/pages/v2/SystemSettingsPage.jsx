@@ -743,10 +743,14 @@ export default function SystemSettingsPage() {
   // PROJ-76: Verwaiste Stacks (Plus-only, sichtbar bei manage_orphan_stacks)
   const canUseStacks = useCapability('stacks')
   const OrphanStacksTab = PlusComponents.OrphanStacksTab
+  // PROJ-96: Verwaiste Abhängigkeiten (Plus-only, sichtbar bei manage_dependencies)
+  const canUseDependencies = useCapability('vm_dependencies')
+  const OrphanDependenciesTab = PlusComponents.OrphanDependenciesTab
 
   const isAdmin = role === 'admin'
   const perms = portalPermissions ?? []
   const canManageOrphanStacks = isAdmin || perms.includes('manage_orphan_stacks')
+  const canManageDependencies = isAdmin || perms.includes('manage_dependencies')
 
   const visibleTabs = TABS.filter(tab => {
     if (tab.plusOnly && !isPlus) return false
@@ -868,6 +872,14 @@ export default function SystemSettingsPage() {
                   <PlusBadge />
                   <Suspense fallback={null}>
                     <OrphanStacksTab />
+                  </Suspense>
+                </div>
+              )}
+              {canUseDependencies && canManageDependencies && OrphanDependenciesTab && (
+                <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
+                  <PlusBadge />
+                  <Suspense fallback={null}>
+                    <OrphanDependenciesTab />
                   </Suspense>
                 </div>
               )}

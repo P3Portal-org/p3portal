@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { completeSetup } from '../../api/setup'
-import { uploadLicense } from '../../api/license'
+import { uploadLicense, startTrial } from '../../api/license'
 
 function Row({ label, value }) {
   return (
@@ -20,6 +20,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
   const [uploadLic, setUploadLic] = useState(false)
   const [licenseFile, setLicenseFile] = useState(null)
   const [licenseError, setLicenseError] = useState('')
+  const [startTrialOn, setStartTrialOn] = useState(false)  // PROJ-94
   const fileRef = useRef(null)
 
   const hasTokens = data.viewer_token_id || data.operator_token_id || data.admin_token_id
@@ -47,6 +48,15 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
               ? t('setup.s7_err_lic_invalid')
               : licEx.response?.data?.detail ?? t('setup.s7_err_lic_upload')
           )
+          setBusy(false)
+          return
+        }
+      } else if (startTrialOn) {
+        // PROJ-94: optionaler 30-Tage-Test (trial/start ist auth-pflichtig → nach JWT)
+        try {
+          await startTrial()
+        } catch {
+          setLicenseError(t('setup.s7_err_trial'))
           setBusy(false)
           return
         }
@@ -139,7 +149,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
           </div>
           <button
             type="button"
-            onClick={() => { setUploadLic((v) => !v); setLicenseError('') }}
+            onClick={() => { if (!uploadLic) setStartTrialOn(false); setUploadLic((v) => !v); setLicenseError('') }}
             className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${uploadLic ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${uploadLic ? 'translate-x-5' : ''}`} />
@@ -173,6 +183,25 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
             )}
           </div>
         )}
+      </div>
+
+      {/* PROJ-94: 30-Tage-Test starten (alternativ zum Lizenz-Upload) */}
+      <div className="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{t('setup.s7_trial_title')}</p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              {t('setup.s7_trial_hint')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { if (!startTrialOn) { setUploadLic(false); setLicenseFile(null) } setStartTrialOn((v) => !v); setLicenseError('') }}
+            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${startTrialOn ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${startTrialOn ? 'translate-x-5' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {error && (

@@ -11,7 +11,10 @@ import ComputeTemplatesTab from '../../components/computenodes/ComputeTemplatesT
 import ComputeEventsTab from '../../components/computenodes/ComputeEventsTab'
 import ComputeBackupsTab from '../../components/computenodes/ComputeBackupsTab'
 import ComputeBackupJobsTab from '../../components/computenodes/ComputeBackupJobsTab'
+import ComputeNetworkTab from '../../components/computenodes/ComputeNetworkTab'
+import NodeFirewallPanel from '../../components/firewall/NodeFirewallPanel'
 import UpdatesTab from '../../features/node_updates/components/UpdatesTab'
+import { useMyNodeAssignments } from '../../features/node_assignments/hooks/useNodeAssignments'
 import TokenMissingBanner from '../../components/ui/TokenMissingBanner'
 import NodeDetailSection from '../../components/compute/NodeDetailSection'
 import VmSection from '../../components/dashboard/VmSection'
@@ -63,6 +66,8 @@ const TABS = [
   { id: 'updates',          label: 'Updates',          nodeAction: 'node:view_updates' },
   { id: 'backups',          label: 'Backups' },
   { id: 'backup-jobs',      label: 'Backup-Jobs',      perm: 'manage_backup_jobs' },
+  { id: 'networks',         label: 'Netzwerk',         netGate: true },
+  { id: 'firewall',         label: 'Firewall',         fwGate: true },
   { id: 'alerting',         label: 'Alerting',         capKey: 'compute_alerting' },
   { id: 'schedules',        label: 'Scheduled Jobs',   capKey: 'compute_scheduled_jobs' },
   { id: 'config-snapshots', label: 'Config-Snapshots', capKey: 'config_snapshots' },
@@ -84,6 +89,25 @@ export default function ComputeNodesPage() {
   const isAdmin = role === 'admin'
   const hasPerm = (perm) => isAdmin || (portalPermissions ?? []).includes(perm)
   const canManageNodes = hasPerm('manage_nodes')
+
+  // PROJ-79: node-scope grant for node:manage_network (third OR-branch of the
+  // network tab gate). Server-side _assert_network_access is the real boundary;
+  // this is only the visual tab heuristic.
+  const { assignments: myNodeAssignments } = useMyNodeAssignments()
+  const nodeHasNetworkScope = (nodeName) =>
+    (myNodeAssignments ?? []).some(
+      a => a.node_name === nodeName && (a.preset_node_actions ?? []).includes('node:manage_network'),
+    )
+  const canManageNetwork = (nodeName) =>
+    isAdmin || hasPerm('manage_networks') || nodeHasNetworkScope(nodeName)
+
+  // PROJ-90: same OR-gate for the optional node firewall tab (AC-UI-3).
+  const nodeHasFirewallScope = (nodeName) =>
+    (myNodeAssignments ?? []).some(
+      a => a.node_name === nodeName && (a.preset_node_actions ?? []).includes('node:manage_firewall'),
+    )
+  const canManageFirewall = (nodeName) =>
+    isAdmin || hasPerm('manage_firewall') || nodeHasFirewallScope(nodeName)
 
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedNodeKey = searchParams.get('node') || null
@@ -192,6 +216,10 @@ export default function ComputeNodesPage() {
                   if (t.capKey && !(caps[t.capKey] ?? false)) return false
                   if (t.nodeAction && !isAdmin && role !== 'operator') return false
                   if (t.perm && !hasPerm(t.perm)) return false
+                  // PROJ-79: OR-gated network tab (admin OR manage_networks OR node-scope).
+                  if (t.netGate && !canManageNetwork(selectedNode.node)) return false
+                  // PROJ-90: OR-gated firewall tab (admin OR manage_firewall OR node-scope).
+                  if (t.fwGate && !canManageFirewall(selectedNode.node)) return false
                   return true
                 }).map(tab => {
                   const isActive = activeTab === tab.id
@@ -245,6 +273,8 @@ export default function ComputeNodesPage() {
               {activeTab === 'updates'   && <UpdatesTab portalNodeId={selectedNode.portal_node_id} active={activeTab === 'updates'} />}
               {activeTab === 'backups'   && <ComputeBackupsTab nodeName={selectedNode.node} active={activeTab === 'backups'} />}
               {activeTab === 'backup-jobs' && <ComputeBackupJobsTab nodeName={selectedNode.node} active={activeTab === 'backup-jobs'} />}
+              {activeTab === 'networks'    && canManageNetwork(selectedNode.node) && <ComputeNetworkTab nodeName={selectedNode.node} active={activeTab === 'networks'} />}
+              {activeTab === 'firewall'    && canManageFirewall(selectedNode.node) && <NodeFirewallPanel nodeName={selectedNode.node} installation={selectedNode.portal_node_id} active={activeTab === 'firewall'} />}
               {activeTab === 'alerting' && (caps.compute_alerting ?? false) && ComputeAlertingTab && (
                 <Suspense fallback={null}>
                   <ComputeAlertingTab nodeName={selectedNode.node} active={activeTab === 'alerting'} />

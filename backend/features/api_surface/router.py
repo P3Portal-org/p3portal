@@ -44,7 +44,7 @@ async def get_version() -> VersionResponse:
     edition = "plus" if is_plus_edition() else "core"
     return VersionResponse(
         version=__version__,
-        api_compat_level="1",
+        api_compat_level="2",  # PROJ-97: Default-Deny für upk_-Keys (Breaking)
         edition=edition,
     )
 

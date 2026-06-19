@@ -93,3 +93,31 @@ pveum aclmod /storage --roles PVEDatastoreUser --token portal-operator@pve!porta
 ```
 
 This removes the need for the admin token for storage listing.
+
+---
+
+## In-guest playbook runs (PROJ-83)
+
+In-guest playbook runs connect to the guest **over SSH** (not through the Proxmox
+API), using a dedicated service user `p3-ansible` inside the guest. The **MVP
+needs no extra Proxmox token privilege**:
+
+- **Manual onboarding** (paste the onboarding block into the guest) uses no token at all.
+- **cloud-init delivery** ships the onboarding block as a vendor-data snippet on a
+  Proxmox storage with the **"Snippets"** content type and sets `cicustom: vendor=...`
+  on the VM. This uses the same token your deploy already uses — no additional privilege.
+
+### Optional (NOT in the MVP): guest-exec onboarding
+
+A later, optional convenience method could onboard/re-key **existing** VMs via the
+QEMU guest agent (`/agent/exec`) or host-side `pct exec`. This executes **root code
+in the guest** and would require the `VM.GuestAgent.*` (e.g. `VM.GuestAgent.Audit`
++ guest-exec) privileges on the **admin/management token tier** — never on the
+viewer token. Example role grant (only if you build this optional path):
+
+```
+pveum role modify PortalAdmin -privs "...,VM.GuestAgent.Audit,VM.GuestAgent.Unrestricted"
+```
+
+The MVP deliberately does **not** require this. See
+[ansible-inventory.md](ansible-inventory.md).

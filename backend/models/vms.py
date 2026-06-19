@@ -87,6 +87,51 @@ class DiskConfig(BaseModel):
     id: str       # "scsi0", "rootfs", "mp0"
     storage: str  # "local-lvm"
     size: str     # raw Proxmox value: "32G", "512M", "1T"
+    # PROJ-81: p3-<uuid8> serial if we set it at attach time (forward-compat for
+    # the Phase 2 in-guest automation, which finds the disk via /dev/disk/by-id).
+    serial: str | None = None
+
+
+# ── PROJ-81: VM Disk Management (manual, Proxmox-only) ────────────────────────
+
+class DiskAttachRequest(BaseModel):
+    """Attach (=create + attach) an additional disk to a QEMU VM."""
+    size_gb: int = Field(..., ge=1, le=131072)        # 1 GiB .. 128 TiB
+    storage: str
+    bus: Literal["scsi", "virtio", "sata"] = "scsi"
+
+    @field_validator("storage")
+    @classmethod
+    def storage_valid(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("storage must not be empty")
+        # Defense-in-depth: a Proxmox storage id is alphanumeric plus ._- only.
+        # Rejecting other characters prevents smuggling extra disk-config options
+        # (e.g. ",import-from=...") into the volume spec built at attach time.
+        if not re.fullmatch(r"[A-Za-z0-9._-]+", v):
+            raise ValueError("storage contains invalid characters")
+        return v
+
+
+class DiskResizeRequest(BaseModel):
+    """Grow an existing disk. Proxmox can only grow, never shrink."""
+    size_gb: int = Field(..., ge=1, le=131072)
+
+
+class ImageStorageInfo(BaseModel):
+    """A node storage that can hold VM disk images (content type 'images')."""
+    name: str           # Proxmox storage id
+    type: str = ""      # "lvmthin", "dir", "zfspool", ...
+    avail: int = 0      # bytes free
+    total: int = 0      # bytes total
+    used: int = 0       # bytes used
+
+
+class DiskListResponse(BaseModel):
+    """Disk list after a mutating operation, plus the affected slot."""
+    disks: list[DiskConfig]
+    disk: str | None = None   # the created/resized/removed slot
 
 
 class VmDetailResponse(BaseModel):

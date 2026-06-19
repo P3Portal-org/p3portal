@@ -167,8 +167,8 @@ async def set_preferences(
                 """INSERT INTO user_profiles (username, auth_type, theme_preference, lang_preference)
                    VALUES (:u, 'local', :theme, :lang)
                    ON CONFLICT(username) DO UPDATE SET
-                       theme_preference = COALESCE(:theme, theme_preference),
-                       lang_preference  = COALESCE(:lang,  lang_preference)"""
+                       theme_preference = COALESCE(:theme, user_profiles.theme_preference),
+                       lang_preference  = COALESCE(:lang,  user_profiles.lang_preference)"""
             ),
             {"u": current_user.username, "theme": body.theme_id, "lang": body.lang_code},
         )

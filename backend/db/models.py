@@ -42,6 +42,8 @@ jobs = Table(
     Column("auto_owner_user_id", Integer),   # PROJ-48: wenn gesetzt → Owner nach Erfolg eintragen
     Column("deploy_category", String(20)),   # PROJ-48: vm_deployment | lxc_deployment | NULL
     Column("pool_id", Integer),              # PROJ-62: Pool-Kontext für Auto-Member-Add + Quota-Check
+    Column("ansible_manage", Integer),       # PROJ-83: Deploy-Opt-out-Haken „Für Ansible verwalten"
+    Column("ansible_global_opt_in", Integer),  # PROJ-83: Global-Key beim Deploy mit-injizieren
     CheckConstraint(
         "status IN ('pending', 'running', 'success', 'failed')",
         name="ck_jobs_status",
@@ -753,3 +755,33 @@ node_updates = Table(
 )
 Index("idx_node_updates_portal_node_id", node_updates.c.portal_node_id)
 Index("idx_node_updates_last_success_at", node_updates.c.last_success_at)
+
+# ── ansible_managed_hosts (PROJ-83 – minimaler persistierter In-Guest-Host-Zustand) ──
+#
+# Das Inventory selbst wird zur Laufzeit aus Proxmox (SoT) + diesem minimalen Zustand
+# projiziert (kein materialisiertes Inventory). Persistiert wird NUR, was aus Proxmox
+# nicht rekonstruierbar ist: ssh_managed (wurde beim Deploy ein Verwaltungs-Key
+# injiziert?), ansible_user, global_opt_in, gemerkter Host-Key (TOFU). Existenz/Name/
+# IP/Owner/Pool sind abgeleitet → strukturell keine Leichen (AC-CLEAN-1).
+#
+# Diese Tabelle ist Core (User-Scope ist Core). global_opt_in liegt bewusst hier, nicht
+# in einer Plus-Tabelle: es ist ein per-Host-Flag (in Pure Core ungenutzt + Global-EP 404)
+# → kein edition-übergreifender Split des Host-Zustands.
+
+ansible_managed_hosts = Table(
+    "ansible_managed_hosts", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("portal_node_id", Integer, ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False),
+    Column("vmid", Integer, nullable=False),
+    Column("kind", String(10), nullable=False),                       # qemu | lxc
+    Column("ssh_managed", Integer, nullable=False, server_default="0"),
+    Column("ansible_user", String(64), nullable=False, server_default="p3-ansible"),
+    Column("global_opt_in", Integer, nullable=False, server_default="0"),
+    Column("host_key", Text, nullable=True),                          # gemerkter Server-Host-Key (TOFU)
+    Column("host_origin", String(16), nullable=False, server_default="proxmox"),  # Forward-Compat (AC-CLEAN-4)
+    Column("created_at", String, nullable=False),
+    Column("updated_at", String, nullable=False),
+    UniqueConstraint("portal_node_id", "vmid", "kind", name="uq_ansible_managed_hosts"),
+    CheckConstraint("kind IN ('qemu', 'lxc')", name="ck_ansible_managed_hosts_kind"),
+)
+Index("idx_ansible_managed_hosts_node", ansible_managed_hosts.c.portal_node_id)

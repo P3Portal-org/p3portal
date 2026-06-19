@@ -7,6 +7,7 @@ import SnapshotModal from '../vms/SnapshotModal'
 import BulkActionToolbar from './BulkActionToolbar'
 import useVmIps, { vmIpKey } from '../../hooks/useVmIps'
 import { deleteVm, checkVmSsh } from '../../api/vms'
+import { useDependencyImpactGuard } from '../vms/useDependencyImpactGuard'
 import { useBulkOwners } from '../../features/owners/hooks/useOwners'
 import OwnerColumn from '../../features/owners/components/OwnerColumn'
 import ConfirmModal from '../common/ConfirmModal'
@@ -215,6 +216,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
   const [feedback, setFeedback]     = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteBusy, setDeleteBusy] = useState(null)
+  const { guardedRun, impactModal } = useDependencyImpactGuard()  // PROJ-96
 
   const [sortCol, setSortCol] = useState(() => {
     try { return JSON.parse(localStorage.getItem('p3-vmtable-sort'))?.col ?? 'id' } catch { return 'id' }
@@ -541,6 +543,8 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
         <SnapshotModal vm={snapshotVm} onClose={() => setSnapshotVm(null)} />
       )}
 
+      {impactModal /* PROJ-96: Abhängigkeits-Impact-Dialog beim Löschen */}
+
       {deleteTarget && (
         <ConfirmModal
           title="VM löschen"
@@ -552,10 +556,12 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
             setDeleteTarget(null)
             setDeleteBusy(vm.vmid)
             try {
-              await deleteVm(vm.vmid, vm.node)
+              // PROJ-96: Löschen durchläuft die Abhängigkeits-Impact-Warnung.
+              await guardedRun((confirm) => deleteVm(vm.vmid, vm.node, { confirm }), 'Löschen')
               showOk(`VM ${vm.vmid} wird gelöscht.`)
               onRefresh?.()
             } catch (err) {
+              if (err?.cancelled) { setDeleteBusy(null); return }
               const s = err.response?.status
               const d = err.response?.data?.detail
               showErr(

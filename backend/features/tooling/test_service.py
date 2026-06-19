@@ -208,3 +208,93 @@ def test_build_response_includes_all_tools(svc):
     resp = svc.build_response()
     assert "ansible" in resp
     assert "packer" in resp
+
+
+# ── PROJ-66 Phase 2: Plus-Runner-Dispatch + Rate-Limit-Verallgemeinerung ──────
+
+def _make_tofu_result(status="ready"):
+    return CheckResult(
+        status=status,
+        version="1.9.1",
+        stdout="=== tofu version ===\nOpenTofu v1.9.1",
+        stderr="",
+        checked_at=datetime.now(timezone.utc),
+    )
+
+
+def _patch_tofu_hook(monkeypatch, runner):
+    """Lässt den Plus-Hook eine Tofu-Config mit Runner-Callable liefern."""
+    from backend.core.plus_protocol import plus_behavior
+
+    cfg = [{"tool_id": "opentofu", "display_name": "OpenTofu", "runner": runner}]
+    monkeypatch.setattr(plus_behavior, "get_additional_tooling_checks", lambda: cfg)
+
+
+def test_extra_runner_registered_from_hook(svc, monkeypatch):
+    """_init_tools() legt den Runner-Callable in _extra_runners ab (§B)."""
+    async def fake(): return _make_tofu_result()
+
+    _patch_tofu_hook(monkeypatch, fake)
+    svc._init_tools()
+
+    assert "opentofu" in svc._known_tools
+    assert "opentofu" in svc._cache
+    assert svc._extra_runners["opentofu"] is fake
+
+
+@pytest.mark.asyncio
+async def test_run_tool_dispatches_to_extra_runner(svc, monkeypatch):
+    """_run_tool() führt für ein Plus-Tool den mitgebrachten Runner aus (AC-P2-DISPATCH-1)."""
+    async def fake(): return _make_tofu_result("degraded")
+
+    _patch_tofu_hook(monkeypatch, fake)
+    svc._init_tools()
+
+    result = await svc._run_tool("opentofu")
+    assert result is not None
+    assert result.status == "degraded"
+    assert result.version == "1.9.1"
+
+
+@pytest.mark.asyncio
+async def test_core_dispatch_unchanged_with_plus_tool(svc, monkeypatch):
+    """Core-Tools laufen weiter über _RUNNERS, unberührt vom Plus-Tool (AC-P2-DISPATCH-2)."""
+    async def fake(): return _make_tofu_result()
+
+    _patch_tofu_hook(monkeypatch, fake)
+    _mock_runners(svc, {})
+    await svc.run_all_checks(bypass_cache=True)
+
+    assert svc._cache["ansible"].status == "ready"
+    assert svc._cache["packer"].status == "ready"
+    assert svc._cache["opentofu"].status == "ready"
+
+
+def test_get_cached_includes_hook_tool(svc, monkeypatch):
+    """get_cached() ruft _init_tools() → tofu erscheint (als unknown) vor erstem Check."""
+    async def fake(): return _make_tofu_result()
+
+    _patch_tofu_hook(monkeypatch, fake)
+    cache = svc.get_cached()
+    assert "opentofu" in cache
+    assert cache["opentofu"].status == "unknown"
+
+
+def test_known_tools_property_includes_hook_tool(svc, monkeypatch):
+    async def fake(): return _make_tofu_result()
+
+    _patch_tofu_hook(monkeypatch, fake)
+    assert "opentofu" in svc.known_tools
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_covers_tofu(svc, monkeypatch):
+    """force_recheck markiert auch tofu → Recheck-Pfad rate-limited (AC-P2-DISPATCH-3)."""
+    async def fake(): return _make_tofu_result()
+
+    _patch_tofu_hook(monkeypatch, fake)
+    _mock_runners(svc, {})
+
+    await svc.force_recheck(user_id=42)
+    # tofu wurde mit-markiert → zweiter Recheck innerhalb 30s ist limitiert
+    assert svc.check_rate_limit(42, "opentofu") is not None

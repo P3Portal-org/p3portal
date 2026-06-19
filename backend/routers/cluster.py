@@ -86,6 +86,31 @@ async def _alert_vms_callback(node_id: int, _endpoint: str, data: list) -> None:
         )
     except Exception:
         pass
+    # PROJ-83: persistierten Ansible-Host-Zustand für verschwundene VMs/LXC bereinigen
+    try:
+        from backend.features.ansible_inventory import host_state as _ah
+        still_visible_kinds: set[tuple[int, str]] = {
+            (int(r.get("vmid", -1)), str(r.get("type", "qemu")))
+            for r in (data or [])
+            if r.get("vmid") is not None
+        }
+        await _ah.delete_vanished(node_id, still_visible_kinds)
+    except Exception:
+        pass
+    # PROJ-96: VM-Abhängigkeits-Kanten verschwundener VMs als „verwaist" markieren.
+    # Nur nach erfolgreichem Refresh (on_fresh_data) → eine offline-Installation
+    # verwaist nichts fälschlich (EC-6).
+    try:
+        still_visible_vmids: set[int] = {
+            int(r.get("vmid", -1))
+            for r in (data or [])
+            if r.get("vmid") is not None
+        }
+        await plus_behavior.on_cluster_refresh_vanished_resources_dependencies(
+            still_visible_vmids, node_id
+        )
+    except Exception:
+        pass
 
 
 def _cluster_http_exc(exc: httpx.HTTPStatusError, auth: ProxmoxAuth) -> HTTPException:
@@ -192,12 +217,15 @@ async def _filter_nodes_for_rbac_user(user_id: int, nodes: list[NodeInfo]) -> li
     return [n for n in nodes if n.portal_node_id in assigned_node_ids]
 
 
-@router.get("/nodes", response_model=list[NodeInfo])
-async def get_nodes(
+async def fetch_nodes(
+    current_user: CurrentUser,
     force: bool = False,
-    current_user: CurrentUser = Depends(require_not_restricted),
-    _scope: CurrentUser = Depends(require_scope_for_upk("cluster:read")),
+    raise_on_empty: bool = True,
 ) -> list[NodeInfo]:
+    """Single-source node fan-out (PROJ-30/33) reused by the dashboard *and*
+    PROJ-75 topology. Set ``raise_on_empty=False`` to get best-effort behaviour
+    (return whatever installations are reachable, no 502) for the topology view.
+    """
     plus = plus_behavior.can_use_multi_node_dashboard()
 
     # PROJ-30 + PROJ-33: Plus + local → fan-out with per-node cache
@@ -225,7 +253,7 @@ async def get_nodes(
                 info.portal_node_id = node_row.id
                 info.response_time_ms = duration_ms
                 nodes.append(info)
-        if not nodes:
+        if not nodes and raise_on_empty:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not reach any Proxmox installation",
@@ -281,12 +309,25 @@ async def get_nodes(
     return [NodeInfo.model_validate(r) for r in raw]
 
 
-@router.get("/vms", response_model=list[VmInfo])
-async def get_vms(
+@router.get("/nodes", response_model=list[NodeInfo])
+async def get_nodes(
     force: bool = False,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_not_restricted),
     _scope: CurrentUser = Depends(require_scope_for_upk("cluster:read")),
-) -> list[VmInfo]:
+) -> list[NodeInfo]:
+    return await fetch_nodes(current_user, force=force)
+
+
+async def _collect_vm_resources(
+    current_user: CurrentUser,
+    force: bool = False,
+    raise_on_empty: bool = True,
+) -> tuple[list[VmInfo], dict[int, tuple[ProxmoxClient, ProxmoxAuth]]]:
+    """Fan-out raw VM/LXC resources (PROJ-30/33) → (vms, vm_client_map).
+
+    ``vm_client_map`` maps ``id(vm)`` → (client, auth) for follow-up per-VM
+    lookups (IP / ctime). Shared by the dashboard and PROJ-75 topology.
+    """
     plus = plus_behavior.can_use_multi_node_dashboard()
 
     # vm_client_map: id(vm) → (client, auth) for per-VM IP/ctime lookups
@@ -317,7 +358,7 @@ async def get_vms(
                 vm.portal_node_id = node_row.id
                 vms.append(vm)
                 vm_client_map[id(vm)] = (node_client, node_auth)
-        if not vms:
+        if not vms and raise_on_empty:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Could not reach any Proxmox installation",
@@ -367,36 +408,56 @@ async def get_vms(
         for vm in vms:
             vm_client_map[id(vm)] = (proxmox_client, auth)
 
-    # IP-Lookup parallel für alle laufenden VMs (per-VM client für Multi-Node-Korrektheit)
+    return vms, vm_client_map
+
+
+async def _lookup_vm_ips(
+    vms: list[VmInfo], vm_client_map: dict[int, tuple[ProxmoxClient, ProxmoxAuth]]
+) -> None:
+    """Enrich running VMs/LXCs with their first non-loopback IPv4 (in-place)."""
     running = [vm for vm in vms if vm.status == "running"]
-    if running:
-        ip_results = await asyncio.gather(
-            *[vm_client_map[id(vm)][0].get_vm_ip(
-                vm_client_map[id(vm)][1], vm.node, vm.vmid, vm.type,
-            ) for vm in running],
-            return_exceptions=True,
-        )
-        for vm, result in zip(running, ip_results):
-            if isinstance(result, str):
-                vm.ip = result
+    if not running:
+        return
+    ip_results = await asyncio.gather(
+        *[vm_client_map[id(vm)][0].get_vm_ip(
+            vm_client_map[id(vm)][1], vm.node, vm.vmid, vm.type,
+        ) for vm in running],
+        return_exceptions=True,
+    )
+    for vm, result in zip(running, ip_results):
+        if isinstance(result, str):
+            vm.ip = result
 
-    # ctime-Lookup parallel für alle Template-VMs
+
+async def _lookup_template_ctimes(
+    vms: list[VmInfo], vm_client_map: dict[int, tuple[ProxmoxClient, ProxmoxAuth]]
+) -> None:
+    """Enrich template VMs with their creation ctime (in-place)."""
     templates = [vm for vm in vms if vm.template == 1]
-    if templates:
-        ctime_results = await asyncio.gather(
-            *[vm_client_map[id(vm)][0].get_vm_ctime(
-                vm_client_map[id(vm)][1], vm.node, vm.vmid, vm.type,
-            ) for vm in templates],
-            return_exceptions=True,
-        )
-        for vm, result in zip(templates, ctime_results):
-            if isinstance(result, int):
-                vm.ctime = result
+    if not templates:
+        return
+    ctime_results = await asyncio.gather(
+        *[vm_client_map[id(vm)][0].get_vm_ctime(
+            vm_client_map[id(vm)][1], vm.node, vm.vmid, vm.type,
+        ) for vm in templates],
+        return_exceptions=True,
+    )
+    for vm, result in zip(templates, ctime_results):
+        if isinstance(result, int):
+            vm.ctime = result
 
-    # RBAC filtering:
-    # - restricted role: always filtered (no assignments → empty list)
-    # - viewer/operator with assignments: filtered to assigned VMs only
-    # - viewer/operator without assignments: full list (backwards compat)
+
+async def apply_vm_rbac_filter(
+    current_user: CurrentUser, vms: list[VmInfo]
+) -> list[VmInfo]:
+    """Single-source RBAC filter (PROJ-12) reused by the dashboard *and*
+    PROJ-75 topology — guarantees no divergence (AC-RBAC-4).
+
+    - admin / operator / proxmox auth: full list
+    - restricted role: empty (no assignments → sees nothing)
+    - viewer/operator with assignments: only assigned VMs (sets ``permissions``)
+    - viewer/operator without assignments: full list (backwards compat)
+    """
     if current_user.auth_type == "local" and current_user.role not in ("admin", "operator"):
         user = await get_user_by_username(current_user.username)
         if user is not None:
@@ -419,6 +480,39 @@ async def get_vms(
                 return filtered
 
     return vms
+
+
+async def fetch_visible_vm_resources(
+    current_user: CurrentUser,
+    force: bool = False,
+    with_ip: bool = False,
+) -> list[VmInfo]:
+    """RBAC-filtered VM/LXC resources for the current user — single-source for
+    the dashboard *and* PROJ-75 topology.
+
+    ``with_ip=False`` (topology default) skips the N per-VM IP calls; the
+    topology resource-bars come from cluster/resources (cpu/mem/disk) and IPs
+    are loaded on-demand in the detail panel. ``raise_on_empty=False`` makes the
+    fan-out best-effort (no 502 when an installation has 0 guests / is offline).
+    """
+    vms, vm_client_map = await _collect_vm_resources(
+        current_user, force=force, raise_on_empty=False
+    )
+    if with_ip:
+        await _lookup_vm_ips(vms, vm_client_map)
+    return await apply_vm_rbac_filter(current_user, vms)
+
+
+@router.get("/vms", response_model=list[VmInfo])
+async def get_vms(
+    force: bool = False,
+    current_user: CurrentUser = Depends(get_current_user),
+    _scope: CurrentUser = Depends(require_scope_for_upk("cluster:read")),
+) -> list[VmInfo]:
+    vms, vm_client_map = await _collect_vm_resources(current_user, force=force)
+    await _lookup_vm_ips(vms, vm_client_map)
+    await _lookup_template_ctimes(vms, vm_client_map)
+    return await apply_vm_rbac_filter(current_user, vms)
 
 
 @router.get("/cache-stats")
@@ -762,12 +856,14 @@ def _parse_disks(config: dict, vm_type: str) -> list[DiskConfig]:
         first_part = val.split(",")[0]
         storage = first_part.split(":")[0] if ":" in first_part else ""
         size = ""
+        serial = None
         for part in val.split(","):
             if part.startswith("size="):
                 size = part.split("=", 1)[1]
-                break
+            elif part.startswith("serial="):
+                serial = part.split("=", 1)[1]
         if storage:
-            disks.append(DiskConfig(id=key, storage=storage, size=size))
+            disks.append(DiskConfig(id=key, storage=storage, size=size, serial=serial))
     return disks
 
 
@@ -1076,9 +1172,17 @@ async def list_lxc_templates(
             return {"available": [], "installed": [], "failed_nodes": []}
 
         async def _fetch_node_templates(node_row):
-            token = _extract_token(node_row, "viewer")
+            # admin→operator→viewer: Listen des vztmpl-Storage-Inhalts braucht
+            # Datastore.Audit, das der Viewer-Token meist nicht hat → 403 →
+            # still leer. Stärkstes verfügbares Read-Token wählen (analog
+            # iso_service / Netzwerk-Tab / lxc-template-storages).
+            token = (
+                _extract_token(node_row, "admin")
+                or _extract_token(node_row, "operator")
+                or _extract_token(node_row, "viewer")
+            )
             if not token:
-                raise ValueError(f"no viewer token for {node_row.name}")
+                raise ValueError(f"no read token for {node_row.name}")
             nc = ProxmoxClient(base_url=node_row.url, verify_ssl=node_row.verify_ssl)
             na = ProxmoxAuth(kind="token", value=token.token_id, secret=token.token_secret)
             base = nc._base
@@ -1402,15 +1506,27 @@ async def get_node_vm_options(
             logger.warning("vm-options: %s for node '%s' failed: %s", label, node, exc)
             return default
 
-    bridges, cpu_types, tags, node_status = await asyncio.gather(
+    bridges, cpu_types, tags, node_status, vnets = await asyncio.gather(
         _safe(client.get_node_bridges(auth, node), [], "bridges"),
         _safe(client.get_node_cpu_types(auth, node), [], "cpu_types"),
         _safe(client.get_used_tags(auth, node), [], "tags"),
         _safe(client.get_node_status(auth, node), {}, "status"),
+        # SDN-VNets sind cluster-weit (/cluster/sdn/vnets) und können – wie eine
+        # Bridge – im Gast-Netz referenziert werden (net0: bridge=<vnet>). Best-
+        # effort: braucht ggf. SDN-Read-Recht, sonst leere Liste → Freitext.
+        _safe(client.get_sdn_vnets(auth), [], "vnets"),
     )
     status_data = node_status if isinstance(node_status, dict) else {}
+    vnet_names = sorted({
+        str(v.get("vnet"))
+        for v in (vnets if isinstance(vnets, list) else [])
+        if isinstance(v, dict)
+        and v.get("vnet")
+        and str(v.get("state", "")).lower() != "deleted"
+    })
     return {
         "bridges": bridges,
+        "vnets": vnet_names,             # PROJ-79/80: auswählbare SDN-VNets
         "cpu_types": cpu_types,
         "tags": tags,
         "maxcpu": status_data.get("maxcpu"),   # physische Kerne des Nodes

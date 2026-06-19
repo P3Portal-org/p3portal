@@ -210,7 +210,7 @@ async def create_node(
                 ":aid, :asec, "
                 ":pid, :psec, "
                 ":tofuid, :tofusec, "
-                ":cnodes, :poll, :def, :now, :by)"
+                ":cnodes, :poll, :def, :now, :by) RETURNING id"
             ),
             {
                 "name": name, "url": url.rstrip("/"), "pnode": proxmox_node,
@@ -226,7 +226,8 @@ async def create_node(
                 "def": is_def, "now": now, "by": created_by,
             },
         )
-        new_id = result.lastrowid
+        # RETURNING id statt cursor.lastrowid (asyncpg-kompatibel, S562/S588).
+        new_id = result.scalar()
         await session.commit()
     node = await get_node(new_id)
     assert node is not None

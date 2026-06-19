@@ -21,12 +21,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from backend.core.deps import CurrentUser, require_admin_or
+from backend.features.api_surface.deps import require_scope_for_upk
 from backend.models.vms import BackupJobCreateRequest, BackupJobUpdateRequest, BackupRetention, BackupSchedule
 from backend.services.audit_service import write_audit_log
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/backup-jobs", tags=["backup-jobs"])
+
+# PROJ-97: upk_-Scope-Gates (No-Op für JWT). GET → :read, Mutationen → :write.
+_SCOPE_READ = Depends(require_scope_for_upk("backup_jobs:read"))
+_SCOPE_WRITE = Depends(require_scope_for_upk("backup_jobs:write"))
 
 
 # ── Error mapper ──────────────────────────────────────────────────────────────
@@ -129,7 +134,7 @@ async def _resolve_write_auth(current_user: CurrentUser, node: str):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=BackupJobsListResponse)
+@router.get("", response_model=BackupJobsListResponse, dependencies=[_SCOPE_READ])
 async def list_backup_jobs(
     node: str = Query(..., description="Proxmox node name for installation context"),
     current_user: CurrentUser = Depends(require_admin_or("manage_backup_jobs")),
@@ -180,7 +185,7 @@ async def list_backup_jobs(
         )
 
 
-@router.get("/pools", response_model=list[dict])
+@router.get("/pools", response_model=list[dict], dependencies=[_SCOPE_READ])
 async def list_pools(
     node: str = Query(..., description="Proxmox node for installation context"),
     current_user: CurrentUser = Depends(require_admin_or("manage_backup_jobs")),
@@ -193,7 +198,7 @@ async def list_pools(
         return []
 
 
-@router.get("/storages", response_model=list[dict])
+@router.get("/storages", response_model=list[dict], dependencies=[_SCOPE_READ])
 async def list_storages(
     node: str = Query(..., description="Proxmox node whose backup-capable storages to list"),
     current_user: CurrentUser = Depends(require_admin_or("manage_backup_jobs")),
@@ -222,7 +227,7 @@ async def list_storages(
         return []
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=dict)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=dict, dependencies=[_SCOPE_WRITE])
 async def create_backup_job(
     body: BackupJobCreateRequest,
     node: str = Query(...),
@@ -251,7 +256,7 @@ async def create_backup_job(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not reach Proxmox API")
 
 
-@router.put("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/{job_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[_SCOPE_WRITE])
 async def update_backup_job(
     job_id: str,
     body: BackupJobUpdateRequest,
@@ -280,7 +285,7 @@ async def update_backup_job(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not reach Proxmox API")
 
 
-@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[_SCOPE_WRITE])
 async def delete_backup_job(
     job_id: str,
     node: str = Query(...),
@@ -302,7 +307,7 @@ async def delete_backup_job(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Could not reach Proxmox API")
 
 
-@router.post("/{job_id}/run", response_model=RunBackupNowResponse)
+@router.post("/{job_id}/run", response_model=RunBackupNowResponse, dependencies=[_SCOPE_WRITE])
 async def run_backup_now(
     job_id: str,
     node: str = Query(...),

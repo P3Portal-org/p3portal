@@ -58,6 +58,7 @@ def list_playbooks() -> list[PlaybookSummary]:
             description=meta.description,
             required_role=meta.required_role,
             category=meta.category,
+            targets=meta.targets,
         )
         for pid, meta in _load_all_metas()
     ]
@@ -74,6 +75,7 @@ def get_playbook(playbook_id: str) -> PlaybookDetail | None:
                 category=meta.category,
                 parameters=meta.parameters,
                 presets=meta.presets,
+                targets=meta.targets,
             )
     return None
 

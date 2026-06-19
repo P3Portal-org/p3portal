@@ -4,6 +4,7 @@ import SshKeyField from './SshKeyField'
 import TargetVmSelector from './TargetVmSelector'
 import ProxmoxNodeSelector from './ProxmoxNodeSelector'
 import ProxmoxTemplateSelector from './ProxmoxTemplateSelector'
+import ProxmoxBridgeSelector from './ProxmoxBridgeSelector'
 import IpConfigField from './IpConfigField'
 import VmAccessField from './VmAccessField'
 import { getPlaybookNextVmid } from '../../api/cluster'
@@ -92,6 +93,17 @@ export default function PlaybookFormField({ param, value, onChange, error, formV
   if (param.type === 'proxmox_template') {
     return (
       <ProxmoxTemplateSelector
+        param={param}
+        value={value}
+        onChange={onChange}
+        error={error}
+        nodeValue={formValues?.proxmox_node ?? null}
+      />
+    )
+  }
+  if (param.type === 'proxmox_bridge') {
+    return (
+      <ProxmoxBridgeSelector
         param={param}
         value={value}
         onChange={onChange}

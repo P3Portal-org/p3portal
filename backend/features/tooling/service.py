@@ -54,6 +54,9 @@ class ToolingHealthService:
         # (user_id_or_none, tool_id) → last_recheck_at (für Rate-Limit)
         self._rate_limits: dict[tuple, datetime] = {}
         self._known_tools: list[str] = list(_CORE_TOOLS)  # wird in _init_tools() erweitert
+        # PROJ-66 Phase 2: Plus-gelieferte Tools bringen ihren eigenen Runner mit
+        # (Callable aus der Hook-Config) → tool_id → async Runner → CheckResult.
+        self._extra_runners: dict[str, object] = {}
 
     # ── Interne Tool-Initialisierung mit Plus-Hook ───────────────────────────
 
@@ -67,20 +70,42 @@ class ToolingHealthService:
 
         for cfg in extra:
             # cfg ist ToolCheckConfig oder dict mit 'tool_id'
-            tool_id = cfg.get("tool_id") if isinstance(cfg, dict) else getattr(cfg, "tool_id", None)
+            is_dict = isinstance(cfg, dict)
+            tool_id = cfg.get("tool_id") if is_dict else getattr(cfg, "tool_id", None)
             if not tool_id:
                 continue
             if tool_id in _CORE_TOOLS:
                 logger.warning("Tooling: Plus-Hook liefert tool_id '%s' – Kollision mit Core-Tool, ignoriert (EC-12)", tool_id)
                 continue
+            # PROJ-66 Phase 2: Plus-Tool bringt eigenen Runner-Callable mit (§B).
+            runner = cfg.get("runner") if is_dict else getattr(cfg, "runner", None)
+            if runner is not None:
+                self._extra_runners[tool_id] = runner
             if tool_id not in self._known_tools:
                 self._known_tools.append(tool_id)
                 self._cache[tool_id] = ToolStatus(tool=tool_id, status="unknown")
 
     # ── Öffentliche API ──────────────────────────────────────────────────────
 
+    @property
+    def known_tools(self) -> list[str]:
+        """Liste der bekannten Tool-IDs (Core + Plus-Hook). Idempotent.
+
+        Stellt sicher, dass die Plus-Hook-Tools (PROJ-66 Phase 2: tofu) bereits
+        registriert sind, bevor der Recheck-Rate-Limit-Pfad im Router darüber
+        iteriert (AC-P2-DISPATCH-3).
+        """
+        self._init_tools()
+        return list(self._known_tools)
+
     def get_cached(self) -> dict[str, ToolStatus]:
-        """Gibt gecachten Status zurück (kein Lock, kein Subprocess)."""
+        """Gibt gecachten Status zurück (kein Lock, kein Subprocess).
+
+        Ruft _init_tools(), damit Plus-Hook-Tools (tofu) auch vor dem ersten
+        Hintergrund-Check im /status erscheinen (als 'unknown', generisch
+        gerendert) – konsistent mit ansible/packer.
+        """
+        self._init_tools()
         return dict(self._cache)
 
     async def force_recheck(self, user_id: int | None = None) -> dict[str, ToolStatus]:
@@ -119,13 +144,16 @@ class ToolingHealthService:
         """
         self._init_tools()
 
-        # Rate-Limit prüfen und sofort setzen (vor dem Subprocess)
+        # Rate-Limit prüfen und sofort setzen (vor dem Subprocess).
+        # PROJ-66 Phase 2: über _known_tools statt _CORE_TOOLS, damit Plus-Tools
+        # (tofu) ebenfalls rate-limited werden (AC-P2-DISPATCH-3, EC-P2-7).
+        # _init_tools() lief oben → _known_tools enthält bereits die Hook-Tools.
         if bypass_cache and user_id is not None:
-            for tool_id in _CORE_TOOLS:
+            for tool_id in self._known_tools:
                 retry_after = self.check_rate_limit(user_id, tool_id)
                 if retry_after is not None:
                     raise ValueError(f"rate_limited:{tool_id}:{retry_after}")
-            for tool_id in _CORE_TOOLS:
+            for tool_id in self._known_tools:
                 self._mark_rate_limit(user_id, tool_id)
 
         await asyncio.gather(
@@ -166,13 +194,19 @@ class ToolingHealthService:
         import backend.features.tooling.runners as _runners_mod
 
         runner_name = _RUNNERS.get(tool_id)
-        if runner_name is None:
-            logger.warning("Kein Runner für tool_id '%s'", tool_id)
-            return None
-        runner = getattr(_runners_mod, runner_name, None)
-        if runner is None:
-            logger.warning("Runner-Funktion '%s' nicht gefunden", runner_name)
-            return None
+        if runner_name is not None:
+            # Core-Tool: dynamisch aus runners-Modul (monkeypatch-fähig, Phase 1).
+            runner = getattr(_runners_mod, runner_name, None)
+            if runner is None:
+                logger.warning("Runner-Funktion '%s' nicht gefunden", runner_name)
+                return None
+        else:
+            # PROJ-66 Phase 2: Plus-geliefertes Tool führt seinen mitgebrachten
+            # Runner-Callable aus (additiv, Core-Pfad unberührt – AC-P2-DISPATCH).
+            runner = self._extra_runners.get(tool_id)
+            if runner is None:
+                logger.warning("Kein Runner für tool_id '%s'", tool_id)
+                return None
         try:
             return await runner()
         except Exception as exc:

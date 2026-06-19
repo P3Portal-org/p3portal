@@ -359,3 +359,33 @@ Combined field for VM access configuration (cloud-init): root password, user con
 | `min` | no | Minimum value (only for `type: integer`) |
 | `max` | no | Maximum value (only for `type: integer`) |
 | `options` | no | Selection options (only for `type: dropdown`) |
+
+---
+
+## Top-level playbook properties (PROJ-83)
+
+In addition to the parameter list, a playbook's `meta.yaml` supports two top-level
+flags that mark it as an **in-guest playbook** (run *inside* a VM/LXC over SSH
+instead of `hosts: localhost`):
+
+| Property | Required | Description |
+|---|---|---|
+| `targets` | no | `localhost` (default) or `guest`. `guest` enables the scope + host selector in the playbook form and runs the playbook against the dynamic inventory over SSH. Default `localhost` is fully backwards compatible. |
+| `become` | no | `true`/`false` (default `false`). When `true`, the run uses `--become` (passwordless `sudo` via the `p3-ansible` service user). No become password is stored or asked for. |
+
+```yaml
+name: "Install Docker"
+description: "Installs Docker inside the target guests"
+playbook: "configure_docker.yml"
+targets: guest        # run inside the guest, not on localhost
+become: true          # needs root in the guest
+parameters: []
+```
+
+> **Convention:** a *guest playbook* is `hosts: <something other than localhost>`
+> (commonly `hosts: all` or `hosts: managed`). P3 only inspects the `targets`
+> flag, not the playbook body. The generated inventory contains only the selected,
+> *managed* target hosts, so `hosts: all` hits exactly those.
+
+See [ansible-inventory.md](ansible-inventory.md) for the full model (scopes, key
+tiers, the `p3-ansible` service user, onboarding block, host-key TOFU).

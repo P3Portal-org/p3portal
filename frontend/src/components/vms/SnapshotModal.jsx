@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getSnapshots, createSnapshot, rollbackSnapshot, deleteSnapshot } from '../../api/vms'
 import ConfirmModal from '../common/ConfirmModal'
+import { useDependencyImpactGuard } from './useDependencyImpactGuard'
 
 const SNAP_NAME_RE = /^[a-zA-Z0-9_-]{1,40}$/
 
@@ -28,6 +29,7 @@ export default function SnapshotModal({ vm, onClose }) {
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState(null)          // `rollback:name` | `delete:name`
   const [confirm, setConfirm] = useState(null)    // { type, name }
+  const { guardedRun, impactModal } = useDependencyImpactGuard()  // PROJ-96
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -67,10 +69,12 @@ export default function SnapshotModal({ vm, onClose }) {
     setError('')
     setConfirm(null)
     try {
-      if (type === 'rollback') await rollbackSnapshot(vm.vmid, name, vm.node)
+      // PROJ-96: Rollback durchläuft die Abhängigkeits-Impact-Warnung.
+      if (type === 'rollback') await guardedRun((confirmFlag) => rollbackSnapshot(vm.vmid, name, vm.node, { confirm: confirmFlag }), 'Rollback')
       if (type === 'delete')   await deleteSnapshot(vm.vmid, name, vm.node)
       await load()
     } catch (err) {
+      if (err?.cancelled) { setBusy(null); return }
       setError(errMsg(err))
     } finally {
       setBusy(null)
@@ -199,6 +203,8 @@ export default function SnapshotModal({ vm, onClose }) {
         <span className="rq hidden" aria-hidden="true" />
       </div>
     </div>
+
+    {impactModal /* PROJ-96: Abhängigkeits-Impact-Dialog beim Rollback */}
 
     {confirm && (
       <ConfirmModal

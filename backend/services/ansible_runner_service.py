@@ -155,6 +155,32 @@ async def run_ansible_job(
         token_secret_override=tsec_override,
     )
 
+    # PROJ-83: cloud-init Onboarding-Extravars beim Deploy injizieren (Opt-out-Haken).
+    # Liefert die vendor-data (Service-User p3-ansible + Keys) an das Deploy-Playbook;
+    # greift nur, wenn der Haken gesetzt war UND ein Verwaltungs-Key existiert. user-data
+    # bleibt unangetastet (Proxmox generiert ciuser/sshkeys weiter selbst, AC-KEY-6).
+    try:
+        async with get_db() as _session:
+            _jrow = (await _session.execute(
+                text("SELECT ansible_manage, ansible_global_opt_in, auto_owner_user_id, "
+                     "deploy_category, pool_id FROM jobs WHERE id = :id"),
+                {"id": job_id},
+            )).mappings().fetchone()
+        if (_jrow and _jrow["ansible_manage"]
+                and _jrow["deploy_category"] in ("vm_deployment", "lxc_deployment")):
+            from backend.features.ansible_inventory.deploy_hook import (
+                build_deploy_onboarding_extravars,
+            )
+            _ob = await build_deploy_onboarding_extravars(
+                _jrow["auto_owner_user_id"], _jrow["pool_id"],
+                bool(_jrow["ansible_global_opt_in"]),
+            )
+            for _k, _v in _ob.items():
+                extravars.setdefault(_k, _v)
+    except Exception as _exc:
+        import logging
+        logging.getLogger(__name__).warning("PROJ-83: onboarding extravars failed for job %s: %s", job_id, _exc)
+
     success = False
     try:
         success = await _run_in_executor(playbook, extravars, log_path)
@@ -197,6 +223,15 @@ async def run_ansible_job(
         except Exception as exc:
             import logging
             logging.getLogger(__name__).warning("PROJ-62: pool deploy_hook error for job %s: %s", job_id, exc)
+
+    # PROJ-83: Host-Zustand aufzeichnen (ssh_managed) nach erfolgreichem Deploy
+    if job_status == "success":
+        try:
+            from backend.features.ansible_inventory.deploy_hook import on_deploy_success_ansible
+            await on_deploy_success_ansible(job_id)
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning("PROJ-83: ansible deploy_hook error for job %s: %s", job_id, exc)
 
     # PROJ-44: Fire webhook if requested (callback_url set by caller)
     if callback_url:

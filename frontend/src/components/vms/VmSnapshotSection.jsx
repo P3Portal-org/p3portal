@@ -3,6 +3,7 @@ import { Suspense, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createSnapshot, rollbackSnapshot, deleteSnapshot } from '../../api/vms'
 import ConfirmModal from '../common/ConfirmModal'
+import { useDependencyImpactGuard } from './useDependencyImpactGuard'
 // PROJ-77: Auto-Badge für p3auto_*-Snapshots (Plus-only Bulk-Lookup via Registry)
 import { PlusComponents } from '../../plus'
 import { useCapability } from '../../hooks/useCapability'
@@ -93,6 +94,7 @@ export default function VmSnapshotSection({ vmid, node, snapshots, isOperator, i
   const [confirmTarget, setConfirmTarget] = useState(null) // { type: 'rollback'|'delete', name: string }
   const [actionErr, setActionErr]       = useState('')
   const [showForm, setShowForm]         = useState(false)
+  const { guardedRun, impactModal }     = useDependencyImpactGuard()  // PROJ-96
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -118,10 +120,12 @@ export default function VmSnapshotSection({ vmid, node, snapshots, isOperator, i
     setBusy(`${type}:${name}`)
     setActionErr('')
     try {
-      if (type === 'rollback') await rollbackSnapshot(vmid, name, node)
+      // PROJ-96: Rollback durchläuft die Abhängigkeits-Impact-Warnung.
+      if (type === 'rollback') await guardedRun((confirm) => rollbackSnapshot(vmid, name, node, { confirm }), 'Rollback')
       if (type === 'delete')   await deleteSnapshot(vmid, name, node)
       await onReload()
     } catch (err) {
+      if (err?.cancelled) { setBusy(null); return }
       setActionErr(errMsg(err))
     } finally {
       setBusy(null)
@@ -216,6 +220,8 @@ export default function VmSnapshotSection({ vmid, node, snapshots, isOperator, i
       ) : (
         <SnapshotList snapshots={snapshots} fmtTime={fmtTime} isOperator={isOperator} isTemplate={isTemplate} busy={busy} setConfirmTarget={setConfirmTarget} autoLookup={{}} />
       )}
+
+      {impactModal /* PROJ-96: Abhängigkeits-Impact-Dialog beim Rollback */}
 
       {confirmTarget && (
         <ConfirmModal

@@ -9,6 +9,11 @@ sqlalchemy[asyncio]>=2.0.0
 aiosqlite>=0.20.0
 alembic>=1.13.0
 asyncpg>=0.29.0
+# psycopg2-binary: synchroner PostgreSQL-Treiber. asyncpg ist async-only;
+# get_sync_engine() (db/database.py) baut für die Plus-Modul-Tabellen
+# (ensure_plus_db_tables, metadata.create_all) eine synchrone Engine, die auf
+# PostgreSQL psycopg2 benötigt. Auf SQLite wird der eingebaute pysqlite genutzt.
+psycopg2-binary>=2.9.0
 # aiomysql>=0.2.0    # MariaDB/MySQL (bei Bedarf installieren)
 pyyaml>=6.0.0
 python-multipart>=0.0.9

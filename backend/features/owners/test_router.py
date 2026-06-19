@@ -266,8 +266,11 @@ class TestOwnerConfig:
         now = datetime.now(timezone.utc).isoformat()
         async with get_db() as db:
             await db.execute(
-                text("INSERT OR REPLACE INTO portal_config (key, value, is_secret, updated_at, updated_by) "
-                     "VALUES ('owner_auto_assign_enabled', 'false', 0, :now, 'test')"),
+                text("INSERT INTO portal_config (key, value, is_secret, updated_at, updated_by) "
+                     "VALUES ('owner_auto_assign_enabled', 'false', 0, :now, 'test') "
+                     "ON CONFLICT (key) DO UPDATE SET value=excluded.value, "
+                     "is_secret=excluded.is_secret, updated_at=excluded.updated_at, "
+                     "updated_by=excluded.updated_by"),
                 {"now": now},
             )
             await db.commit()
@@ -288,8 +291,11 @@ class TestOwnerConfig:
         now = datetime.now(timezone.utc).isoformat()
         async with get_db() as db:
             await db.execute(
-                text("INSERT OR REPLACE INTO portal_config (key, value, is_secret, updated_at, updated_by) "
-                     "VALUES ('owner_auto_assign_categories', :val, 0, :now, 'test')"),
+                text("INSERT INTO portal_config (key, value, is_secret, updated_at, updated_by) "
+                     "VALUES ('owner_auto_assign_categories', :val, 0, :now, 'test') "
+                     "ON CONFLICT (key) DO UPDATE SET value=excluded.value, "
+                     "is_secret=excluded.is_secret, updated_at=excluded.updated_at, "
+                     "updated_by=excluded.updated_by"),
                 {"val": json.dumps(["vm_deployment"]), "now": now},
             )
             await db.commit()

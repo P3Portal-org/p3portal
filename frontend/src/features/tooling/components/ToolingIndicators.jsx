@@ -3,15 +3,16 @@
 import { useToolingStatus } from '../hooks'
 import ToolingIndicator from './ToolingIndicator'
 
-// Reihenfolge: hardcoded Core-Tools zuerst (alphabetisch), Plus-Tools danach (AC-UI-8)
-const CORE_ORDER = ['ansible', 'packer']
+// Reihenfolge: Core-Tools zuerst, dann bekannte Plus-Tools, dann unbekannte (AC-UI-8 / AC-P2-UI-3)
+// Ansible → Packer → OpenTofu (Tofu nach den Core-Tools, PROJ-66 Phase 2)
+const KNOWN_ORDER = ['ansible', 'packer', 'opentofu']
 
 function sortedTools(statusObj) {
   if (!statusObj) return []
   const keys = Object.keys(statusObj)
-  const core  = CORE_ORDER.filter(k => keys.includes(k))
-  const extra = keys.filter(k => !CORE_ORDER.includes(k)).sort()
-  return [...core, ...extra]
+  const known = KNOWN_ORDER.filter(k => keys.includes(k))
+  const extra = keys.filter(k => !KNOWN_ORDER.includes(k)).sort()
+  return [...known, ...extra]
 }
 
 export default function ToolingIndicators() {

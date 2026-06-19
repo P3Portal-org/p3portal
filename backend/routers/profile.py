@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from sqlalchemy.exc import IntegrityError
 
 from backend.core.config import settings
 from backend.core.deps import CurrentUser, get_current_user
@@ -220,13 +221,15 @@ async def add_my_ssh_key(
         key_id = await add_ssh_key_entry(
             current_user.username, current_user.auth_type, body.label, body.key
         )
-    except Exception as exc:
-        if "UNIQUE constraint failed" in str(exc):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Ein Key mit der Bezeichnung '{body.label}' existiert bereits.",
-            )
-        raise
+    except IntegrityError:
+        # uq_user_ssh_keys (username, label) verletzt → doppeltes Label.
+        # IntegrityError ist dialect-portabel (SQLite "UNIQUE constraint failed" +
+        # PostgreSQL "duplicate key value violates unique constraint") — vorher
+        # wurde nur die SQLite-Meldung gematcht → PG lieferte fälschlich 500.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ein Key mit der Bezeichnung '{body.label}' existiert bereits.",
+        )
     keys = await list_ssh_keys(current_user.username)
     entry = next((k for k in keys if k["id"] == key_id), None)
     if not entry:

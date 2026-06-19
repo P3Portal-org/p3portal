@@ -144,7 +144,7 @@ async def add_assignment(
                 text(
                     "INSERT INTO node_assignments "
                     "(node_id, subject_type, subject_id, role_preset_id, added_at, added_by) "
-                    "VALUES (:nid, :stype, :sid, :pid, :now, :by)"
+                    "VALUES (:nid, :stype, :sid, :pid, :now, :by) RETURNING id"
                 ),
                 {
                     "nid": node_id,
@@ -155,8 +155,9 @@ async def add_assignment(
                     "by": added_by,
                 },
             )
+            # RETURNING id statt cursor.lastrowid (asyncpg-kompatibel, S562/S588).
+            new_id = result.scalar()
             await db.commit()
-            new_id = result.lastrowid
         except IntegrityError:
             await db.rollback()
             raise ValueError("Dieses Subjekt hat bereits eine Zuweisung auf diesem Node.")

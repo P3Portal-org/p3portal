@@ -183,7 +183,8 @@ async def test_add_ssh_key_duplicate_label(client: AsyncClient):
         json={"label": "Laptop", "key": _VALID_KEY_2},
         headers=_auth(_LOCAL_TOKEN),
     )
-    assert resp.status_code in (409, 500)
+    # AC-SSH-1: doppeltes Label → 409 (nicht 500), dialect-portabel SQLite+PostgreSQL
+    assert resp.status_code == 409
 
 
 @pytest.mark.asyncio

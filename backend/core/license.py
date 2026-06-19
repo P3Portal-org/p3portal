@@ -20,8 +20,9 @@ import hashlib
 import hmac as _hmac
 import json
 import logging
+import time
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -35,7 +36,19 @@ VENDOR_SALT: bytes = bytes.fromhex(
 )
 
 _PLUS_TOKEN = b"P3PLUS_VALID_TOKEN"
+
+# PROJ-94: license status cache with a 60-second TTL (was: cached once forever).
+# A date-based trial must expire lazily without a restart, so the status is
+# re-evaluated at most once per minute. reset_license_cache() forces an immediate
+# re-evaluation (license upload / trial start / deactivate).
+_TTL_SECONDS = 60.0
 _cache: "LicenseStatus | None" = None
+_cache_loaded_at: float = 0.0
+
+# PROJ-94: duration of the opt-in Plus trial. Single source of truth — raising it
+# later is a one-line release. Honor-based (source-available); the legal boundary
+# stays LICENSE-PLUS.
+TRIAL_DURATION_DAYS = 30
 
 # PROJ-20: Core edition resource limits
 CORE_MAX_USERS = 6
@@ -72,12 +85,16 @@ def _normalize_edition(edition: str) -> str:
 
 @dataclass
 class LicenseStatus:
-    edition: str        # "plus_v1" | "plus_v2" | "core"
+    edition: str        # "plus_v1" | "plus_v2" | "core" | "plus_trial"
     valid: bool
     contact_name: str | None
     contact_email: str | None
     expiry: str | None
-    reason: str | None  # None | "decryption_failed" | "expired" | "missing" | "tampered"
+    reason: str | None  # None | "decryption_failed" | "expired" | "missing" | "tampered" | "trial" | "trial_expired"
+    # PROJ-94: trial flags (populated only in the trial branch; default False on all
+    # license/key paths). trial_active == valid && edition == "plus_trial".
+    trial_used: bool = False
+    trial_active: bool = False
 
 
 def _aes_gcm_decrypt(data: bytes, key: bytes) -> bytes:
@@ -98,6 +115,45 @@ def _verify_mac(payload: bytes, mac_hex: str, master_key: bytes) -> bool:
     return _hmac.compare_digest(expected, mac_hex)
 
 
+def _trial_status() -> LicenseStatus:
+    """PROJ-94: trial branch — reached ONLY when no plus.lic exists (the 'missing' path).
+
+    Reads the two trial flags DIRECTLY (sync) from the DB — NOT via
+    config_service's process-local in-memory cache — so a trial started in the
+    web process is also seen by the celery-worker process (Tech-Design §E).
+    The 60s TTL of get_license_status() throttles this DB read to ~1×/min/process.
+
+    Never masks a broken key (this is the missing path, no key present).
+    """
+    # lazy import to avoid a circular import at module load (mirrors the settings import)
+    from backend.services.config_service import get_trial_flags_sync
+
+    trial_used, trial_started_at = get_trial_flags_sync()
+    if not trial_used or not trial_started_at:
+        return LicenseStatus("core", False, None, None, None, "missing")
+
+    try:
+        start_date = date.fromisoformat(trial_started_at)
+    except (ValueError, TypeError):
+        # corrupt start date → treat as never started; do not crash
+        logger.warning("PROJ-94: invalid trial_started_at %r", trial_started_at)
+        return LicenseStatus("core", False, None, None, None, "missing")
+
+    end_date = start_date + timedelta(days=TRIAL_DURATION_DAYS)
+    expiry_str = end_date.isoformat()
+    if date.today() <= end_date:
+        # active trial → unlocks all Plus capabilities via valid=True
+        return LicenseStatus(
+            "plus_trial", True, None, None, expiry_str, "trial",
+            trial_used=True, trial_active=True,
+        )
+    # expired trial → hard fall back to Core, exactly like an expired license
+    return LicenseStatus(
+        "core", False, None, None, expiry_str, "trial_expired",
+        trial_used=True, trial_active=False,
+    )
+
+
 def _load_status() -> LicenseStatus:
     from backend.core.config import settings  # lazy to avoid circular import at module load
 
@@ -105,7 +161,8 @@ def _load_status() -> LicenseStatus:
     enc_path = Path(settings.plus_enc_path)
 
     if not lic_path.exists():
-        return LicenseStatus("core", False, None, None, None, "missing")
+        # PROJ-94: no key file → trial branch may unlock Plus (or report expired/missing)
+        return _trial_status()
 
     # Parse plus.lic
     try:
@@ -171,10 +228,18 @@ def _load_status() -> LicenseStatus:
 
 
 def get_license_status() -> LicenseStatus:
-    """Returns cached license status. Loaded once at first call (typically at startup)."""
-    global _cache
-    if _cache is None:
+    """Returns the license status with a 60-second TTL cache (PROJ-94).
+
+    Re-evaluated at most once per minute so a date-based trial expires lazily
+    without a restart. The expensive AES-GCM decryption (only with a key present)
+    therefore runs at most ~1×/minute. reset_license_cache() forces an immediate
+    re-evaluation (license upload / trial start / deactivate).
+    """
+    global _cache, _cache_loaded_at
+    now = time.monotonic()
+    if _cache is None or (now - _cache_loaded_at) >= _TTL_SECONDS:
         _cache = _load_status()
+        _cache_loaded_at = now
     return _cache
 
 
@@ -183,6 +248,10 @@ def is_plus_edition() -> bool:
 
 
 def reset_license_cache() -> None:
-    """Resets the cached status. Use in tests to re-evaluate with new fixtures."""
-    global _cache
+    """Resets the cached status so the next call re-evaluates immediately.
+
+    Idempotent. Used by license upload / trial start / deactivate, and by tests.
+    """
+    global _cache, _cache_loaded_at
     _cache = None
+    _cache_loaded_at = 0.0

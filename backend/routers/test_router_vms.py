@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
@@ -38,6 +39,21 @@ def inject_proxmox_session():
     _sessions["proxmox-user@pam"] = _FAKE_SESSION
     yield
     _sessions.clear()
+
+
+@pytest.fixture(autouse=True)
+def _no_stack_managed():
+    """Default the PROJ-76 stack-mutation guard + PROJ-96 dependency-impact guard
+    to no-ops.
+
+    Both real guards hit the DB (get_node_for_proxmox_name); in unit tests the
+    global session isn't initialised. Tests that exercise the 409 stack-block or
+    the dependency-impact warning re-patch these targets inside their own
+    ``with`` block (the inner patch wins).
+    """
+    with patch("backend.routers.vms._assert_not_stack_managed", new=AsyncMock(return_value=None)), \
+         patch("backend.routers.vms._dependency_impact", new=AsyncMock(return_value=None)):
+        yield
 
 
 @pytest_asyncio.fixture
@@ -466,3 +482,387 @@ async def test_service_account_status_operator_forbidden(
 ):
     resp = await client.get("/api/service-accounts/status", headers=operator_local_headers)
     assert resp.status_code == 403
+
+
+# ── PROJ-81: VM Disk Management ───────────────────────────────────────────────
+
+def _http_status_error(code: int) -> httpx.HTTPStatusError:
+    req = httpx.Request("PUT", "http://test/api2/json")
+    resp = httpx.Response(code, request=req)
+    return httpx.HTTPStatusError("err", request=req, response=resp)
+
+
+_PATCH_STORAGE_READ = lambda: patch(  # noqa: E731
+    "backend.routers.vms._resolve_node_read_auth",
+    new=AsyncMock(return_value=(proxmox_client, _FAKE_AUTH_OPERATOR)),
+)
+
+_CFG_ONE_DISK = {
+    "name": "testvm",
+    "boot": "order=scsi0",
+    "scsi0": "local-lvm:vm-100-disk-0,size=32G",
+    "scsihw": "virtio-scsi-pci",
+}
+_CFG_TWO_DISKS = {
+    "name": "testvm",
+    "boot": "order=scsi0",
+    "scsi0": "local-lvm:vm-100-disk-0,size=32G",
+    "scsi1": "local-lvm:vm-100-disk-1,size=10G,serial=p3-deadbeef",
+    "scsihw": "virtio-scsi-pci",
+}
+
+
+# ── image-storages read ───────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_list_image_storages_success(client: AsyncClient, viewer_local_headers: dict):
+    raw = [
+        {"storage": "local-lvm", "type": "lvmthin", "avail": 100, "total": 200, "used": 100},
+        {"storage": "", "type": "dir"},  # dropped (no storage id)
+    ]
+    with (
+        _PATCH_STORAGE_READ(),
+        patch(
+            "backend.routers.vms.proxmox_client.get_node_image_storages",
+            new=AsyncMock(return_value=raw),
+        ),
+    ):
+        resp = await client.get("/api/nodes/pve1/image-storages", headers=viewer_local_headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["name"] == "local-lvm"
+    assert body[0]["avail"] == 100
+
+
+@pytest.mark.asyncio
+async def test_list_image_storages_unauthenticated(client: AsyncClient):
+    resp = await client.get("/api/nodes/pve1/image-storages")
+    assert resp.status_code in (401, 403)
+
+
+# ── attach ────────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_attach_disk_success(client: AsyncClient, operator_local_headers: dict):
+    captured = {}
+
+    async def _fake_attach(_auth, node, vmid, bus, index, storage, size_gb, serial):
+        captured.update(bus=bus, index=index, storage=storage, size_gb=size_gb, serial=serial)
+
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch(
+            "backend.routers.vms.proxmox_client.get_vm_config",
+            new=AsyncMock(side_effect=[_CFG_ONE_DISK, _CFG_TWO_DISKS]),
+        ),
+        patch("backend.routers.vms.proxmox_client.attach_vm_disk", new=AsyncMock(side_effect=_fake_attach)),
+    ):
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm", "bus": "scsi"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["disk"] == "scsi1"
+    assert any(d["id"] == "scsi1" for d in body["disks"])
+    # next free scsi slot is 1 (scsi0 taken, scsihw ignored)
+    assert captured["index"] == 1
+    assert captured["bus"] == "scsi"
+    assert captured["size_gb"] == 10
+    assert captured["serial"].startswith("p3-")
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_viewer_forbidden(client: AsyncClient, viewer_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        patch("backend.routers.vms.get_user_by_username", new=AsyncMock(return_value=None)),
+    ):
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=viewer_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm"},
+        )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_lxc_rejected(client: AsyncClient, operator_local_headers: dict):
+    with patch(
+        "backend.routers.vms._resolve_vm_access",
+        new=AsyncMock(return_value=(proxmox_client, _FAKE_AUTH_OPERATOR, "pve1", "lxc")),
+    ):
+        resp = await client.post(
+            "/api/vms/200/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm"},
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_stack_managed_409(client: AsyncClient, operator_local_headers: dict):
+    from fastapi import HTTPException
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        patch(
+            "backend.routers.vms._assert_not_stack_managed",
+            new=AsyncMock(side_effect=HTTPException(status_code=409, detail={"error": "vm_managed_by_stack"})),
+        ),
+    ):
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm"},
+        )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_proxmox_403_mapped(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_ONE_DISK)),
+        patch(
+            "backend.routers.vms.proxmox_client.attach_vm_disk",
+            new=AsyncMock(side_effect=_http_status_error(403)),
+        ),
+    ):
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm"},
+        )
+    assert resp.status_code == 403
+    assert "VM.Config.Disk" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_proxmox_401_becomes_502(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_ONE_DISK)),
+        patch(
+            "backend.routers.vms.proxmox_client.attach_vm_disk",
+            new=AsyncMock(side_effect=_http_status_error(401)),
+        ),
+    ):
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm"},
+        )
+    assert resp.status_code == 502
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_bus_full_422(client: AsyncClient, operator_local_headers: dict):
+    full = {"name": "vm", **{f"scsi{i}": "local-lvm:x,size=8G" for i in range(31)}}
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=full)),
+    ):
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm", "bus": "scsi"},
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_invalid_size_422(client: AsyncClient, operator_local_headers: dict):
+    with _PATCH_VM_ACCESS_OPERATOR():
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 0, "storage": "local-lvm"},
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_attach_disk_storage_charset_rejected_422(client: AsyncClient, operator_local_headers: dict):
+    # BUG-81-2: a storage value with extra disk-config options must be rejected
+    # before it can be smuggled into the volume spec.
+    with _PATCH_VM_ACCESS_OPERATOR():
+        resp = await client.post(
+            "/api/vms/100/disks",
+            headers=operator_local_headers,
+            json={"size_gb": 10, "storage": "local-lvm,import-from=local-lvm:vm-999-disk-0"},
+        )
+    assert resp.status_code == 422
+
+
+# ── resize ──────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_resize_disk_success(client: AsyncClient, operator_local_headers: dict):
+    captured = {}
+
+    async def _fake_resize(_auth, node, vmid, disk, size_gb):
+        captured.update(disk=disk, size_gb=size_gb)
+
+    after = {**_CFG_TWO_DISKS, "scsi1": "local-lvm:vm-100-disk-1,size=64G,serial=p3-deadbeef"}
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch(
+            "backend.routers.vms.proxmox_client.get_vm_config",
+            new=AsyncMock(side_effect=[_CFG_TWO_DISKS, after]),
+        ),
+        patch("backend.routers.vms.proxmox_client.resize_vm_disk", new=AsyncMock(side_effect=_fake_resize)),
+    ):
+        resp = await client.put(
+            "/api/vms/100/disks/scsi1/resize",
+            headers=operator_local_headers,
+            json={"size_gb": 64},
+        )
+    assert resp.status_code == 200
+    assert captured == {"disk": "scsi1", "size_gb": 64}
+
+
+@pytest.mark.asyncio
+async def test_resize_disk_shrink_rejected_422(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_TWO_DISKS)),
+    ):
+        resp = await client.put(
+            "/api/vms/100/disks/scsi1/resize",
+            headers=operator_local_headers,
+            json={"size_gb": 5},  # current is 10G
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_resize_disk_not_found_404(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_ONE_DISK)),
+    ):
+        resp = await client.put(
+            "/api/vms/100/disks/scsi9/resize",
+            headers=operator_local_headers,
+            json={"size_gb": 64},
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_resize_disk_bad_slot_422(client: AsyncClient, operator_local_headers: dict):
+    # path pattern rejects non disk-slot strings before the handler runs
+    with _PATCH_VM_ACCESS_OPERATOR():
+        resp = await client.put(
+            "/api/vms/100/disks/notadisk/resize",
+            headers=operator_local_headers,
+            json={"size_gb": 64},
+        )
+    assert resp.status_code == 422
+
+
+# ── remove ────────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_remove_disk_success(client: AsyncClient, operator_local_headers: dict):
+    captured = {}
+
+    async def _fake_delete(_auth, node, vmid, disk):
+        captured["disk"] = disk
+
+    after = {k: v for k, v in _CFG_TWO_DISKS.items() if k != "scsi1"}
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch(
+            "backend.routers.vms.proxmox_client.get_vm_config",
+            new=AsyncMock(side_effect=[_CFG_TWO_DISKS, after]),
+        ),
+        patch("backend.routers.vms.proxmox_client.delete_vm_disk", new=AsyncMock(side_effect=_fake_delete)),
+    ):
+        resp = await client.delete(
+            "/api/vms/100/disks/scsi1?confirm=testvm",
+            headers=operator_local_headers,
+        )
+    assert resp.status_code == 200
+    assert captured["disk"] == "scsi1"
+    assert all(d["id"] != "scsi1" for d in resp.json()["disks"])
+
+
+@pytest.mark.asyncio
+async def test_remove_disk_confirm_mismatch_400(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_TWO_DISKS)),
+    ):
+        resp = await client.delete(
+            "/api/vms/100/disks/scsi1?confirm=wrongname",
+            headers=operator_local_headers,
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_remove_disk_root_disk_rejected_422(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_TWO_DISKS)),
+    ):
+        resp = await client.delete(
+            "/api/vms/100/disks/scsi0?confirm=testvm",  # scsi0 is the boot disk
+            headers=operator_local_headers,
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_remove_disk_index0_fallback_when_no_boot_info(
+    client: AsyncClient, operator_local_headers: dict
+):
+    cfg = {
+        "name": "vm",
+        "scsi0": "local-lvm:vm-100-disk-0,size=32G",
+        "scsi1": "local-lvm:vm-100-disk-1,size=10G",
+    }
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=cfg)),
+    ):
+        resp = await client.delete(
+            "/api/vms/100/disks/scsi0?confirm=vm",  # no boot info → index-0 blocked
+            headers=operator_local_headers,
+        )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_remove_disk_not_found_404(client: AsyncClient, operator_local_headers: dict):
+    with (
+        _PATCH_VM_ACCESS_OPERATOR(),
+        _PATCH_AUDIT(),
+        patch("backend.routers.vms.proxmox_client.get_vm_config", new=AsyncMock(return_value=_CFG_ONE_DISK)),
+    ):
+        resp = await client.delete(
+            "/api/vms/100/disks/scsi5?confirm=testvm",
+            headers=operator_local_headers,
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_remove_disk_missing_confirm_422(client: AsyncClient, operator_local_headers: dict):
+    with _PATCH_VM_ACCESS_OPERATOR():
+        resp = await client.delete("/api/vms/100/disks/scsi1", headers=operator_local_headers)
+    assert resp.status_code == 422  # required confirm query param missing

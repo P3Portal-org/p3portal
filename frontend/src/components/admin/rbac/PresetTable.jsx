@@ -16,6 +16,8 @@ const NODE_ACTION_LABELS = {
   'node:upload_iso':      'ISO-Upload',
   'node:view_updates':    'Updates ansehen',
   'node:refresh_updates': 'Updates aktualisieren',
+  'node:manage_network':  'Netzwerk verwalten',
+  'node:manage_firewall': 'Firewall verwalten',
 }
 
 function ActionPill({ action }) {

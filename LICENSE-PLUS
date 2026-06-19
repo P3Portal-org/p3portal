@@ -19,8 +19,12 @@ helper scripts therein (collectively "the Plus Code").
 
 "Licensor" means rootq, the copyright holder of the Plus Code.
 "You" means the individual or legal entity accepting this license.
-"Plus License Key" means a valid, individually issued `plus.lic` file
-  obtained from the Licensor that activates Plus features at runtime.
+"Plus License Key" (also "License File") means a valid, individually
+  issued `plus.lic` file obtained from the Licensor that activates Plus
+  features at runtime. The Plus License Key is bound to a named licensee
+  and is the instrument through which the use rights under § 2 are
+  granted; it is not itself a transfer of rights in, or ownership of,
+  the Plus Code.
 "Modification" means any alteration to the Plus Code's source files.
 "Redistribution" means any act of making the Plus Code (original or
   modified) available to a third party in any form.
@@ -38,7 +42,11 @@ non-exclusive, non-transferable, worldwide right to:
       image on systems You own or operate, provided You hold a valid
       Plus License Key for each such instance.
 
-No other rights are granted unless explicitly stated below.
+No other rights are granted unless explicitly stated below. This grant
+conveys no ownership of, or proprietary interest in, the Plus Code. The
+Plus Code remains the exclusive property of the Licensor and stays fully
+protected under this license at all times, whether or not You hold a Plus
+License Key.
 
 ───────────────────────────────────────────────────────────────────────
 § 3  RESTRICTIONS
@@ -102,6 +110,13 @@ Plus features require a valid Plus License Key (`plus.lic`) issued by
 the Licensor.  License keys are individually bound and are not
 transferable between organisations or instances unless the Licensor
 explicitly permits such transfer in writing.
+
+What the Licensor provides to a licensee is the issuance of a Plus
+License Key. Neither possession of the Plus Code nor any other
+circumstance grants the right to use, run, or activate Plus features;
+only a valid, currently-issued Plus License Key does. This clause adds a
+condition to the use of the Plus Code under § 2; it does not relax any
+restriction in § 3.
 
 ───────────────────────────────────────────────────────────────────────
 § 6  TRADEMARK RESERVATION
@@ -188,7 +203,7 @@ termination of this license.
 § 10  CONTACT AND LICENCE ENQUIRIES
 ───────────────────────────────────────────────────────────────────────
 
-For license purchases, trial keys, security-patch notifications, or
+For license issuance, trial keys, security-patch notifications, or
 any other enquiry, contact:
 
   E-mail:  license@p3portal.org

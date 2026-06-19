@@ -1,5 +1,6 @@
 // p3portal.org
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCapability } from '../hooks/useCapability'
@@ -15,6 +16,7 @@ import VmBackupSection from '../components/vms/VmBackupSection'
 import VmGuestInfoSection from '../components/vms/VmGuestInfoSection'
 import VmLxcNetworkSection from '../components/vms/VmLxcNetworkSection'
 import VmAlertsTab from '../components/vms/VmAlertsTab'
+import VmFirewallTab from '../components/firewall/VmFirewallTab'
 import OwnerSection from '../features/owners/components/OwnerSection'
 import Watermark from '../components/common/Watermark'
 import { PlusComponents } from '../plus'
@@ -99,10 +101,16 @@ function errLabel(err) {
 }
 
 export default function VmDetailPage() {
+  const { t } = useTranslation()
   const { node, type, vmid } = useParams()
-  const { role, username } = useAuth()
+  const { role, username, portalPermissions } = useAuth()
   const hasConfigSnapshots = useCapability('config_snapshots')
   const ConfigSnapshotsTab = PlusComponents.ConfigSnapshotsTab
+  // PROJ-96: VM-Abhängigkeiten (Plus). Anzeigen via Capability; Verwalten
+  // zusätzlich via manage_dependencies (oder Admin).
+  const hasDependencies = useCapability('vm_dependencies')
+  const VmDependencySection = PlusComponents.VmDependencySection
+  const canManageDependencies = (role === 'admin') || (portalPermissions ?? []).includes('manage_dependencies')
   const [activeTab, setActiveTab] = useState('overview')
 
   const pinRoute = `/vm/${node}/${type}/${vmid}`
@@ -127,6 +135,10 @@ export default function VmDetailPage() {
   const [ifacesLoading, setIfacesLoading] = useState(false)
 
   const isOperator = role === 'operator' || role === 'admin'
+  // PROJ-90: firewall tab gate (AC-UI-2 / AC-RBAC-2). The server enforces the real
+  // boundary via _resolve_vm_access + _check_rbac("configure"); this only decides
+  // whether to render the tab. Owners/operators/admins or manage_firewall holders.
+  const canFirewall = isOperator || (portalPermissions ?? []).includes('manage_firewall')
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -286,6 +298,11 @@ export default function VmDetailPage() {
         <button onClick={() => setActiveTab('scheduled')} className={tabCls('scheduled')}>
           Zeitgesteuert
         </button>
+        {canFirewall && (
+          <button onClick={() => setActiveTab('firewall')} className={tabCls('firewall')}>
+            Firewall
+          </button>
+        )}
         {hasConfigSnapshots && ConfigSnapshotsTab && (
           <button onClick={() => setActiveTab('config-snapshots')} className={tabCls('config-snapshots')}>
             Config-Snapshots
@@ -313,13 +330,13 @@ export default function VmDetailPage() {
                 {/* PROJ-76 Phase 2b: Stack-Hinweis + Link (AC-2B-MUT-1 / AC-2B-UI-9) */}
                 {detail.managed_by_stack && (
                   <div className="rounded-md border border-portal-accent/40 bg-portal-accent/10 px-4 py-2.5 text-sm text-portal-text flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-portal-accent/20 text-portal-accent">Stack</span>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-portal-accent/20 text-portal-accent">{t('stacks.managed_by.badge')}</span>
                     <span>
-                      Diese VM wird vom Stack{' '}
+                      {t('stacks.managed_by.banner_prefix')}{' '}
                       <Link to={`/stacks/${detail.managed_by_stack.stack_id}`} className="font-medium text-portal-accent hover:underline">
                         {detail.managed_by_stack.stack_name}
                       </Link>{' '}
-                      verwaltet. Konfiguration, Disk-Größe und Löschen bitte über den Stack ändern.
+                      {t('stacks.managed_by.banner_suffix')}
                     </span>
                   </div>
                 )}
@@ -333,6 +350,19 @@ export default function VmDetailPage() {
                     isAdmin={isAdmin}
                     currentUsername={username}
                   />
+                )}
+
+                {/* PROJ-96: Abhängigkeiten (Plus, beide Richtungen) */}
+                {hasDependencies && VmDependencySection && detail.portal_node_id != null && (
+                  <Suspense fallback={null}>
+                    <VmDependencySection
+                      portalNodeId={detail.portal_node_id}
+                      vmid={Number(vmid)}
+                      node={node}
+                      vmName={detail.name ?? `${type === 'qemu' ? 'VM' : 'CT'} ${vmid}`}
+                      canManage={canManageDependencies}
+                    />
+                  </Suspense>
                 )}
 
                 {/* Resource bars */}
@@ -395,6 +425,15 @@ export default function VmDetailPage() {
                 </h2>
                 <VmScheduledJobsTab vmid={vmid} />
               </div>
+            )}
+
+            {activeTab === 'firewall' && canFirewall && (
+              <VmFirewallTab
+                vmid={Number(vmid)}
+                proxmoxNode={node}
+                installation={detail.portal_node_id}
+                stackInfo={detail.managed_by_stack}
+              />
             )}
 
             {activeTab === 'config-snapshots' && hasConfigSnapshots && ConfigSnapshotsTab && detail?.portal_node_id != null && (

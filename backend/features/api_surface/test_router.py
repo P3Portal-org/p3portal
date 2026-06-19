@@ -45,7 +45,7 @@ async def test_version_unauthenticated(client: AsyncClient):
     data = resp.json()
     assert "version" in data
     assert "api_compat_level" in data
-    assert data["api_compat_level"] == "1"
+    assert data["api_compat_level"] == "2"  # PROJ-97
     assert "edition" in data
     assert data["edition"] in ("core", "plus")
 
@@ -54,7 +54,7 @@ async def test_version_unauthenticated(client: AsyncClient):
 async def test_version_authenticated(client: AsyncClient):
     resp = await client.get("/api/version", headers=_auth(_OP_TOKEN))
     assert resp.status_code == 200
-    assert resp.json()["api_compat_level"] == "1"
+    assert resp.json()["api_compat_level"] == "2"  # PROJ-97
 
 
 # ── GET /api/scopes/manifest ─────────────────────────────────────────────────

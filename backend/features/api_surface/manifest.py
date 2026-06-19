@@ -313,6 +313,239 @@ SCOPE_MANIFEST: tuple[ScopeManifestEntry, ...] = (
             "<HOST>/api/stacks/1"
         ),
     ),
+    # ── PROJ-97: Scope-Nachzug für neuere Features ────────────────────────────
+    # PROJ-78: Backup-Job-Verwaltung (Core)
+    ScopeManifestEntry(
+        name="backup_jobs:read",
+        description_key="scope.backup_jobs_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/backup-jobs", "scope.backup_jobs_read.ep.list"),
+            ScopeEndpoint("GET", "/api/backup-jobs/pools", "scope.backup_jobs_read.ep.pools"),
+            ScopeEndpoint("GET", "/api/backup-jobs/storages", "scope.backup_jobs_read.ep.storages"),
+        ),
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/backup-jobs?node=pve"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="backup_jobs:write",
+        description_key="scope.backup_jobs_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/backup-jobs", "scope.backup_jobs_write.ep.create"),
+            ScopeEndpoint("PUT", "/api/backup-jobs/{job_id}", "scope.backup_jobs_write.ep.update"),
+            ScopeEndpoint("DELETE", "/api/backup-jobs/{job_id}", "scope.backup_jobs_write.ep.delete"),
+            ScopeEndpoint("POST", "/api/backup-jobs/{job_id}/run", "scope.backup_jobs_write.ep.run"),
+        ),
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            '-H "Content-Type: application/json" '
+            '-d \'{"storage":"local","schedule":"02:00","mode":"snapshot","all":1}\' '
+            "<HOST>/api/backup-jobs?node=pve"
+        ),
+    ),
+    # PROJ-79: Netzwerk-Verwaltung (Core)
+    ScopeManifestEntry(
+        name="networks:read",
+        description_key="scope.networks_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/networks", "scope.networks_read.ep.list"),
+            ScopeEndpoint("GET", "/api/networks/devices", "scope.networks_read.ep.devices"),
+            ScopeEndpoint("GET", "/api/networks/{iface}/usage", "scope.networks_read.ep.usage"),
+        ),
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/networks?node=pve"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="networks:write",
+        description_key="scope.networks_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/networks", "scope.networks_write.ep.create"),
+            ScopeEndpoint("PUT", "/api/networks/{iface}", "scope.networks_write.ep.update"),
+            ScopeEndpoint("DELETE", "/api/networks/{iface}", "scope.networks_write.ep.delete"),
+            ScopeEndpoint("POST", "/api/networks/reload", "scope.networks_write.ep.reload"),
+            ScopeEndpoint("POST", "/api/networks/revert", "scope.networks_write.ep.revert"),
+        ),
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            '-H "Content-Type: application/json" '
+            '-d \'{"type":"bridge","iface":"vmbr1","autostart":true}\' '
+            "<HOST>/api/networks?node=pve"
+        ),
+    ),
+    # PROJ-80: SDN-Verwaltung (Core, cluster-weit)
+    ScopeManifestEntry(
+        name="sdn:read",
+        description_key="scope.sdn_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/sdn/zones", "scope.sdn_read.ep.zones"),
+            ScopeEndpoint("GET", "/api/sdn/vnets", "scope.sdn_read.ep.vnets"),
+            ScopeEndpoint("GET", "/api/sdn/subnets", "scope.sdn_read.ep.subnets"),
+            ScopeEndpoint("GET", "/api/sdn", "scope.sdn_read.ep.pending"),
+        ),
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/sdn/zones"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="sdn:write",
+        description_key="scope.sdn_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/sdn/zones", "scope.sdn_write.ep.zone_create"),
+            ScopeEndpoint("POST", "/api/sdn/vnets", "scope.sdn_write.ep.vnet_create"),
+            ScopeEndpoint("POST", "/api/sdn/subnets", "scope.sdn_write.ep.subnet_create"),
+            ScopeEndpoint("POST", "/api/sdn/apply", "scope.sdn_write.ep.apply"),
+            ScopeEndpoint("POST", "/api/sdn/revert", "scope.sdn_write.ep.revert"),
+        ),
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/sdn/apply"
+        ),
+    ),
+    # PROJ-90: Firewall-Verwaltung (Core, alle 3 Ebenen datacenter/nodes/vms)
+    ScopeManifestEntry(
+        name="firewall:read",
+        description_key="scope.firewall_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/firewall/datacenter/rules", "scope.firewall_read.ep.dc_rules"),
+            ScopeEndpoint("GET", "/api/firewall/nodes/{node}/rules", "scope.firewall_read.ep.node_rules"),
+            ScopeEndpoint("GET", "/api/firewall/vms/{vmid}/rules", "scope.firewall_read.ep.vm_rules"),
+            ScopeEndpoint("GET", "/api/firewall/datacenter/macros", "scope.firewall_read.ep.macros"),
+        ),
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/firewall/datacenter/rules?installation=1"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="firewall:write",
+        description_key="scope.firewall_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/firewall/datacenter/rules", "scope.firewall_write.ep.dc_rule_create"),
+            ScopeEndpoint("PUT", "/api/firewall/datacenter/options", "scope.firewall_write.ep.dc_options"),
+            ScopeEndpoint("POST", "/api/firewall/vms/{vmid}/rules", "scope.firewall_write.ep.vm_rule_create"),
+            ScopeEndpoint("DELETE", "/api/firewall/datacenter/rules/{pos}", "scope.firewall_write.ep.dc_rule_delete"),
+        ),
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            '-H "Content-Type: application/json" '
+            '-d \'{"type":"in","action":"ACCEPT","proto":"tcp","dport":"22"}\' '
+            "<HOST>/api/firewall/vms/100/rules?node=pve"
+        ),
+    ),
+    # PROJ-10/63/81: VM-Mutationen (Core). VM-Reads bleiben unter cluster:read.
+    ScopeManifestEntry(
+        name="vms:write",
+        description_key="scope.vms_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/vms/{vmid}/start", "scope.vms_write.ep.start"),
+            ScopeEndpoint("POST", "/api/vms/{vmid}/stop", "scope.vms_write.ep.stop"),
+            ScopeEndpoint("POST", "/api/vms/{vmid}/reboot", "scope.vms_write.ep.reboot"),
+            ScopeEndpoint("PATCH", "/api/vms/{vmid}/config", "scope.vms_write.ep.config"),
+            ScopeEndpoint("POST", "/api/vms/{vmid}/snapshots", "scope.vms_write.ep.snapshot"),
+            ScopeEndpoint("POST", "/api/vms/{vmid}/disks", "scope.vms_write.ep.disk"),
+            ScopeEndpoint("DELETE", "/api/vms/{vmid}", "scope.vms_write.ep.delete"),
+        ),
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/vms/100/start?node=pve"
+        ),
+    ),
+    # PROJ-83/84: Ansible-Inventory & Onboarding (Core; Plus-EPs zusätzlich 404 ohne Lizenz)
+    ScopeManifestEntry(
+        name="ansible_inventory:read",
+        description_key="scope.ansible_inventory_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/ansible-inventory/hosts", "scope.ansible_inventory_read.ep.hosts"),
+            ScopeEndpoint("GET", "/api/ansible-inventory/onboarding-block", "scope.ansible_inventory_read.ep.onboarding"),
+            ScopeEndpoint("GET", "/api/ansible-inventory/discovery", "scope.ansible_inventory_read.ep.discovery"),
+        ),
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/ansible-inventory/hosts"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="ansible_inventory:write",
+        description_key="scope.ansible_inventory_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/ansible-inventory/hosts/{node_id}/{kind}/{vmid}/mark-managed", "scope.ansible_inventory_write.ep.mark"),
+            ScopeEndpoint("POST", "/api/ansible-inventory/hosts/{node_id}/{kind}/{vmid}/test-connection", "scope.ansible_inventory_write.ep.test"),
+            ScopeEndpoint("POST", "/api/ansible-inventory/onboard", "scope.ansible_inventory_write.ep.onboard"),
+            ScopeEndpoint("POST", "/api/ansible-inventory/keys/global/rotate", "scope.ansible_inventory_write.ep.rotate"),
+        ),
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/ansible-inventory/hosts/1/qemu/100/mark-managed"
+        ),
+    ),
+    # PROJ-92: Packer Visual Editor (Plus)
+    ScopeManifestEntry(
+        name="packer_editor:read",
+        description_key="scope.packer_editor_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/packer-editor/definitions", "scope.packer_editor_read.ep.list"),
+            ScopeEndpoint("GET", "/api/packer-editor/definitions/{definition_id}", "scope.packer_editor_read.ep.detail"),
+        ),
+        plus_only=True,
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/packer-editor/definitions"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="packer_editor:write",
+        description_key="scope.packer_editor_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/packer-editor/definitions", "scope.packer_editor_write.ep.create"),
+            ScopeEndpoint("PUT", "/api/packer-editor/definitions/{definition_id}", "scope.packer_editor_write.ep.update"),
+            ScopeEndpoint("DELETE", "/api/packer-editor/definitions/{definition_id}", "scope.packer_editor_write.ep.delete"),
+            ScopeEndpoint("POST", "/api/packer-editor/validate", "scope.packer_editor_write.ep.validate"),
+        ),
+        plus_only=True,
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            '-H "Content-Type: application/json" '
+            '-d \'{"meta":{"id":"deb13"}}\' '
+            "<HOST>/api/packer-editor/definitions"
+        ),
+    ),
+    # PROJ-93: Ansible Visual Editor (Plus)
+    ScopeManifestEntry(
+        name="ansible_editor:read",
+        description_key="scope.ansible_editor_read.desc",
+        endpoints=(
+            ScopeEndpoint("GET", "/api/ansible-editor/definitions", "scope.ansible_editor_read.ep.list"),
+            ScopeEndpoint("GET", "/api/ansible-editor/definitions/{definition_id}", "scope.ansible_editor_read.ep.detail"),
+            ScopeEndpoint("GET", "/api/ansible-editor/modules", "scope.ansible_editor_read.ep.modules"),
+            ScopeEndpoint("GET", "/api/ansible-editor/modules/{name}/schema", "scope.ansible_editor_read.ep.schema"),
+        ),
+        plus_only=True,
+        curl_example=(
+            'curl -H "Authorization: Bearer <KEY>" '
+            "<HOST>/api/ansible-editor/definitions"
+        ),
+    ),
+    ScopeManifestEntry(
+        name="ansible_editor:write",
+        description_key="scope.ansible_editor_write.desc",
+        endpoints=(
+            ScopeEndpoint("POST", "/api/ansible-editor/definitions", "scope.ansible_editor_write.ep.create"),
+            ScopeEndpoint("PUT", "/api/ansible-editor/definitions/{definition_id}", "scope.ansible_editor_write.ep.update"),
+            ScopeEndpoint("DELETE", "/api/ansible-editor/definitions/{definition_id}", "scope.ansible_editor_write.ep.delete"),
+            ScopeEndpoint("POST", "/api/ansible-editor/validate", "scope.ansible_editor_write.ep.validate"),
+        ),
+        plus_only=True,
+        curl_example=(
+            'curl -X POST -H "Authorization: Bearer <KEY>" '
+            '-H "Content-Type: application/json" '
+            '-d \'{"meta":{"id":"setup"}}\' '
+            "<HOST>/api/ansible-editor/definitions"
+        ),
+    ),
 )
 
 # Lookup-Dict für schnellen Zugriff per Name

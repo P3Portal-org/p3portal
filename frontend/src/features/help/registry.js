@@ -13,6 +13,9 @@ export const HELP_CATEGORIES = {
   permissions:    { de: 'Berechtigungen',      en: 'Permissions' },
   pools_groups:   { de: 'Pools & Gruppen',     en: 'Pools & Groups' },
   compute:        { de: 'Compute Nodes',       en: 'Compute Nodes' },
+  vm_detail:      { de: 'VM / LXC Detail',      en: 'VM / LXC Detail' },
+  network:        { de: 'Netzwerk & Firewall', en: 'Networking & Firewall' },
+  stacks:         { de: 'Stacks',              en: 'Stacks' },
   automation:     { de: 'Automation',          en: 'Automation' },
   modals:         { de: 'Formulare & Dialoge', en: 'Forms & Dialogs' },
   help_page:      { de: 'Handbuch',            en: 'Manual' },
@@ -57,16 +60,31 @@ export const HELP_REGISTRY = [
   { key: 'image_factory.tabs.vm_templates',titleDe: 'VM Templates',                titleEn: 'VM Templates',               category: 'settings',    order: 8 },
   { key: 'image_factory.tabs.lxc_templates',titleDe: 'LXC Templates',              titleEn: 'LXC Templates',              category: 'settings',    order: 9 },
   { key: 'image_factory.tabs.isos',        titleDe: 'ISOs',                        titleEn: 'ISOs',                       category: 'settings',    order: 10 },
+  { key: 'image_factory.tabs.build_editor',titleDe: 'Build Editor (Plus)',         titleEn: 'Build Editor (Plus)',        category: 'settings',    order: 11 },
 
   // ── Compute Nodes ──────────────────────────────────────────────────────────
   { key: 'compute',                   titleDe: 'Compute Nodes',               titleEn: 'Compute Nodes',              category: 'compute',     order: 1 },
   { key: 'compute.tabs.alerting',     titleDe: 'Node Alerting',               titleEn: 'Node Alerting',              category: 'compute',     order: 2 },
   { key: 'compute.tabs.scheduled_jobs',titleDe: 'Zeitgesteuerte Jobs (Node)', titleEn: 'Scheduled Jobs (Node)',      category: 'compute',     order: 3 },
 
+  // ── VM / LXC Detail ────────────────────────────────────────────────────────
+  { key: 'vm_detail.disks',           titleDe: 'Festplatten im Gast nutzbar machen', titleEn: 'Making disks usable in the guest', category: 'vm_detail', order: 1 },
+
+  // ── Netzwerk & Firewall ────────────────────────────────────────────────────
+  { key: 'network',                   titleDe: 'Netzwerk (Node-Bridges & SDN)', titleEn: 'Networking (Node Bridges & SDN)', category: 'network', order: 1 },
+  { key: 'firewall',                  titleDe: 'Firewall',                    titleEn: 'Firewall',                   category: 'network',     order: 2 },
+
+  // ── Stacks (Plus) ──────────────────────────────────────────────────────────
+  { key: 'stacks',                    titleDe: 'Stacks – Übersicht',          titleEn: 'Stacks – Overview',          category: 'stacks',      order: 1 },
+  { key: 'stacks.editor',             titleDe: 'Stack-Editor (YAML / Formular / Cloud-Init / Netze)', titleEn: 'Stack Editor (YAML / Form / Cloud-Init / Networks)', category: 'stacks', order: 2 },
+  { key: 'stacks.detail',             titleDe: 'Stack-Detail (Ausrollen / Drift / Zerstören)', titleEn: 'Stack Detail (Deploy / Drift / Destroy)', category: 'stacks', order: 3 },
+
   // ── Automation ─────────────────────────────────────────────────────────────
   { key: 'automation',                     titleDe: 'Automation / Scheduled Jobs', titleEn: 'Automation / Scheduled Jobs',category: 'automation',  order: 1 },
   { key: 'automation.tabs.playbooks',      titleDe: 'Playbooks',                   titleEn: 'Playbooks',                  category: 'automation',  order: 2 },
   { key: 'automation.tabs.scheduled',      titleDe: 'Zeitgesteuerte Jobs',         titleEn: 'Scheduled Jobs',             category: 'automation',  order: 3 },
+  { key: 'automation.tabs.inventory',      titleDe: 'Ansible-Inventar',            titleEn: 'Ansible Inventory',          category: 'automation',  order: 4 },
+  { key: 'automation.tabs.playbook_editor', titleDe: 'Playbook-Editor',             titleEn: 'Playbook Editor',            category: 'automation',  order: 5 },
 
   // ── Modals ─────────────────────────────────────────────────────────────────
   { key: 'modal.deploy_form',         titleDe: 'Deploy-Formular',             titleEn: 'Deploy Form',                category: 'modals',      order: 1 },

@@ -34,8 +34,10 @@ export default function ToolingSlideOver() {
 
   const isOpen = !!openTool
   const toolData = openTool && status ? status[openTool] : null
+  // PROJ-66 Phase 2: OpenTofu als dritter Indikator (AC-P2-UI-2)
   const displayName = openTool === 'ansible' ? 'Ansible'
     : openTool === 'packer' ? 'Packer'
+    : openTool === 'opentofu' ? 'OpenTofu'
     : openTool ?? ''
 
   const toolStatus = toolData?.status ?? 'unknown'
@@ -98,6 +100,13 @@ export default function ToolingSlideOver() {
 
         {/* Body — scrollbar */}
         <div className="flex-1 overflow-y-auto">
+          {/* PROJ-66 Phase 2: OpenTofu-spezifischer Hilfetext (AC-P2-UI-5) */}
+          {openTool === 'opentofu' && (
+            <p className="px-4 py-3 border-b border-portal-border text-xs text-portal-text/60">
+              {t('tooling.opentofu_hint')}
+            </p>
+          )}
+
           {/* §1 Version + Status */}
           <ToolingStatusSection toolData={toolData} />
 

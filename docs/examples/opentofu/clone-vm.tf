@@ -17,7 +17,7 @@ terraform {
       source = "bpg/proxmox"
       # Must match the version mirrored into the Plus image
       # (build ARG BPG_PROVIDER_VERSION). Resolved from /opt/tofu/plugin-mirror.
-      version = "~> 0.78"
+      version = "~> 0.109"
     }
   }
 }

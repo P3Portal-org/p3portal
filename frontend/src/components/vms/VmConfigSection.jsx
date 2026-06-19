@@ -1,6 +1,12 @@
 // p3portal.org
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import VmConfigEditModal from './VmConfigEditModal'
+import AddDiskModal from './disks/AddDiskModal'
+import ResizeDiskModal from './disks/ResizeDiskModal'
+import RemoveDiskModal from './disks/RemoveDiskModal'
+import { sizeToGib } from './disks/diskHelpers'
+import HelpButton from '../../features/help/components/HelpButton'
 
 function KvRow({ label, value }) {
   return (
@@ -27,10 +33,24 @@ function BoolBadge({ value }) {
 }
 
 export default function VmConfigSection({ detail, canEdit = false, onSaved, managedByStack = null }) {
+  const { t } = useTranslation()
   const osLabel = OS_LABELS[detail.ostype] ?? detail.ostype ?? '–'
   const [editing, setEditing] = useState(false)
+  // PROJ-81: disk management modals
+  const [addingDisk, setAddingDisk] = useState(false)
+  const [resizingDisk, setResizingDisk] = useState(null) // { id, size }
+  const [removingDisk, setRemovingDisk] = useState(null)  // { id }
+  // PROJ-81: a single "Bearbeiten" toggle for the whole Konfiguration card.
+  // Until it is on, nothing is mutable — the CPU/RAM modal trigger and the disk
+  // actions stay hidden, so no destructive button is one accidental click away.
+  const [editMode, setEditMode] = useState(false)
   // PROJ-76 Phase 2b: Stack-VMs werden über die Stack-Definition bearbeitet (AC-2B-MUT-2).
   const stackLocked = !!managedByStack
+  // PROJ-81: disk actions only for QEMU VMs (LXC mountpoints are a non-goal),
+  // never on templates, and not on stack-managed VMs (server enforces 409).
+  const isQemu = detail.type === 'qemu'
+  const canManageDisks = canEdit && !detail.is_template && isQemu && !stackLocked
+  const confirmToken = detail.name || String(detail.vmid)
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg px-5 py-4">
@@ -41,16 +61,26 @@ export default function VmConfigSection({ detail, canEdit = false, onSaved, mana
         {canEdit && !detail.is_template && (
           stackLocked ? (
             <span
-              title="Diese VM gehört zu einem Stack – Konfiguration über den Stack bearbeiten."
+              title={t('stacks.managed_by.locked_title')}
               className="btn-table flex items-center gap-1.5 opacity-50 cursor-not-allowed"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5H6.75a1.5 1.5 0 0 1-1.5-1.5v-6a1.5 1.5 0 0 1 1.5-1.5Z" />
               </svg>
-              Stack-verwaltet
+              {t('stacks.managed_by.locked_label')}
+            </span>
+          ) : editMode ? (
+            <span className="flex items-center gap-1.5">
+              <button onClick={() => setEditing(true)} className="btn-table flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                </svg>
+                CPU, RAM &amp; Optionen
+              </button>
+              <button onClick={() => setEditMode(false)} className="btn-secondary">Fertig</button>
             </span>
           ) : (
-            <button onClick={() => setEditing(true)} className="btn-table flex items-center gap-1.5">
+            <button onClick={() => setEditMode(true)} className="btn-table flex items-center gap-1.5">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3.5 h-3.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
               </svg>
@@ -122,9 +152,24 @@ export default function VmConfigSection({ detail, canEdit = false, onSaved, mana
 
         {/* Disks */}
         <div>
-          <p className="text-xs font-medium text-gray-400 dark:text-zinc-600 mb-2">
-            Festplatten ({detail.disks.length})
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-zinc-600">
+              Festplatten ({detail.disks.length})
+              {isQemu && <HelpButton helpKey="vm_detail.disks" />}
+            </p>
+            {canManageDisks && editMode && (
+              <button onClick={() => setAddingDisk(true)} className="btn-table flex items-center gap-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-3 h-3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Hinzufügen
+              </button>
+            )}
+          </div>
+          {/* Stack-managed: disk actions go through the stack definition (AC-STACK-BLOCK-1) */}
+          {isQemu && stackLocked && canEdit && !detail.is_template && (
+            <p className="text-xs text-gray-400 dark:text-zinc-600 mb-2">{t('stacks.managed_by.locked_label')}</p>
+          )}
           {detail.disks.length === 0 ? (
             <p className="text-xs text-gray-400 dark:text-zinc-600">Keine Festplatten.</p>
           ) : (
@@ -135,7 +180,22 @@ export default function VmConfigSection({ detail, canEdit = false, onSaved, mana
                     <span className="font-mono text-gray-700 dark:text-zinc-300">{disk.id}</span>
                     <span className="text-gray-400 dark:text-zinc-600 font-mono">{disk.size}</span>
                   </div>
-                  <div className="text-gray-500 dark:text-zinc-500">{disk.storage}</div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 dark:text-zinc-500">{disk.storage}</span>
+                    {canManageDisks && editMode && (
+                      <span className="flex items-center gap-1">
+                        <button
+                          onClick={() => setResizingDisk({ id: disk.id, size: sizeToGib(disk.size) })}
+                          className="btn-table"
+                        >
+                          Vergrößern
+                        </button>
+                        <button onClick={() => setRemovingDisk({ id: disk.id })} className="btn-table-danger">
+                          Entfernen
+                        </button>
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -161,6 +221,41 @@ export default function VmConfigSection({ detail, canEdit = false, onSaved, mana
           onSaved={onSaved}
         />
       )}
+
+      {addingDisk && (
+        <AddDiskModal
+          vmid={detail.vmid}
+          node={detail.node}
+          vmName={detail.name}
+          onClose={() => setAddingDisk(false)}
+          onSaved={onSaved}
+        />
+      )}
+
+      {resizingDisk && (
+        <ResizeDiskModal
+          vmid={detail.vmid}
+          node={detail.node}
+          disk={resizingDisk.id}
+          currentSizeGb={resizingDisk.size}
+          vmName={detail.name}
+          onClose={() => setResizingDisk(null)}
+          onSaved={onSaved}
+        />
+      )}
+
+      {removingDisk && (
+        <RemoveDiskModal
+          vmid={detail.vmid}
+          node={detail.node}
+          disk={removingDisk.id}
+          confirmToken={confirmToken}
+          vmName={detail.name}
+          onClose={() => setRemovingDisk(null)}
+          onSaved={onSaved}
+        />
+      )}
+
       <span className="rq hidden" aria-hidden="true" />
     </div>
   )

@@ -12,7 +12,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from backend.core.config import settings
 from backend.db.database import init_db, migrate_env_to_db
 from backend.features.api_surface.middleware import UpkRateLimitMiddleware
+from backend.features.api_surface.default_deny import build_scoped_endpoint_inventory, upk_doorman
 from backend.features.api_surface.router import router as api_surface_router
 from backend.routers import auth, cluster, jobs, packer, playbooks, profile, rbac, vms
 from backend.routers import settings as settings_router
@@ -30,6 +31,9 @@ from backend.routers import user_api_keys as user_api_keys_router
 from backend.routers import announcements as announcements_router
 from backend.routers import alerts as alerts_router
 from backend.routers import backup_jobs as backup_jobs_router
+from backend.routers import networks as networks_router
+from backend.routers import sdn as sdn_router
+from backend.routers import firewall as firewall_router
 # PROJ-70: scheduled_jobs_router wird via try/except unten eingehängt (Plus-only)
 from backend.routers import capabilities as capabilities_router
 from backend.core.license import get_license_status
@@ -119,11 +123,15 @@ _openapi_url = "/api/openapi.json" if settings.expose_api_docs else None
 
 app = FastAPI(
     title="P3 Portal",
-    version="v1.81.2-beta",
+    version="v1.97.1-beta",
     docs_url=_docs_url,
     redoc_url=None,
     openapi_url=_openapi_url,
     lifespan=lifespan,
+    # PROJ-97: Default-Deny-Türsteher als globale Dependency. Greift nur bei
+    # upk_-Tokens (No-Op für JWT/öffentliche EPs). Wird allen danach gemounteten
+    # Routen mitgegeben. Die scope-tragenden Routen werden am Modulende inventarisiert.
+    dependencies=[Depends(upk_doorman)],
 )
 
 app.add_middleware(
@@ -160,6 +168,9 @@ app.include_router(announcements_router.router)
 app.include_router(alerts_router.router)
 app.include_router(alerts_router.smtp_router)
 app.include_router(backup_jobs_router.router)  # PROJ-78: Backup-Job-Verwaltung (Core)
+app.include_router(networks_router.router)  # PROJ-79: Netzwerk-Verwaltung Node-Bridges/VLANs (Core)
+app.include_router(sdn_router.router)  # PROJ-80: SDN-Verwaltung Zonen/VNets/Subnets (Core, cluster-weit)
+app.include_router(firewall_router.router)  # PROJ-90: Firewall-Verwaltung Datacenter/Node/VM (Core)
 # PROJ-70: Scheduled-Jobs-Router im Plus-Modul; 404 in Pure-Core
 try:
     from backend.plus.scheduled_jobs.router import router as sj_router, settings_router as sj_settings_router
@@ -196,6 +207,18 @@ app.include_router(node_assignments_me_router)
 from backend.features.owners.router import router as owners_router, me_router as owners_me_router
 app.include_router(owners_router)
 app.include_router(owners_me_router)
+
+# PROJ-83: Ansible-Inventory & In-Guest-Playbook-Runs (Core User-Scope)
+from backend.features.ansible_inventory.router import router as ansible_inventory_router
+app.include_router(ansible_inventory_router)
+
+try:
+    from backend.plus.ansible_inventory.router import router as ansible_inventory_keys_router
+    app.include_router(ansible_inventory_keys_router)  # PROJ-83: Plus Key-Management
+    from backend.plus.ansible_inventory.router import discovery_router as ansible_inventory_discovery_router
+    app.include_router(ansible_inventory_discovery_router)  # PROJ-84: Discovery + Onboarding bestehender Hosts
+except ImportError:
+    pass
 
 try:
     from backend.plus.playbook_permissions.router import router as playbook_permissions_router
@@ -255,6 +278,34 @@ try:
 except ImportError:
     logger.info("PROJ-76: backend.plus.stacks nicht gefunden – Stacks-Endpunkte nicht registriert")
 
+# PROJ-75: Cluster-Topologie Router (Plus-only; 404 für Core und unlizenziertes Plus)
+try:
+    from backend.plus.topology.router import router as topology_router
+    app.include_router(topology_router)
+except ImportError:
+    logger.info("PROJ-75: backend.plus.topology nicht gefunden – Topologie-Endpunkte nicht registriert")
+
+# PROJ-92: Packer Visual Editor Router (Plus-only; 404 für Core und unlizenziertes Plus)
+try:
+    from backend.plus.packer_editor.router import router as packer_editor_router
+    app.include_router(packer_editor_router)
+except ImportError:
+    logger.info("PROJ-92: backend.plus.packer_editor nicht gefunden – Editor-Endpunkte nicht registriert")
+
+# PROJ-93: Ansible Visual Editor Router (Plus-only; 404 für Core und unlizenziertes Plus)
+try:
+    from backend.plus.ansible_editor.router import router as ansible_editor_router
+    app.include_router(ansible_editor_router)
+except ImportError:
+    logger.info("PROJ-93: backend.plus.ansible_editor nicht gefunden – Editor-Endpunkte nicht registriert")
+
+# PROJ-96: VM-Abhängigkeiten Router (Plus-only; 404 für Core und unlizenziertes Plus)
+try:
+    from backend.plus.dependencies.router import router as dependencies_router
+    app.include_router(dependencies_router)
+except ImportError:
+    logger.info("PROJ-96: backend.plus.dependencies nicht gefunden – Abhängigkeits-Endpunkte nicht registriert")
+
 
 @app.get("/api/health", tags=["meta"])
 async def health():
@@ -280,3 +331,9 @@ if _static_dir.is_dir():
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="Not Found")
         return FileResponse(_static_dir / "index.html")
+
+
+# PROJ-97: Start-Inventur der scope-tragenden Routen (nach ALLEN include_router +
+# @app.get-Definitionen). Der Türsteher (upk_doorman) liest diese Menge zur Laufzeit.
+# Sync, idempotent – läuft einmal bei Import-Abschluss ("beim Hochfahren").
+build_scoped_endpoint_inventory(app)

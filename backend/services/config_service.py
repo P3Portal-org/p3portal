@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import base64
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from sqlalchemy import text
 
-from backend.db.database import get_db
+from backend.db.database import get_db, get_sync_engine
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,11 @@ def _env_value(key: str) -> str | None:
     return s if s else None
 
 
+# PROJ-94: trial flags (plain text, NOT secrets → not in _SECRET_KEYS)
+TRIAL_USED_KEY = "trial_used"
+TRIAL_STARTED_AT_KEY = "trial_started_at"
+
+
 # ── Sync interface (uses in-memory cache) ─────────────────────────────────────
 
 def get_config_sync(key: str) -> str | None:
@@ -97,6 +102,44 @@ def get_config_sync(key: str) -> str | None:
     if env is not None:
         return env
     return _cache.get(key) or None
+
+
+def get_trial_flags_sync() -> tuple[bool, str | None]:
+    """PROJ-94: read the two trial flags DIRECTLY (sync) from the DB.
+
+    Deliberately bypasses the process-local in-memory `_cache` (which is only
+    populated at startup + on set_config in the same process): the backend runs
+    in multiple processes (uvicorn web + celery worker), so a trial started in
+    the web process would otherwise be invisible to the worker. The license
+    branch that calls this is throttled to ~1×/min/process by the 60s TTL cache,
+    so a fresh sync engine per call is acceptable.
+
+    Returns (trial_used, trial_started_at). On any error / DB-not-ready → (False, None).
+    """
+    engine = get_sync_engine()
+    if engine is None:
+        return (False, None)
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT key, value FROM portal_config "
+                    "WHERE key IN (:used, :started)"
+                ),
+                {"used": TRIAL_USED_KEY, "started": TRIAL_STARTED_AT_KEY},
+            ).mappings().fetchall()
+        data = {r["key"]: r["value"] for r in rows}
+        trial_used = (data.get(TRIAL_USED_KEY) or "").lower() == "true"
+        trial_started_at = data.get(TRIAL_STARTED_AT_KEY) or None
+        return (trial_used, trial_started_at)
+    except Exception as e:
+        logger.warning("portal_config: trial flags sync read failed: %s", e)
+        return (False, None)
+    finally:
+        try:
+            engine.dispose()
+        except Exception:
+            pass
 
 
 # ── Async interface (reads from DB) ───────────────────────────────────────────
@@ -149,6 +192,20 @@ async def set_config(
         )
         await session.commit()
     _cache[key] = value  # store plain in cache
+
+
+async def mark_trial_started(updated_by: str = "system") -> str:
+    """PROJ-94: start the one-time Plus trial.
+
+    Writes trial_started_at (today, ISO date) then trial_used=true. Order matters:
+    if the second write fails, the trial is not yet 'used' (the start guard checks
+    trial_used) → a retry simply re-sets the date and marks it used. Returns the
+    start date (ISO). Caller must guard against re-start (trial_used / valid key).
+    """
+    started_at = date.today().isoformat()
+    await set_config(TRIAL_STARTED_AT_KEY, started_at, is_secret=False, updated_by=updated_by)
+    await set_config(TRIAL_USED_KEY, "true", is_secret=False, updated_by=updated_by)
+    return started_at
 
 
 async def is_setup_complete() -> bool:

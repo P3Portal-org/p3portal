@@ -66,7 +66,7 @@ async def create_allowlist_entry(
             result = await db.execute(
                 text(
                     "INSERT INTO webhook_allowlist (pattern, allow_http, created_at, created_by) "
-                    "VALUES (:pattern, :allow_http, :created_at, :created_by)"
+                    "VALUES (:pattern, :allow_http, :created_at, :created_by) RETURNING id"
                 ),
                 {
                     "pattern": body.pattern,
@@ -75,8 +75,10 @@ async def create_allowlist_entry(
                     "created_by": current_user.username,
                 },
             )
+            # RETURNING id statt cursor.lastrowid: asyncpg kennt kein lastrowid,
+            # RETURNING ist auf SQLite (≥3.35) und PostgreSQL portabel.
+            new_id = result.scalar()
             await db.commit()
-            new_id = result.lastrowid
         except Exception as exc:
             if "UNIQUE" in str(exc).upper():
                 raise HTTPException(

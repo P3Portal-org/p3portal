@@ -35,7 +35,7 @@ ARG PACKER_VERSION=1.11.2
 # PROJ-76 Phase 2a: OpenTofu engine + bpg/proxmox provider (Plus-only, MPL-2.0).
 # Pinned; the exact patch + SHA256 are verified at build time (SHA256SUMS file).
 ARG OPENTOFU_VERSION=1.9.1
-ARG BPG_PROVIDER_VERSION=0.78.2
+ARG BPG_PROVIDER_VERSION=0.109.0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_ROOT_USER_ACTION=ignore
@@ -115,6 +115,25 @@ COPY backend/ ./backend/
 COPY ansible/ ./ansible/
 COPY packer/ ./packer/
 COPY examples/ ./examples/
+
+# PROJ-93: Ansible Visual Editor — Build-Zeit-Schema-Cache aus ansible-doc.
+# Plus-only (der Editor ist Core-404); generiert die ~71 ansible.builtin-Modul-
+# Schemas nach /opt/p3/ansible-doc-cache/ (world-readable für den non-root
+# portal-User). Muss VOR dem Core-Strip laufen (braucht backend/plus/).
+# SECRET_KEY: der `python -m backend.plus.…`-Aufruf lädt über die Paket-Mechanik
+# backend/plus/__init__.py → backend.core.config.Settings(), das einen gültigen
+# SECRET_KEY (≥32 Zeichen, kein Default) verlangt. Der Cache-Build nutzt ihn NICHT
+# (ruft nur ansible-doc). Daher ein Build-Wegwerf-Wert NUR für diesen einen
+# Befehl (inline, keine persistente ENV) — zur Laufzeit setzt entrypoint.sh den
+# echten SECRET_KEY.
+RUN if [ "$EDITION" != "core" ]; then \
+        SECRET_KEY="build-time-throwaway-key-for-ansible-doc-cache-not-used-at-runtime" \
+        python -m backend.plus.ansible_editor.doc_cache --build && \
+        chmod -R a+rX /opt/p3/ansible-doc-cache && \
+        echo "PROJ-93: ansible-doc schema cache built (EDITION=$EDITION)"; \
+    else \
+        echo "PROJ-93: ansible-doc cache skipped (EDITION=core)"; \
+    fi
 
 # PROJ-69: Plus-Backend im Core-Build entfernen.
 # rm-after-COPY ist die Docker-idiomatische Lösung, da COPY keine Bedingungen kennt.

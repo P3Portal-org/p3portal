@@ -23,4 +23,9 @@ export const CAPABILITY_KEYS = [
   'node_assignments',
   'owners_unlimited',
   'playbook_permissions',
+  'ansible_inventory',
+  'topology',
+  'packer_editor',
+  'ansible_editor',
+  'vm_dependencies',
 ]

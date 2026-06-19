@@ -72,13 +72,26 @@ def get_packer_template(template_id: str) -> PackerDetail | None:
     return None
 
 
-def find_hcl_file(template_id: str) -> Path | None:
-    """Return path to the .pkr.hcl file for a template, or None if not found."""
+def find_definition_file(template_id: str) -> Path | None:
+    """Return the build-definition file for a template, or None if not found.
+
+    Accepts a hand-written/ZIP/Git ``*.pkr.hcl`` **or** an editor-generated
+    ``*.pkr.json`` (PROJ-92, HCL2-JSON). ``packer build <file>`` works with
+    either. If both extensions are present, ``.pkr.hcl`` wins (a real HCL file
+    takes precedence over a stale generated JSON).
+    """
     template_dir = _packer_dir() / template_id
     if not template_dir.is_dir():
         return None
-    hcl_files = list(template_dir.glob("*.pkr.hcl"))
-    return hcl_files[0] if hcl_files else None
+    hcl_files = sorted(template_dir.glob("*.pkr.hcl"))
+    if hcl_files:
+        return hcl_files[0]
+    json_files = sorted(template_dir.glob("*.pkr.json"))
+    return json_files[0] if json_files else None
+
+
+# Backwards-compatible alias (pre-PROJ-92 name).
+find_hcl_file = find_definition_file
 
 
 def get_sensitive_packer_param_ids(template_id: str) -> set[str]:

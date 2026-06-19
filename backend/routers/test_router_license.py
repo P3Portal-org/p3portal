@@ -634,3 +634,272 @@ async def test_deactivate_overwrites_existing_disabled_backup(client: AsyncClien
     assert not lic_path.exists()
     assert disabled_path.exists()
     assert disabled_path.read_text() != "old backup"
+
+
+# ---------------------------------------------------------------------------
+# PROJ-94: TTL cache
+# ---------------------------------------------------------------------------
+
+def test_ttl_cache_returns_same_object_within_window(tmp_path, monkeypatch):
+    """Two back-to-back calls within the 60s TTL return the same cached object."""
+    from backend.core.config import settings
+    lic_path, enc_path = _make_license_files(tmp_path)
+    monkeypatch.setattr(settings, "plus_license_path", str(lic_path))
+    monkeypatch.setattr(settings, "plus_enc_path", str(enc_path))
+
+    s1 = get_license_status()
+    s2 = get_license_status()
+    assert s1 is s2  # cached within TTL
+
+
+def test_ttl_cache_reevaluates_when_stale(tmp_path, monkeypatch):
+    """AC-CACHE-1: once the 60s TTL has elapsed the status is re-evaluated.
+
+    Simulated by zeroing _cache_loaded_at so the next call counts as stale.
+    """
+    import backend.core.license as lic_mod
+    from backend.core.config import settings
+
+    # start with no license → core/missing (cached)
+    monkeypatch.setattr(settings, "plus_license_path", str(tmp_path / "missing.lic"))
+    monkeypatch.setattr(settings, "plus_enc_path", str(tmp_path / "missing.enc"))
+    s1 = get_license_status()
+    assert s1.reason == "missing"
+
+    # now a valid license appears
+    lic_path, enc_path = _make_license_files(tmp_path)
+    monkeypatch.setattr(settings, "plus_license_path", str(lic_path))
+    monkeypatch.setattr(settings, "plus_enc_path", str(enc_path))
+
+    # within TTL → still the old (stale) cached object
+    assert get_license_status() is s1
+
+    # force TTL expiry → re-evaluation picks up the new license
+    monkeypatch.setattr(lic_mod, "_cache_loaded_at", 0.0)
+    s3 = get_license_status()
+    assert s3.valid is True
+    assert s3.edition == "plus_v1"
+
+
+# ---------------------------------------------------------------------------
+# PROJ-94: trial branch in _load_status() (sync DB read of flags)
+# ---------------------------------------------------------------------------
+
+async def _set_trial_flags(used: bool | None, started_at: str | None) -> None:
+    """Write the two trial flags into portal_config (DB), bypassing nothing."""
+    from backend.services.config_service import set_config
+    if used is not None:
+        await set_config("trial_used", "true" if used else "false", is_secret=False)
+    if started_at is not None:
+        await set_config("trial_started_at", started_at, is_secret=False)
+
+
+def _point_to_missing_lic(tmp_path, monkeypatch) -> None:
+    from backend.core.config import settings
+    monkeypatch.setattr(settings, "plus_license_path", str(tmp_path / "no.lic"))
+    monkeypatch.setattr(settings, "plus_enc_path", str(tmp_path / "no.enc"))
+
+
+@pytest.mark.asyncio
+async def test_trial_active_unlocks_plus(client, tmp_path, monkeypatch):
+    """AC-UNLOCK-1/2: active trial → valid=True, edition=plus_trial, is_plus_edition True."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    await _set_trial_flags(True, date.today().isoformat())
+    reset_license_cache()
+
+    status = get_license_status()
+    assert status.valid is True
+    assert status.edition == "plus_trial"
+    assert status.reason == "trial"
+    assert status.trial_used is True
+    assert status.trial_active is True
+    assert status.expiry == (date.today() + timedelta(days=30)).isoformat()
+    assert is_plus_edition() is True
+
+
+@pytest.mark.asyncio
+async def test_trial_last_day_still_active(client, tmp_path, monkeypatch):
+    """Boundary: started exactly 30 days ago → today == end → still active."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    started = (date.today() - timedelta(days=30)).isoformat()
+    await _set_trial_flags(True, started)
+    reset_license_cache()
+
+    status = get_license_status()
+    assert status.valid is True
+    assert status.edition == "plus_trial"
+
+
+@pytest.mark.asyncio
+async def test_trial_expired_falls_back_to_core(client, tmp_path, monkeypatch):
+    """AC-UNLOCK-3: trial older than 30 days → core, reason=trial_expired, locked."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    started = (date.today() - timedelta(days=31)).isoformat()
+    await _set_trial_flags(True, started)
+    reset_license_cache()
+
+    status = get_license_status()
+    assert status.valid is False
+    assert status.edition == "core"
+    assert status.reason == "trial_expired"
+    assert status.trial_used is True
+    assert status.trial_active is False
+    assert is_plus_edition() is False
+
+
+@pytest.mark.asyncio
+async def test_trial_never_started_is_core_missing(client, tmp_path, monkeypatch):
+    """No trial flags + no lic → unchanged core/missing."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    reset_license_cache()
+
+    status = get_license_status()
+    assert status.valid is False
+    assert status.edition == "core"
+    assert status.reason == "missing"
+    assert status.trial_used is False
+
+
+@pytest.mark.asyncio
+async def test_trial_corrupt_started_at_is_core_missing(client, tmp_path, monkeypatch):
+    """trial_used set but started_at garbage → treated as never started (no crash)."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    await _set_trial_flags(True, "not-a-date")
+    reset_license_cache()
+
+    status = get_license_status()
+    assert status.valid is False
+    assert status.reason == "missing"
+
+
+@pytest.mark.asyncio
+async def test_trial_does_not_mask_broken_key(client, tmp_path, monkeypatch):
+    """Edge case: a present-but-broken .lic shows its key error; the trial branch
+    only runs in the 'missing' path and must never mask a key problem."""
+    from backend.core.config import settings
+    lic_path, enc_path = _make_license_files(tmp_path, corrupt_key=True)
+    monkeypatch.setattr(settings, "plus_license_path", str(lic_path))
+    monkeypatch.setattr(settings, "plus_enc_path", str(enc_path))
+    await _set_trial_flags(True, date.today().isoformat())  # active trial would unlock IF reached
+    reset_license_cache()
+
+    status = get_license_status()
+    assert status.valid is False
+    assert status.reason == "decryption_failed"   # key error, NOT trial
+    assert status.edition != "plus_trial"
+
+
+@pytest.mark.asyncio
+async def test_get_trial_flags_sync_reads_db_not_cache(client, tmp_path, monkeypatch):
+    """§E: get_trial_flags_sync reads the DB directly, not the process-local cache."""
+    from backend.services import config_service
+    await _set_trial_flags(True, "2026-06-16")
+    # wipe the in-memory cache → only a DB read can still see the flags
+    config_service._cache.clear()
+
+    used, started = config_service.get_trial_flags_sync()
+    assert used is True
+    assert started == "2026-06-16"
+
+
+# ---------------------------------------------------------------------------
+# PROJ-94: POST /api/license/trial/start
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_trial_start_success(client: AsyncClient, tmp_path, monkeypatch):
+    """AC-START-1/AC-UNLOCK-1: admin starts the trial → plus_trial unlocked."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+
+    resp = await client.post("/api/license/trial/start", headers=_ADMIN_HEADERS)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["valid"] is True
+    assert data["edition"] == "plus_trial"
+    assert data["reason"] == "trial"
+    assert data["trial_active"] is True
+    assert data["trial_used"] is True
+
+    # /status now reflects the active trial
+    s = await client.get("/api/license/status")
+    sd = s.json()
+    assert sd["edition"] == "plus_trial"
+    assert sd["trial_active"] is True
+    assert sd["trial_used"] is True
+
+
+@pytest.mark.asyncio
+async def test_trial_start_requires_admin(client: AsyncClient, tmp_path, monkeypatch):
+    """AC: trial/start without admin token → 401."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    resp = await client.post("/api/license/trial/start")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_trial_start_409_when_already_used(client: AsyncClient, tmp_path, monkeypatch):
+    """AC-START-2: second start (trial_used set) → 409 trial_already_used."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    await _set_trial_flags(True, date.today().isoformat())
+    reset_license_cache()
+
+    resp = await client.post("/api/license/trial/start", headers=_ADMIN_HEADERS)
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "trial_already_used"
+
+
+@pytest.mark.asyncio
+async def test_trial_start_409_when_valid_license(client: AsyncClient, tmp_path, monkeypatch):
+    """AC-START-2/AC-PRIORITY: a valid key license blocks the trial → 409."""
+    lic_path, enc_path = _make_license_files(tmp_path)
+    monkeypatch.setattr(_settings, "plus_license_path", str(lic_path))
+    monkeypatch.setattr(_settings, "plus_enc_path", str(enc_path))
+    reset_license_cache()
+
+    resp = await client.post("/api/license/trial/start", headers=_ADMIN_HEADERS)
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == "valid_license_present"
+
+
+@pytest.mark.asyncio
+async def test_trial_start_double_click_is_409(client: AsyncClient, tmp_path, monkeypatch):
+    """Edge case: first start 200, second start 409 (deterministic, idempotent)."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+
+    first = await client.post("/api/license/trial/start", headers=_ADMIN_HEADERS)
+    assert first.status_code == 200
+
+    second = await client.post("/api/license/trial/start", headers=_ADMIN_HEADERS)
+    assert second.status_code == 409
+    assert second.json()["detail"] == "trial_already_used"
+
+
+@pytest.mark.asyncio
+async def test_trial_start_writes_audit(client: AsyncClient, tmp_path, monkeypatch):
+    """AC-START-1: trial start records a trial_started audit event."""
+    from sqlalchemy import text as _text
+    from backend.db.database import get_db
+
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    resp = await client.post("/api/license/trial/start", headers=_ADMIN_HEADERS)
+    assert resp.status_code == 200
+
+    async with get_db() as db:
+        row = (
+            await db.execute(
+                _text("SELECT COUNT(*) FROM audit_logs WHERE event_type = 'trial_started'")
+            )
+        ).scalar()
+    assert row >= 1
+
+
+@pytest.mark.asyncio
+async def test_status_exposes_trial_flags_in_core(client: AsyncClient, tmp_path, monkeypatch):
+    """AC-UI-3: /status always carries trial_used + trial_active keys."""
+    _point_to_missing_lic(tmp_path, monkeypatch)
+    resp = await client.get("/api/license/status")
+    data = resp.json()
+    assert "trial_used" in data
+    assert "trial_active" in data
+    assert data["trial_used"] is False
+    assert data["trial_active"] is False

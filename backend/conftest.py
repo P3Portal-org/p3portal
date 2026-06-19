@@ -99,3 +99,35 @@ def _check_docker_available() -> bool:
         except (subprocess.TimeoutExpired, OSError):
             continue
     return False
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_plus_behavior_singleton():
+    """PROJ-60: Entfernt Test-Patches vom plus_behavior-Singleton nach jedem Test.
+
+    PROJ-71 Phase 2: Diese Fixture existierte bisher NUR in der Repo-Root-
+    conftest.py. Reale Test-Läufe und die CI laufen aber als ``cd backend &&
+    pytest`` (rootdir=backend/) → die Root-conftest.py oberhalb wird **nie**
+    geladen → der Cleanup lief nie → ein Test, der ``plus_behavior`` via
+    monkeypatch auf Plus-Verhalten setzt, vergiftete nachfolgende ``*_no_plus``/
+    ``*_core``/``*_404_in_core``-Tests (Core-Erwartung scheitert) = die 26
+    "Baseline"-Failures, die den blockierenden ``-x``-CI-Job rot machten.
+
+    ``monkeypatch.setattr(plus_behavior, name, ...)`` schreibt direkt ins
+    ``__dict__`` des Dispatchers; das undo setzt den alten Wert (bound method)
+    statt zu löschen. Diese Fixture löscht alle Test-Attribute sauber, sodass
+    kein Singleton-State zwischen Tests leckt. (Identisch zur Root-Variante; die
+    Root-conftest.py bleibt für Repo-Root-Läufe bestehen.)
+    """
+    _protected = {"_core", "_active"}
+    yield
+    try:
+        from backend.core.plus_protocol import plus_behavior
+        extras = [k for k in vars(plus_behavior) if k not in _protected]
+        for attr in extras:
+            try:
+                object.__delattr__(plus_behavior, attr)
+            except AttributeError:
+                pass
+    except ImportError:
+        pass

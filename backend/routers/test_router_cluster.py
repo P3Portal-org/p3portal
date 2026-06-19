@@ -827,8 +827,10 @@ def _make_portal_clients(nodes_and_data: list) -> list:
 async def test_get_nodes_multi_node_success(client: AsyncClient, local_plus_headers: dict):
     """Plus + local: fan-out to 2 nodes, both succeed, portal_node_name annotated."""
     mc1, mc2 = AsyncMock(), AsyncMock()
-    mc1.get_cluster_resources_v2 = AsyncMock(return_value=[{**_FAKE_NODE_STATUS, "node": "pve1"}])
-    mc2.get_cluster_resources_v2 = AsyncMock(return_value=[{**_FAKE_NODE_STATUS, "node": "pve2"}])
+    # get_nodes() ruft get_nodes_with_swap() (PROJ-S563 Swap-Balken), nicht
+    # get_cluster_resources_v2 — Mock muss die tatsächlich konsumierte Methode treffen.
+    mc1.get_nodes_with_swap = AsyncMock(return_value=[{**_FAKE_NODE_STATUS, "node": "pve1"}])
+    mc2.get_nodes_with_swap = AsyncMock(return_value=[{**_FAKE_NODE_STATUS, "node": "pve2"}])
     portal = _make_portal_clients([
         (_NODE_ROW_1, mc1, _FAKE_AUTH_1),
         (_NODE_ROW_2, mc2, _FAKE_AUTH_2),
@@ -850,9 +852,9 @@ async def test_get_nodes_multi_node_success(client: AsyncClient, local_plus_head
 async def test_get_nodes_multi_node_partial_failure(client: AsyncClient, local_plus_headers: dict):
     """Plus + local: one node unreachable, other node's data still returned."""
     mc1 = AsyncMock()
-    mc1.get_cluster_resources_v2 = AsyncMock(return_value=[{**_FAKE_NODE_STATUS, "node": "pve1"}])
+    mc1.get_nodes_with_swap = AsyncMock(return_value=[{**_FAKE_NODE_STATUS, "node": "pve1"}])
     mc2 = AsyncMock()
-    mc2.get_cluster_resources_v2 = AsyncMock(side_effect=Exception("timeout"))
+    mc2.get_nodes_with_swap = AsyncMock(side_effect=Exception("timeout"))
     portal = _make_portal_clients([
         (_NODE_ROW_1, mc1, _FAKE_AUTH_1),
         (_NODE_ROW_2, mc2, _FAKE_AUTH_2),

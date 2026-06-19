@@ -9,6 +9,9 @@ import { useOwnerConfig } from '../../features/owners/hooks/useOwners'
 import { useLicenseLimits } from '../../hooks/useLicenseLimits'
 import { useCapability } from '../../hooks/useCapability'
 import OwnershipLimitBanner from '../../features/owners/components/OwnershipLimitBanner'
+// PROJ-83: In-Guest-Run-Optionen (Core-Feature, direkter Import erlaubt)
+import GuestScopeSelector from '../../features/ansible_inventory/components/GuestScopeSelector'
+import DeployAnsibleOptions from '../../features/ansible_inventory/components/DeployAnsibleOptions'
 // PROJ-62: Pool-Dropdown + QuotaErrorBanner via Plus-Registry (lazy, Core importiert nie direkt)
 import { PlusComponents } from '../../plus'
 const PoolSelectorField = PlusComponents.PoolSelectorField
@@ -47,6 +50,9 @@ export default function PlaybookForm({ playbook }) {
   const [autoAssignOwner, setAutoAssignOwner] = useState(true)
   // PROJ-62: Pool-Auswahl (Plus-only)
   const [selectedPoolId, setSelectedPoolId] = useState(null)
+  // PROJ-83: In-Guest-Run (Gast-Playbook) bzw. Deploy-Onboarding-Optionen
+  const [guestSelection, setGuestSelection] = useState(null)
+  const [deployAnsible, setDeployAnsible] = useState({ manageForAnsible: true, globalOptIn: false })
 
   const { data: ownerConfig } = useOwnerConfig()
   const { ownerships } = useLicenseLimits()
@@ -59,6 +65,11 @@ export default function PlaybookForm({ playbook }) {
   const showOwnerCheckbox = ownerEnabled && ownerCategories.includes(playbook.category ?? '')
 
   const hasTemplateParam = (playbook.parameters ?? []).some(p => p.type === 'proxmox_template')
+
+  // PROJ-83: Gast-Playbook (hosts ≠ localhost) → Scope/Host-Selektor;
+  // Deploy-Playbook → Ansible-Onboarding-Optionen.
+  const isGuest = playbook.targets === 'guest'
+  const isDeploy = DEPLOY_CATEGORIES.includes(playbook.category ?? '')
 
   useEffect(() => {
     if (!hasTemplateParam) return
@@ -108,11 +119,22 @@ export default function PlaybookForm({ playbook }) {
           return true
         })
       )
+      // PROJ-83: In-Guest-Run + Deploy-Onboarding-Optionen
+      const opts = {}
+      if (isGuest && guestSelection) {
+        opts.guestScope = guestSelection.guestScope
+        opts.targetHosts = guestSelection.targetHosts
+      }
+      if (isDeploy) {
+        opts.manageForAnsible = deployAnsible.manageForAnsible
+        opts.globalOptIn = deployAnsible.globalOptIn
+      }
       const result = await startJob(
         playbook.id,
         cleaned,
         showOwnerCheckbox ? autoAssignOwner : false,
         selectedPoolId,
+        opts,
       )
       // PROJ-50: HTTP 202 → Freigabe erforderlich, Weiterleitung zur Pending-Page
       if (result?.approval_id) {
@@ -168,6 +190,16 @@ export default function PlaybookForm({ playbook }) {
           formValues={values}
         />
       ))}
+
+      {/* PROJ-83: Gast-Playbook → Scope- und Host-Auswahl für den In-Guest-Run */}
+      {isGuest && (
+        <GuestScopeSelector onChange={setGuestSelection} />
+      )}
+
+      {/* PROJ-83: Deploy-Playbook → Opt-out-Haken „Für Ansible verwalten" */}
+      {isDeploy && (
+        <DeployAnsibleOptions onChange={setDeployAnsible} />
+      )}
 
       {/* PROJ-62: Pool-Dropdown – nur bei Plus-Lizenz und Deploy-Playbooks */}
       {poolsEnabled && PoolSelectorField && (

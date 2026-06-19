@@ -16,7 +16,7 @@ The Plus image bundles two MPL-2.0 components:
 | Component | Version (pinned) | License | Source |
 |---|---|---|---|
 | OpenTofu | `1.9.x` (build `ARG OPENTOFU_VERSION`) | MPL-2.0 | <https://github.com/opentofu/opentofu> |
-| bpg/terraform-provider-proxmox | `0.78.x` (build `ARG BPG_PROVIDER_VERSION`) | MPL-2.0 | <https://github.com/bpg/terraform-provider-proxmox> |
+| bpg/terraform-provider-proxmox | `0.109.x` (build `ARG BPG_PROVIDER_VERSION`) | MPL-2.0 | <https://github.com/bpg/terraform-provider-proxmox> |
 
 Both are redistributed unmodified under the Mozilla Public License 2.0. See
 `THIRD-PARTY-LICENSES.md` at the repo root. OpenTofu (not Terraform/BSL) was chosen for

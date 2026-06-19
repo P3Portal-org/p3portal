@@ -25,6 +25,9 @@ export function useLicenseLimits() {
 
   return {
     isPlus: data?.valid === true,
+    // PROJ-94: trial flags (from /api/license/status) for the start-button visibility
+    trialUsed:   data?.trial_used === true,
+    trialActive: data?.trial_active === true,
     userLimit,
     presetLimit,
     groupLimit,

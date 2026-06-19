@@ -38,7 +38,11 @@ export default function ToolingIndicator({ tool, toolData }) {
   const lastCheck = toolData?.last_check ?? null
 
   const dotCls = statusDotClass(status)
-  const displayName = tool === 'ansible' ? 'Ansible' : tool === 'packer' ? 'Packer' : tool
+  // PROJ-66 Phase 2: OpenTofu als dritter Indikator (AC-P2-UI-2)
+  const displayName = tool === 'ansible' ? 'Ansible'
+    : tool === 'packer' ? 'Packer'
+    : tool === 'opentofu' ? 'OpenTofu'
+    : tool
 
   // Tooltip-Text AC-UI-5
   const tooltip = (() => {

@@ -19,6 +19,8 @@ const ALL_NODE_ACTIONS = [
   { id: 'node:upload_iso',      label: 'ISO hochladen' },
   { id: 'node:view_updates',    label: 'Update-Liste ansehen' },
   { id: 'node:refresh_updates', label: 'Update-Liste aktualisieren' },
+  { id: 'node:manage_network',  label: 'Netzwerk verwalten (Bridges/VLANs)' },
+  { id: 'node:manage_firewall', label: 'Firewall verwalten (Node-Regeln)' },
 ]
 
 const GROUP_LABELS = { basis: 'Basis', betrieb: 'Betrieb', admin: 'Admin' }

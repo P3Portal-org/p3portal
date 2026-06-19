@@ -1,9 +1,10 @@
 // p3portal.org
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { usePackerTemplates } from '../../hooks/usePackerTemplates'
 import { useAuth } from '../../hooks/useAuth'
-import { useGitSyncConflictIds } from '../../plus'
+import { useCapability } from '../../hooks/useCapability'
+import { useGitSyncConflictIds, PlusComponents } from '../../plus'
 import { getPackerTemplate, deletePackerTemplate } from '../../api/packer'
 import PackerBuildForm from '../../components/packer/PackerBuildForm'
 import PackerDescriptionPanel from '../../components/packer/PackerDescriptionPanel'
@@ -136,6 +137,10 @@ export default function ImageFactoryPage() {
   const [showUpload, setShowUpload] = useState(false)
   const isAdmin = role === 'admin'
   const conflictIds = useGitSyncConflictIds('packer', isAdmin)
+  // PROJ-92: Build-Editor-Tab nur bei Plus + Admin (require_admin im Backend).
+  const canBuildEditor = useCapability('packer_editor') && isAdmin
+  const PackerEditorTab = PlusComponents.PackerEditorTab
+  const tabs = canBuildEditor ? [...TABS, { id: 'build-editor', label: 'Build Editor' }] : TABS
   const visibleTemplates = role === 'viewer'
     ? templates.filter(t => !t.required_role)
     : templates
@@ -188,12 +193,13 @@ export default function ImageFactoryPage() {
       </header>
 
       <div className="flex border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-6 shrink-0">
-        {TABS.map(tab => {
+        {tabs.map(tab => {
           const tabHelpKeys = {
             'vm-images':    'image_factory.tabs.vm_images',
             'vm-templates': 'image_factory.tabs.vm_templates',
             'lxc-templates':'image_factory.tabs.lxc_templates',
             'isos':         'image_factory.tabs.isos',
+            'build-editor': 'image_factory.tabs.build_editor',
           }
           return (
             <button key={tab.id} onClick={() => setSearchParams({ tab: tab.id })} className={tabCls(tab.id)}>
@@ -203,13 +209,18 @@ export default function ImageFactoryPage() {
           )
         })}
         <div className="ml-auto self-center pr-1">
-          <TabPinButton tabId={activeTab} label={TABS.find(t => t.id === activeTab)?.label ?? activeTab} />
+          <TabPinButton tabId={activeTab} label={tabs.find(t => t.id === activeTab)?.label ?? activeTab} />
         </div>
       </div>
 
       {activeTab === 'vm-templates' && <ProxmoxTemplatesTab />}
       {activeTab === 'lxc-templates' && <LxcTemplatesTab />}
       {activeTab === 'isos' && <IsoManagerTab />}
+      {activeTab === 'build-editor' && canBuildEditor && PackerEditorTab && (
+        <Suspense fallback={<div className="p-6 text-sm text-gray-500 dark:text-zinc-400">Lädt…</div>}>
+          <PackerEditorTab />
+        </Suspense>
+      )}
 
       <div className={`flex flex-1 min-h-0 m-4 rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-700 ${activeTab !== 'vm-images' ? 'hidden' : ''}`}>
         <div className="w-64 lg:w-72 xl:w-80 2xl:w-96 shrink-0 border-r border-gray-200 dark:border-zinc-700 overflow-y-auto p-3 space-y-2 bg-transparent">

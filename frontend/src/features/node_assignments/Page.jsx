@@ -19,6 +19,8 @@ const NODE_ACTION_LABELS = {
   'node:upload_iso':      'node_assignments.action_upload_iso',
   'node:view_updates':    'node_assignments.action_view_updates',
   'node:refresh_updates': 'node_assignments.action_refresh_updates',
+  'node:manage_network':  'node_assignments.action_manage_network',
+  'node:manage_firewall': 'node_assignments.action_manage_firewall',
 }
 
 function NodeActionBadge({ action }) {

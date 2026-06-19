@@ -35,6 +35,24 @@ Authorization: Bearer upk_<key>
 
 **Note:** the legacy `p3k_` prefix (v1 M2M keys) is no longer supported. Migrate existing integrations to `upk_` keys.
 
+### Default-Deny for `upk_` keys (PROJ-97, breaking)
+
+Since PROJ-97 the API follows **default-deny** for `upk_` keys:
+
+- A `upk_` key may only reach endpoints that **declare a scope**, plus a small exemption list.
+- Any endpoint **without** a declared scope returns **HTTP 403** to a `upk_` key — even if the
+  key owner's RBAC would allow it. This closes the historic gap where a scoped key could reach
+  un-scoped endpoints (limited only by RBAC). The rule also applies automatically to future routers.
+- **Exemption list** (reachable without a scope): `GET /api/version`, `GET /api/scopes/manifest`.
+- **JWT sessions are unaffected** — default-deny only applies to `Bearer upk_` requests.
+- Denied default-deny requests are audited as `api_scope_denied` with
+  `scope_required="<no-scope-declared>"` and a `note` carrying the key prefix (so the operator
+  can identify the integration via `user_api_keys.key_prefix`).
+
+> **Migration:** an existing key that previously relied on an un-scoped endpoint will now receive
+> 403. Grant the matching scope (see table below) in **System Settings → API Keys**. The audit log
+> (`api_scope_denied`) makes affected keys/endpoints visible after the upgrade.
+
 ---
 
 ## Scopes
@@ -55,6 +73,20 @@ The full scope list is available at `GET /api/scopes/manifest` (JWT or `upk_` au
 | `owners:read` | Read VM owner assignments |
 | `approvals:read` | Read approval requests |
 | `approvals:approve` | Approve or reject approval requests |
+| `config_snapshots:read` / `:write` | Read / manage VM/LXC config snapshots (Plus) |
+| `auto_snapshots:read` | Read auto-snapshot runs/native snapshots (Plus) |
+| `stacks:read` / `:write` / `:delete` | Read / edit / delete declarative stacks (Plus) |
+| `backup_jobs:read` / `:write` | Read / manage datacenter backup jobs (PROJ-78) |
+| `networks:read` / `:write` | Read / manage node bridges & VLANs (PROJ-79) |
+| `sdn:read` / `:write` | Read / manage SDN zones/vnets/subnets + apply/revert (PROJ-80) |
+| `firewall:read` / `:write` | Read / manage firewall (datacenter + node + VM levels) (PROJ-90) |
+| `vms:write` | VM mutations: power, config change, snapshots, disks (PROJ-10/63/81). VM **reads** stay under `cluster:read` |
+| `ansible_inventory:read` / `:write` | Read / manage Ansible inventory + onboarding (PROJ-83/84) |
+| `packer_editor:read` / `:write` | Read / edit Packer build definitions (Plus, PROJ-92) |
+| `ansible_editor:read` / `:write` | Read / edit Ansible playbook definitions (Plus, PROJ-93) |
+
+Scopes marked **(Plus)** require a Plus license; the endpoints additionally return 404 in Core
+mode regardless of scope (edition gate and scope gate are independent layers).
 
 **Aliases** — these scope names are transparently mapped to their canonical scope:
 
@@ -85,7 +117,7 @@ Public endpoint, no auth required:
 ```json
 {
   "version": "1.60.0",
-  "api_compat_level": "1",
+  "api_compat_level": "2",
   "edition": "core"
 }
 ```
@@ -96,6 +128,13 @@ Public endpoint, no auth required:
 ### Breaking changes
 
 Breaking changes are signalled by bumping `api_compat_level`. Non-breaking additions (new fields, new scopes) ship without a bump.
+
+**`api_compat_level` history:**
+
+| Level | Change |
+|---|---|
+| `1` | PROJ-44: unified `upk_`-only API surface |
+| `2` | PROJ-97: **default-deny for `upk_` keys** — endpoints without a declared scope now return 403 to API keys (see "Default-Deny" above). 15 new scopes added (backup_jobs/networks/sdn/firewall/vms:write/ansible_inventory/packer_editor/ansible_editor). |
 
 ---
 

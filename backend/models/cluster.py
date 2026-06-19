@@ -31,6 +31,8 @@ class VmInfo(BaseModel):
     maxcpu: int = 0
     mem: int = 0
     maxmem: int = 0
+    disk: int = 0         # PROJ-75: bytes used (LXC liefert echte Werte; QEMU oft 0)
+    maxdisk: int = 0      # PROJ-75: bytes total
     uptime: int = 0
     template: int = 0     # 1 wenn Proxmox-Template, sonst 0
     ctime: int | None = None  # Unix-Timestamp der Erstellung (aus VM-Config meta-Feld)

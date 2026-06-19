@@ -41,6 +41,14 @@ jobs:
           cd backend
           python -m pytest -x -q --tb=short
 
+      # PROJ-71 Phase 2: Der vollständige Test-Lauf ist gegen PostgreSQL grün
+      # (testcontainers postgres:17-alpine; 2144 passed / 0 failed, lokal gegen
+      # postgres:17 verifiziert). Test-Fixtures portabel (ON CONFLICT statt
+      # INSERT OR IGNORE), echte PG-App-Bugs gefixt (get_sync_engine-Passwort,
+      # Boolean-Spalten, ssh-key-409), plus_behavior-Singleton-Cleanup in
+      # backend/conftest.py → daher jetzt BLOCKIEREND (kein continue-on-error).
+      # PostgreSQL bleibt im Setup-Wizard als "experimental" markiert bis zur
+      # manuellen Maintainer-Freigabe nach echtem Betriebstest.
       - name: Run tests (PostgreSQL)
         if: matrix.db == 'postgres'
         env:

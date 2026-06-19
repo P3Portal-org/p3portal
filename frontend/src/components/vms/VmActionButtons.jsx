@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { startVm, stopVm, rebootVm } from '../../api/vms'
 import ConfirmModal from '../common/ConfirmModal'
+import { useDependencyImpactGuard } from './useDependencyImpactGuard'
 
 const ACTIONS = {
   start:  { label: 'Starten',    needsConfirm: false, danger: false },
@@ -36,7 +37,7 @@ function errMsg(err) {
   return d ?? 'Fehler beim Ausführen der Aktion.'
 }
 
-function SingleAction({ action, vmid, node, vmStatus, onSuccess, onError, onConfirmRequested, compact }) {
+function SingleAction({ action, vmid, node, vmStatus, onSuccess, onError, onConfirmRequested, guardedRun, compact }) {
   const [busy, setBusy] = useState(false)
   const cfg = ACTIONS[action]
 
@@ -48,11 +49,14 @@ function SingleAction({ action, vmid, node, vmStatus, onSuccess, onError, onConf
   const execute = async () => {
     setBusy(true)
     try {
+      // PROJ-96: stop/reboot durchlaufen die Abhängigkeits-Impact-Warnung
+      // (409 → Dialog → Retry mit confirm); start ist ungeguardet.
       if (action === 'start')  await startVm(vmid, node)
-      if (action === 'stop')   await stopVm(vmid, node)
-      if (action === 'reboot') await rebootVm(vmid, node)
+      if (action === 'stop')   await guardedRun((confirm) => stopVm(vmid, node, { confirm }), cfg.label)
+      if (action === 'reboot') await guardedRun((confirm) => rebootVm(vmid, node, { confirm }), cfg.label)
       onSuccess?.(`VM ${vmid}: ${cfg.label} wurde gestartet.`)
     } catch (err) {
+      if (err?.cancelled) return  // Impact-Dialog abgebrochen → kein Fehler-Toast
       onError?.(errMsg(err))
     } finally {
       setBusy(false)
@@ -99,6 +103,7 @@ function SingleAction({ action, vmid, node, vmStatus, onSuccess, onError, onConf
 
 export default function VmActionButtons({ vm, onSuccess, onError, compact = false }) {
   const [pendingConfirm, setPendingConfirm] = useState(null)
+  const { guardedRun, impactModal } = useDependencyImpactGuard()
   const perms = vm.permissions
 
   const visible = perms == null
@@ -121,9 +126,11 @@ export default function VmActionButtons({ vm, onSuccess, onError, compact = fals
           onSuccess={onSuccess}
           onError={onError}
           onConfirmRequested={(a, execute) => setPendingConfirm({ action: a, execute })}
+          guardedRun={guardedRun}
           compact={compact}
         />
       ))}
+      {impactModal}
       {pendingConfirm && (
         <ConfirmModal
           title={`VM ${vm.vmid} ${cfg.label.toLowerCase()}?`}
