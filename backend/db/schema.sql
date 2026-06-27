@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     tofu_token_secret   TEXT NOT NULL DEFAULT '',
     cluster_nodes TEXT    NOT NULL DEFAULT '',
     poll_interval INTEGER NOT NULL DEFAULT 30,
+    position     INTEGER NOT NULL DEFAULT 0,
     is_default   INTEGER NOT NULL DEFAULT 0,
     created_at   TEXT    NOT NULL,
     created_by   TEXT    NOT NULL DEFAULT 'system'

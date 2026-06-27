@@ -57,15 +57,15 @@ export default function SshKeyField({ param, onChange, error }) {
     <label className={`flex items-start gap-2.5 cursor-pointer p-2.5 border rounded transition ${
       checked
         ? accent
-          ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-          : 'border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/20'
+          ? 'border-portal-info/50 bg-portal-info/10'
+          : 'border-portal-accent/50 bg-portal-accent/10'
         : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
     }`}>
       <input
         type="checkbox"
         checked={checked}
         onChange={e => onCheck(e.target.checked)}
-        className="mt-0.5 w-4 h-4 shrink-0 border-gray-300 dark:border-zinc-600 text-orange-600 focus:ring-orange-500"
+        className="mt-0.5 w-4 h-4 shrink-0 border-gray-300 dark:border-zinc-600 text-portal-accent focus:ring-portal-accent"
       />
       <div className="min-w-0">
         <span className="block text-xs font-medium text-gray-700 dark:text-zinc-300">{label}</span>
@@ -78,7 +78,7 @@ export default function SshKeyField({ param, onChange, error }) {
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
 
       {profileKeys.length === 0 && !serviceKey && (
@@ -108,7 +108,7 @@ export default function SshKeyField({ param, onChange, error }) {
         }
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-portal-danger">{error}</p>}
     </div>
   )
 }

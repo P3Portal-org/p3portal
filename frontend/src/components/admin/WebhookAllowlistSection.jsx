@@ -68,7 +68,7 @@ export default function WebhookAllowlistSection() {
                 {entry.pattern}
               </code>
               {entry.allow_http && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 shrink-0">
+                <span className="text-xs px-1.5 py-0.5 rounded bg-portal-warn/15 text-portal-warn shrink-0">
                   HTTP
                 </span>
               )}

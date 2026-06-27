@@ -1,7 +1,12 @@
 // p3portal.org
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { I18nextProvider } from 'react-i18next'
+import i18n from '../../i18n'
 import ComputeNetworkTab from './ComputeNetworkTab'
+
+// i18n-Provider, damit t() im Test echte (deutsche) Werte liefert statt der Schlüssel.
+const Wrap = ({ children }) => <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 
 vi.mock('../../api/networks', () => ({
   listNetworkInterfaces: vi.fn(),
@@ -30,7 +35,7 @@ describe('ComputeNetworkTab', () => {
 
   it('AC-LIST-1: fetches and lists interfaces when active', async () => {
     listNetworkInterfaces.mockResolvedValue(IFACES)
-    render(<ComputeNetworkTab nodeName="pve1" active={true} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={true} />, { wrapper: Wrap })
     await screen.findByText('vmbr0')
     expect(listNetworkInterfaces).toHaveBeenCalledWith('pve1')
     expect(screen.getByText('vmbr1')).toBeInTheDocument()
@@ -39,7 +44,7 @@ describe('ComputeNetworkTab', () => {
 
   it('AC-APPLY-1: shows pending banner with apply/revert buttons', async () => {
     listNetworkInterfaces.mockResolvedValue(IFACES)
-    render(<ComputeNetworkTab nodeName="pve1" active={true} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={true} />, { wrapper: Wrap })
     await screen.findByText('vmbr0')
     expect(screen.getByText(/Übernehmen \(Reload\)/)).toBeInTheDocument()
     expect(screen.getByText(/Verwerfen \(Revert\)/)).toBeInTheDocument()
@@ -47,14 +52,14 @@ describe('ComputeNetworkTab', () => {
 
   it('AC-LIST-2: pending interface shows "ausstehend" badge', async () => {
     listNetworkInterfaces.mockResolvedValue(IFACES)
-    render(<ComputeNetworkTab nodeName="pve1" active={true} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={true} />, { wrapper: Wrap })
     await screen.findByText('vmbr0')
     expect(screen.getByText('ausstehend')).toBeInTheDocument()
   })
 
   it('AC-LIST-4: type filter narrows the list to VLANs', async () => {
     listNetworkInterfaces.mockResolvedValue(IFACES)
-    render(<ComputeNetworkTab nodeName="pve1" active={true} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={true} />, { wrapper: Wrap })
     await screen.findByText('vmbr0')
     fireEvent.change(screen.getByDisplayValue('Alle Typen'), { target: { value: 'vlan' } })
     expect(screen.queryByText('vmbr0')).not.toBeInTheDocument()
@@ -63,18 +68,18 @@ describe('ComputeNetworkTab', () => {
 
   it('AC-LIST-6: shows node-unreachable banner with detail', async () => {
     listNetworkInterfaces.mockRejectedValue({ response: { status: 502 } })
-    render(<ComputeNetworkTab nodeName="pve1" active={true} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={true} />, { wrapper: Wrap })
     await screen.findByText(/Node nicht erreichbar/)
   })
 
   it('AC-LIST-5: shows permission-denied state', async () => {
     listNetworkInterfaces.mockResolvedValue({ interfaces: [], permission_denied: true })
-    render(<ComputeNetworkTab nodeName="pve1" active={true} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={true} />, { wrapper: Wrap })
     await screen.findByText(/Kein Zugriff in Proxmox/)
   })
 
   it('does not fetch when inactive', () => {
-    render(<ComputeNetworkTab nodeName="pve1" active={false} />)
+    render(<ComputeNetworkTab nodeName="pve1" active={false} />, { wrapper: Wrap })
     expect(listNetworkInterfaces).not.toHaveBeenCalled()
   })
 })

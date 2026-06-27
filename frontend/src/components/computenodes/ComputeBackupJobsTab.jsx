@@ -5,84 +5,85 @@
  * Provides CRUD + run-now for users with manage_backup_jobs or admin role.
  */
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listBackupJobs, deleteBackupJob, updateBackupJob, runBackupNow } from '../../api/backupJobs'
 import BackupJobFormModal from './BackupJobFormModal'
 import ConfirmModal from '../common/ConfirmModal'
 
 // ── Helper: human-readable schedule hint ────────────────────────────────────
 
-function scheduleHint(schedule) {
+function scheduleHint(schedule, t) {
   if (!schedule) return ''
   const s = schedule.trim()
   // Simple Proxmox calendar-event / cron display
-  if (s.match(/^\d{2}:\d{2}$/)) return `täglich um ${s}`
-  if (s === 'daily')             return 'täglich'
-  if (s === 'weekly')            return 'wöchentlich'
-  if (s === 'monthly')           return 'monatlich'
+  if (s.match(/^\d{2}:\d{2}$/)) return t('backup_jobs.hint_daily_at', { time: s })
+  if (s === 'daily')             return t('backup_jobs.hint_daily')
+  if (s === 'weekly')            return t('backup_jobs.hint_weekly')
+  if (s === 'monthly')           return t('backup_jobs.hint_monthly')
   return ''
 }
 
 // ── Helper: VM-Auswahl Kurzform ───────────────────────────────────────────────
 
-function vmSelLabel(job) {
-  if (job.vmid)                    return `VMIDs: ${job.vmid}`
-  if (job.pool)                    return `Pool: ${job.pool}`
-  if (job.all && job.exclude)      return `Alle außer ${job.exclude}`
-  if (job.all)                     return 'Alle Gäste'
-  return '–'
+function vmSelLabel(job, t) {
+  if (job.vmid)                    return t('backup_jobs.vm_sel_vmids', { vmid: job.vmid })
+  if (job.pool)                    return t('backup_jobs.vm_sel_pool', { pool: job.pool })
+  if (job.all && job.exclude)      return t('backup_jobs.vm_sel_all_except', { exclude: job.exclude })
+  if (job.all)                     return t('backup_jobs.vm_sel_all')
+  return t('backup_jobs.dash')
 }
 
 // ── Helper: Retention Kurzform ────────────────────────────────────────────────
 
-function retentionLabel(retention) {
-  if (!retention) return '–'
+function retentionLabel(retention, t) {
+  if (!retention) return t('backup_jobs.dash')
   const parts = []
-  if (retention.keep_last    != null) parts.push(`letzten ${retention.keep_last}`)
-  if (retention.keep_daily   != null) parts.push(`${retention.keep_daily}×tägl.`)
-  if (retention.keep_weekly  != null) parts.push(`${retention.keep_weekly}×wöch.`)
-  if (retention.keep_monthly != null) parts.push(`${retention.keep_monthly}×mon.`)
-  return parts.length > 0 ? parts.join(', ') : '–'
+  if (retention.keep_last    != null) parts.push(t('backup_jobs.ret_keep_last',    { count: retention.keep_last }))
+  if (retention.keep_daily   != null) parts.push(t('backup_jobs.ret_keep_daily',   { count: retention.keep_daily }))
+  if (retention.keep_weekly  != null) parts.push(t('backup_jobs.ret_keep_weekly',  { count: retention.keep_weekly }))
+  if (retention.keep_monthly != null) parts.push(t('backup_jobs.ret_keep_monthly', { count: retention.keep_monthly }))
+  return parts.length > 0 ? parts.join(', ') : t('backup_jobs.dash')
 }
 
 // ── Helper: error message from API error ──────────────────────────────────────
 
-function apiErrMsg(err) {
+function apiErrMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien für die Backup-Job-Verwaltung.'
-  if (s === 503) return 'Admin-Token für diese Node nicht konfiguriert.'
-  if (s === 502) return 'Proxmox nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Ausführen der Aktion.'
+  if (s === 403) return t('backup_jobs.err_403')
+  if (s === 503) return t('backup_jobs.err_503')
+  if (s === 502) return t('backup_jobs.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('backup_jobs.err_generic')
 }
 
 // ── Aktionen-Button-Leiste ────────────────────────────────────────────────────
 
-function JobActions({ job, onEdit, onDelete, onRun, busy }) {
+function JobActions({ job, onEdit, onDelete, onRun, busy, t }) {
   return (
     <div className="flex items-center gap-1.5 justify-end">
       <button
         onClick={() => onEdit(job)}
         disabled={busy}
         className="btn-table"
-        title="Bearbeiten"
+        title={t('backup_jobs.title_edit')}
       >
-        Bearbeiten
+        {t('backup_jobs.btn_edit')}
       </button>
       <button
         onClick={() => onRun(job)}
         disabled={busy}
         className="btn-table"
-        title="Jetzt sichern"
+        title={t('backup_jobs.title_run_now')}
       >
-        Jetzt sichern
+        {t('backup_jobs.btn_run_now')}
       </button>
       <button
         onClick={() => onDelete(job)}
         disabled={busy}
         className="btn-table-danger"
-        title="Löschen"
+        title={t('backup_jobs.title_delete')}
       >
-        Löschen
+        {t('backup_jobs.btn_delete')}
       </button>
     </div>
   )
@@ -91,6 +92,7 @@ function JobActions({ job, onEdit, onDelete, onRun, busy }) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function ComputeBackupJobsTab({ nodeName, active }) {
+  const { t } = useTranslation()
   const [data, setData]           = useState(null)   // { jobs, permission_denied, node_unreachable }
   const [loading, setLoading]     = useState(false)
   const [togglingId, setTogglingId] = useState(null) // job id being toggled
@@ -107,9 +109,9 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
     setLoading(true)
     listBackupJobs(nodeName)
       .then(d => setData(d))
-      .catch(err => setData({ jobs: [], node_unreachable: true, detail: apiErrMsg(err) }))
+      .catch(err => setData({ jobs: [], node_unreachable: true, detail: apiErrMsg(err, t) }))
       .finally(() => setLoading(false))
-  }, [nodeName])
+  }, [nodeName, t])
 
   useEffect(() => {
     if (!active) return
@@ -159,7 +161,7 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
         jobs: prev.jobs.map(j => j.id === job.id ? { ...j, enabled: !j.enabled } : j),
       } : prev)
     } catch (err) {
-      setActionError(apiErrMsg(err))
+      setActionError(apiErrMsg(err, t))
     } finally {
       setTogglingId(null)
     }
@@ -172,7 +174,7 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
       await deleteBackupJob(nodeName, deleteJob.id)
       load()
     } catch (err) {
-      throw new Error(apiErrMsg(err))
+      throw new Error(apiErrMsg(err, t))
     }
   }
 
@@ -184,7 +186,7 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
       setRunResult(result)
       // Don't close automatically – show result to user; user closes via "OK"
     } catch (err) {
-      throw new Error(apiErrMsg(err))
+      throw new Error(apiErrMsg(err, t))
     }
   }
 
@@ -202,11 +204,11 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
 
   if (data?.node_unreachable) {
     return (
-      <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
-        Node nicht erreichbar – Backup-Jobs konnten nicht geladen werden.
+      <div className="rounded-lg border border-portal-warn/30 bg-portal-warn/10 px-4 py-3 text-sm text-portal-warn">
+        {t('backup_jobs.node_unreachable')}
         {data.detail && (
-          <span className="block mt-1 text-xs text-yellow-600/90 dark:text-yellow-500/90">
-            Ursache: {data.detail}
+          <span className="block mt-1 text-xs text-portal-warn/90">
+            {t('backup_jobs.node_unreachable_cause', { detail: data.detail })}
           </span>
         )}
       </div>
@@ -216,9 +218,9 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
   if (data?.permission_denied) {
     return (
       <div className="rounded-lg border border-portal-border bg-portal-bg px-4 py-6 text-center">
-        <p className="text-sm font-medium text-portal-text">Kein Zugriff in Proxmox</p>
+        <p className="text-sm font-medium text-portal-text">{t('backup_jobs.no_access_title')}</p>
         <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-          Der konfigurierte Viewer-Token hat kein Leserecht auf /cluster/backup.
+          {t('backup_jobs.no_access_body')}
         </p>
       </div>
     )
@@ -231,44 +233,44 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
       {/* Datacenter-hint + action button */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-gray-400 dark:text-zinc-500">
-          Datacenter-weite Backup-Jobs – identisch auf allen Mitglieds-Nodes desselben Clusters.
+          {t('backup_jobs.datacenter_hint')}
         </p>
         <button
           onClick={() => { setActionError(''); setFormJob(null) }}
           className="btn-primary shrink-0"
         >
-          + Backup-Job anlegen
+          {t('backup_jobs.btn_create')}
         </button>
       </div>
 
       {/* Action error banner */}
       {actionError && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
           {actionError}
-          <button onClick={() => setActionError('')} className="ml-2 underline text-xs">Schließen</button>
+          <button onClick={() => setActionError('')} className="ml-2 underline text-xs">{t('backup_jobs.btn_close')}</button>
         </div>
       )}
 
       {/* Run-now result */}
       {runResult && (
-        <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-4 py-3 text-sm text-green-700 dark:text-green-400">
-          <strong>{runResult.tasks?.length ?? 0} Backup-Task(s) gestartet.</strong>{' '}
-          Fortschritt im Tab &bdquo;Ereignisse&ldquo; / &bdquo;Backups&ldquo; verfolgen.
+        <div className="rounded-lg border border-portal-success/30 bg-portal-success/10 px-4 py-3 text-sm text-portal-success">
+          <strong>{t('backup_jobs.run_result_started', { count: runResult.tasks?.length ?? 0 })}</strong>{' '}
+          {t('backup_jobs.run_result_followup')}
           <ul className="mt-1 text-xs space-y-0.5">
-            {(runResult.tasks ?? []).map((t, i) => (
+            {(runResult.tasks ?? []).map((task, i) => (
               <li key={i}>
-                <span className="font-mono">{t.node}</span>: UPID <span className="font-mono text-[10px]">{t.upid}</span>
+                <span className="font-mono">{task.node}</span>: UPID <span className="font-mono text-[10px]">{task.upid}</span>
               </li>
             ))}
           </ul>
-          <button onClick={() => setRunResult(null)} className="mt-1 underline text-xs">Schließen</button>
+          <button onClick={() => setRunResult(null)} className="mt-1 underline text-xs">{t('backup_jobs.btn_close')}</button>
         </div>
       )}
 
       {/* Empty state */}
       {jobs.length === 0 && (
         <div className="py-10 text-center text-sm text-gray-400 dark:text-zinc-500">
-          Keine geplanten Backup-Jobs in dieser Proxmox-Installation.
+          {t('backup_jobs.empty')}
         </div>
       )}
 
@@ -278,20 +280,20 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Zeitplan</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Storage</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Ziel</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Modus</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Aufbew.</th>
-                  <th className="px-3 py-2 text-center text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Aktiv</th>
-                  <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Aktionen</th>
+                <tr className="border-b border-gray-200 dark:border-zinc-700">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_id')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_schedule')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_storage')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_target')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_mode')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_retention')}</th>
+                  <th className="text-center px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_enabled')}</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-100 dark:divide-zinc-800">
                 {jobs.map(job => {
-                  const hint = scheduleHint(job.schedule)
+                  const hint = scheduleHint(job.schedule, t)
                   const toggling = togglingId === job.id
                   return (
                     <tr key={job.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors">
@@ -316,8 +318,8 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
                       <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-zinc-300 whitespace-nowrap">
                         {job.storage}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-zinc-300 max-w-[160px] truncate" title={vmSelLabel(job)}>
-                        {vmSelLabel(job)}
+                      <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-zinc-300 max-w-[160px] truncate" title={vmSelLabel(job, t)}>
+                        {vmSelLabel(job, t)}
                       </td>
                       <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 whitespace-nowrap">
                         <span className="capitalize">{job.mode}</span>
@@ -326,20 +328,20 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 whitespace-nowrap">
-                        {retentionLabel(job.retention)}
+                        {retentionLabel(job.retention, t)}
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <button
                           onClick={() => handleToggleEnabled(job)}
                           disabled={toggling}
-                          title={job.enabled ? 'Aktiv – klicken zum Deaktivieren' : 'Inaktiv – klicken zum Aktivieren'}
+                          title={job.enabled ? t('backup_jobs.toggle_title_active') : t('backup_jobs.toggle_title_inactive')}
                           className={`w-8 h-5 rounded-full transition-colors focus:outline-none ${
                             toggling ? 'opacity-40 cursor-not-allowed' :
                             job.enabled
-                              ? 'bg-green-500 hover:bg-green-600'
+                              ? 'bg-portal-success hover:bg-portal-success'
                               : 'bg-gray-300 dark:bg-zinc-600 hover:bg-gray-400'
                           }`}
-                          aria-label={job.enabled ? 'Aktiv' : 'Inaktiv'}
+                          aria-label={job.enabled ? t('backup_jobs.toggle_aria_active') : t('backup_jobs.toggle_aria_inactive')}
                         >
                           <span
                             className={`block w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform mx-0.5 ${
@@ -355,6 +357,7 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
                           onDelete={j => { setActionError(''); setDeleteJob(j); setRunResult(null) }}
                           onRun={j => { setActionError(''); setRunJob(j); setRunResult(null) }}
                           busy={toggling}
+                          t={t}
                         />
                       </td>
                     </tr>
@@ -379,16 +382,16 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
       {/* Delete confirm modal */}
       {deleteJob && (
         <ConfirmModal
-          title="Backup-Job löschen"
+          title={t('backup_jobs.delete_modal_title')}
           body={
             <>
-              <p>Job <strong className="font-mono">{deleteJob.id}</strong> wirklich löschen?</p>
+              <p>{t('backup_jobs.delete_modal_confirm', { id: deleteJob.id })}</p>
               <p className="mt-2 text-xs text-gray-400 dark:text-zinc-500">
-                Nur der Zeitplan wird entfernt – vorhandene Backup-Dateien bleiben erhalten.
+                {t('backup_jobs.delete_modal_hint')}
               </p>
             </>
           }
-          confirmLabel="Löschen"
+          confirmLabel={t('backup_jobs.delete_modal_btn')}
           variant="danger"
           onConfirm={handleDeleteConfirm}
           onClose={() => setDeleteJob(null)}
@@ -398,16 +401,16 @@ export default function ComputeBackupJobsTab({ nodeName, active }) {
       {/* Run-now confirm modal */}
       {runJob && !runResult && (
         <ConfirmModal
-          title="Backup jetzt starten"
+          title={t('backup_jobs.run_modal_title')}
           body={
             <>
-              <p>Job <strong className="font-mono">{runJob.id}</strong> sofort ausführen?</p>
-              <p className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
-                ⚠ Dies kann je nach VM-Anzahl kurzzeitig erhöhte I/O- und Netzwerklast erzeugen.
+              <p>{t('backup_jobs.run_modal_confirm', { id: runJob.id })}</p>
+              <p className="mt-2 text-xs text-portal-warn">
+                {t('backup_jobs.run_modal_hint')}
               </p>
             </>
           }
-          confirmLabel="Jetzt sichern"
+          confirmLabel={t('backup_jobs.run_modal_btn')}
           variant="primary"
           onConfirm={handleRunConfirm}
           onClose={() => setRunJob(null)}

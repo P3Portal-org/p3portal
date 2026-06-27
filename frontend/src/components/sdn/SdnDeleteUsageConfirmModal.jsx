@@ -10,6 +10,7 @@
  * Apply. Subnet/VNet ids: subnet delete needs (vnet, subnet-id).
  */
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   checkSdnZoneUsage,
   checkSdnVnetUsage,
@@ -18,18 +19,18 @@ import {
   deleteSdnSubnet,
 } from '../../api/sdn'
 
-function errMsg(err) {
+function errMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien (SDN.Allocate auf /sdn erforderlich).'
-  if (s === 503) return 'Admin-Token (SDN.Allocate) für diesen Cluster nicht konfiguriert.'
-  if (s === 502) return 'Proxmox-API nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Löschen.'
+  if (s === 403) return t('sdn.delete.err_403')
+  if (s === 503) return t('sdn.delete.err_503')
+  if (s === 502) return t('sdn.delete.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('sdn.delete.err_generic')
 }
 
-const KIND_LABEL = { zone: 'Zone', vnet: 'VNet', subnet: 'Subnet' }
-
 export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = null, onClose, onSuccess }) {
+  const { t } = useTranslation()
+  const KIND_LABEL = { zone: t('sdn.delete.kind_zone'), vnet: t('sdn.delete.kind_vnet'), subnet: t('sdn.delete.kind_subnet') }
   const hasUsageCheck = kind === 'zone' || kind === 'vnet'
   const [usage, setUsage]       = useState(null)
   const [loading, setLoading]   = useState(hasUsageCheck)
@@ -58,7 +59,7 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(errMsg(err))
+      setError(errMsg(err, t))
       setDeleting(false)
     }
   }
@@ -67,7 +68,7 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
   const subnets = usage?.subnets ?? []
   const vnets = usage?.vnets ?? []
   const inUse = Boolean(usage?.in_use)
-  const label = KIND_LABEL[kind] ?? 'Objekt'
+  const label = KIND_LABEL[kind] ?? t('sdn.delete.kind_object')
 
   return (
     <div
@@ -79,26 +80,26 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
       <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]">
         <div className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">
           <h2 id="sdn-delete-title" className="text-base font-semibold text-gray-900 dark:text-zinc-100">
-            {label} löschen – {item?.cidr || item?.id}
+            {t('sdn.delete.title', { label, name: item?.cidr || item?.id })}
           </h2>
         </div>
 
         <div className="px-6 py-4 space-y-3 overflow-y-auto">
           {loading && (
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Nutzungsprüfung läuft …</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('sdn.delete.checking')}</p>
           )}
 
           {/* Zone usage: vnets in the zone */}
           {!loading && kind === 'zone' && inUse && (
             <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3">
               <p className="text-sm font-medium text-portal-danger">
-                ⚠ Diese Zone enthält noch {vnets.length} VNet(s):
+                {t('sdn.delete.zone_in_use', { count: vnets.length })}
               </p>
               <ul className="mt-2 text-xs text-portal-danger/90 space-y-0.5 max-h-40 overflow-y-auto font-mono">
                 {vnets.map(v => <li key={v}>{v}</li>)}
               </ul>
               <p className="mt-2 text-xs text-portal-danger/80">
-                Proxmox lehnt das Löschen einer Zone mit VNets ggf. ab – zuerst die VNets entfernen.
+                {t('sdn.delete.zone_in_use_hint')}
               </p>
             </div>
           )}
@@ -109,7 +110,7 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
               {vms.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-portal-danger">
-                    ⚠ Dieses VNet wird von {vms.length} Gast/Gästen als Bridge genutzt:
+                    {t('sdn.delete.vnet_vms_in_use', { count: vms.length })}
                   </p>
                   <ul className="mt-1 text-xs text-portal-danger/90 space-y-0.5 max-h-32 overflow-y-auto">
                     {vms.map(u => (
@@ -124,7 +125,7 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
               {subnets.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-portal-danger">
-                    Es hängen noch {subnets.length} Subnet(s) daran:
+                    {t('sdn.delete.vnet_subnets_in_use', { count: subnets.length })}
                   </p>
                   <ul className="mt-1 text-xs text-portal-danger/90 space-y-0.5 max-h-24 overflow-y-auto font-mono">
                     {subnets.map(s => <li key={s}>{s}</li>)}
@@ -132,7 +133,7 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
                 </div>
               )}
               <p className="text-xs text-portal-danger/80">
-                Nach Löschen + Apply hängen die Netzwerkkarten dieser Gäste ins Leere.
+                {t('sdn.delete.vnet_in_use_hint')}
               </p>
             </div>
           )}
@@ -140,24 +141,28 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
           {/* No usage found */}
           {!loading && hasUsageCheck && !inUse && (
             <p className="text-sm text-gray-700 dark:text-zinc-300">
-              Keine bekannte Nutzung dieses {label}s{usage?.incomplete ? ' (Prüfung war unvollständig).' : '.'}
+              {t('sdn.delete.no_usage', {
+                label,
+                suffix: usage?.incomplete ? t('sdn.delete.no_usage_incomplete') : t('sdn.delete.no_usage_dot'),
+              })}
             </p>
           )}
 
           {/* Subnet: plain confirm */}
           {kind === 'subnet' && (
             <p className="text-sm text-gray-700 dark:text-zinc-300">
-              Subnet <span className="font-mono">{item?.cidr || item?.id}</span> (VNet {item?.vnet}) wirklich löschen?
+              {t('sdn.delete.subnet_confirm')}{' '}
+              <span className="font-mono">{item?.cidr || item?.id}</span> (VNet {item?.vnet})
             </p>
           )}
 
           <p className="text-xs text-gray-400 dark:text-zinc-500">
-            Die Löschung wird zunächst nur vorgemerkt (pending) und erst beim cluster-weiten Übernehmen aktiv.
+            {t('sdn.delete.staged_hint')}
           </p>
 
           {usage?.incomplete && hasUsageCheck && (
             <p className="text-[11px] text-portal-warn">
-              Hinweis: Die Nutzungsprüfung war unvollständig – die Liste ist evtl. nicht vollständig.
+              {t('sdn.delete.incomplete_hint')}
             </p>
           )}
 
@@ -169,9 +174,9 @@ export default function SdnDeleteUsageConfirmModal({ kind, item, portalNodeId = 
         </div>
 
         <div className="px-6 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl">
-          <button type="button" onClick={onClose} disabled={deleting} className="btn-secondary">Abbrechen</button>
+          <button type="button" onClick={onClose} disabled={deleting} className="btn-secondary">{t('sdn.delete.cancel')}</button>
           <button type="button" onClick={handleDelete} disabled={deleting || loading} className="btn-danger">
-            {deleting ? '…' : 'Löschen'}
+            {deleting ? '…' : t('sdn.delete.confirm')}
           </button>
         </div>
         <span className="rq hidden" aria-hidden="true" />

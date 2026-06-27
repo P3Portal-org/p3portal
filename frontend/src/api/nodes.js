@@ -34,3 +34,8 @@ export async function setDefaultNode(id) {
   const { data } = await api.post(`/api/admin/nodes/default/${id}`)
   return data
 }
+
+export async function reorderNodes(nodeIds) {
+  const { data } = await api.put('/api/admin/nodes/reorder', { node_ids: nodeIds })
+  return data
+}

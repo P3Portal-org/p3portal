@@ -60,13 +60,13 @@ export default function NodeSection({ nodes, loading, selectedNode, onNodeSelect
                   <NodeCard node={n} />
                   <div className={`absolute inset-0 rounded-lg pointer-events-none transition-all ${
                     isSelected
-                      ? 'ring-2 ring-orange-500'
-                      : 'ring-0 group-hover:ring-2 ring-orange-500/30'
+                      ? 'ring-2 ring-portal-accent'
+                      : 'ring-0 group-hover:ring-2 ring-portal-accent'
                   }`} />
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/compute/${n.node}`) }}
-                      className="text-xs text-orange-500 bg-white dark:bg-zinc-900 px-2 py-0.5 border border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors"
+                      className="text-xs text-portal-accent bg-white dark:bg-zinc-900 px-2 py-0.5 border border-portal-accent/30 hover:bg-portal-accent/10 dark:hover:bg-zinc-800 transition-colors"
                     >
                       Details →
                     </button>

@@ -33,7 +33,7 @@ export default function ApiKeyDeleteConfirmModal({ apiKey, onClose, onDeleted })
             Diese Aktion kann nicht rückgängig gemacht werden. Audit-Log-Einträge des Keys bleiben erhalten.
           </p>
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-xs text-portal-danger bg-portal-danger/10 px-3 py-2 rounded-lg">{error}</p>
           )}
         </div>
 

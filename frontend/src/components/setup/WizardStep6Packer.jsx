@@ -82,7 +82,7 @@ function PackerCommandBlock({ tokenId }) {
             title="Kopieren"
           >
             {copied ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-green-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-portal-success">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : <CopyIcon />}
@@ -135,7 +135,7 @@ export default function WizardStep6Packer({ initial, onNext, onBack }) {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -207,7 +207,7 @@ export default function WizardStep6Packer({ initial, onNext, onBack }) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
           {error}
         </p>
       )}

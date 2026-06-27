@@ -7,7 +7,7 @@ import { changePassword } from '../api/profile'
 
 const inputCls =
   'w-full bg-zinc-800 border border-zinc-700 text-zinc-100 px-3 py-2 text-sm ' +
-  'placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+  'placeholder-zinc-500 focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent transition'
 
 export default function ChangePasswordPage() {
   const { t } = useTranslation()
@@ -62,15 +62,15 @@ export default function ChangePasswordPage() {
           <p className="text-zinc-500 text-sm mt-1">{t('change_password.subtitle')}</p>
         </div>
 
-        <div className="bg-orange-950/30 border border-orange-800 px-4 py-3 mb-4">
-          <p className="text-sm text-orange-300">
+        <div className="bg-portal-accent/10 border border-portal-accent/30 px-4 py-3 mb-4">
+          <p className="text-sm text-portal-accent">
             {t('change_password.notice')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-zinc-900 border border-zinc-700 p-8 space-y-5">
           {errors.general && (
-            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
               {errors.general}
             </p>
           )}
@@ -85,9 +85,9 @@ export default function ChangePasswordPage() {
               onChange={e => setForm(f => ({ ...f, current: e.target.value }))}
               required
               autoFocus
-              className={`${inputCls} ${errors.current ? 'border-red-500' : ''}`}
+              className={`${inputCls} ${errors.current ? 'border-portal-danger/50' : ''}`}
             />
-            {errors.current && <p className="text-xs text-red-400 mt-1">{errors.current}</p>}
+            {errors.current && <p className="text-xs text-portal-danger mt-1">{errors.current}</p>}
           </div>
 
           <div>
@@ -99,10 +99,10 @@ export default function ChangePasswordPage() {
               value={form.next}
               onChange={e => setForm(f => ({ ...f, next: e.target.value }))}
               required
-              className={`${inputCls} ${errors.next ? 'border-red-500' : ''}`}
+              className={`${inputCls} ${errors.next ? 'border-portal-danger/50' : ''}`}
             />
             {errors.next
-              ? <p className="text-xs text-red-400 mt-1">{errors.next}</p>
+              ? <p className="text-xs text-portal-danger mt-1">{errors.next}</p>
               : <p className="text-xs text-zinc-600 mt-1">{t('change_password.hint_min')}</p>
             }
           </div>
@@ -116,9 +116,9 @@ export default function ChangePasswordPage() {
               value={form.confirm}
               onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
               required
-              className={`${inputCls} ${errors.confirm ? 'border-red-500' : ''}`}
+              className={`${inputCls} ${errors.confirm ? 'border-portal-danger/50' : ''}`}
             />
-            {errors.confirm && <p className="text-xs text-red-400 mt-1">{errors.confirm}</p>}
+            {errors.confirm && <p className="text-xs text-portal-danger mt-1">{errors.confirm}</p>}
           </div>
 
           <button

@@ -102,6 +102,16 @@ def get_sensitive_packer_param_ids(template_id: str) -> set[str]:
     return {p.id for p in detail.parameters if p.type == "ssh_key"}
 
 
+# Code-Review (Befund 5): Variablen, die der Backend-Runner selbst per -var/Env
+# injiziert (packer_runner_service). Ein User darf sie NICHT als Extra-Param
+# setzen – Packer gibt `-var` Vorrang vor der Env-Var, sonst ließe sich z. B. das
+# Token-Secret überschreiben. Geblockt nur, wenn UNDEKLARIERT (kein Bruch).
+_RESERVED_RUNNER_VARS: frozenset[str] = frozenset({
+    "proxmox_api_url", "proxmox_api_user", "proxmox_api_password",
+    "proxmox_api_token_id", "proxmox_api_token_secret", "packer_http_ip",
+})
+
+
 def validate_params(template_id: str, params: dict) -> list[str]:
     """Validate params against meta.yaml constraints. Returns list of error messages."""
     detail = get_packer_template(template_id)
@@ -109,6 +119,10 @@ def validate_params(template_id: str, params: dict) -> list[str]:
         return [f"Template '{template_id}' not found"]
 
     errors: list[str] = []
+    declared_ids = {p.id for p in detail.parameters}
+    for key in params:
+        if key in _RESERVED_RUNNER_VARS and key not in declared_ids:
+            errors.append(f"Parameter '{key}' ist reserviert und darf nicht gesetzt werden")
     for p in detail.parameters:
         value = params.get(p.id)
 

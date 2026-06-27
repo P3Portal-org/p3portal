@@ -30,15 +30,15 @@ export default function TargetVmSelector({ param, value, onChange, error }) {
 
   const base =
     'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 ' +
-    'text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 ' +
-    'focus:border-orange-500 transition'
-  const errCls = error ? 'border-red-500' : ''
+    'text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent ' +
+    'focus:border-portal-accent transition'
+  const errCls = error ? 'border-portal-danger' : ''
 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
 
       {/* Mode toggle */}
@@ -61,7 +61,7 @@ export default function TargetVmSelector({ param, value, onChange, error }) {
 
       {mode === 'dropdown' ? (
         fetchError ? (
-          <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          <div className="border border-portal-warn/30 bg-portal-warn/10 px-3 py-2 text-xs text-portal-warn">
             Cluster nicht erreichbar – bitte manuelle Eingabe verwenden.
           </div>
         ) : (
@@ -98,7 +98,7 @@ export default function TargetVmSelector({ param, value, onChange, error }) {
       <p className="text-xs text-gray-400 dark:text-zinc-500">
         Wird als <code className="font-mono">target_host</code>-Variable an Ansible übergeben.
       </p>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-portal-danger">{error}</p>}
     </div>
   )
 }

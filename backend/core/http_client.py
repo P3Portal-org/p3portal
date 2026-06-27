@@ -23,11 +23,13 @@ _BLOCKED_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = [
     ipaddress.ip_network("172.16.0.0/12"),      # RFC1918
     ipaddress.ip_network("192.168.0.0/16"),     # RFC1918
     ipaddress.ip_network("169.254.0.0/16"),     # Link-Local
+    ipaddress.ip_network("100.64.0.0/10"),      # CGNAT / shared address space (RFC6598)
     ipaddress.ip_network("224.0.0.0/4"),        # Multicast
     ipaddress.ip_network("::1/128"),            # IPv6 Loopback
     ipaddress.ip_network("fc00::/7"),           # IPv6 ULA
     ipaddress.ip_network("fe80::/10"),          # IPv6 Link-Local
     ipaddress.ip_network("ff00::/8"),           # IPv6 Multicast
+    ipaddress.ip_network("64:ff9b::/96"),       # NAT64 (RFC6052)
     ipaddress.ip_network("0.0.0.0/8"),          # Unspecified
 ]
 
@@ -45,11 +47,27 @@ _SETUP_BLOCKED_NETWORKS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = [
 ]
 
 
+def _addr_in_networks(addr, networks) -> bool:
+    """Prüft addr gegen eine Netz-Liste – inkl. IPv4-mapped-IPv6.
+
+    ``::ffff:127.0.0.1`` ist ein IPv6Address und liegt in keinem IPv4-Network;
+    ohne diese Normalisierung würde ``ipaddress`` ihn nicht als Loopback erkennen
+    → SSRF-Bypass via attacker-kontrollierter AAAA-Antwort. Wir testen daher
+    zusätzlich die eingebettete IPv4-Adresse.
+    """
+    if any(addr in net for net in networks):
+        return True
+    mapped = getattr(addr, "ipv4_mapped", None)
+    if mapped is not None and any(mapped in net for net in networks):
+        return True
+    return False
+
+
 def is_private_ip(ip_str: str) -> bool:
     """Prüft ob eine IP-Adresse in einem blockierten Netzwerk liegt."""
     try:
         addr = ipaddress.ip_address(ip_str)
-        return any(addr in net for net in _BLOCKED_NETWORKS)
+        return _addr_in_networks(addr, _BLOCKED_NETWORKS)
     except ValueError:
         return True  # Ungültige IP → blockieren
 
@@ -63,7 +81,7 @@ def is_unsafe_setup_target(ip_str: str) -> bool:
     """
     try:
         addr = ipaddress.ip_address(ip_str)
-        return any(addr in net for net in _SETUP_BLOCKED_NETWORKS)
+        return _addr_in_networks(addr, _SETUP_BLOCKED_NETWORKS)
     except ValueError:
         return True  # Ungültige IP → blockieren
 

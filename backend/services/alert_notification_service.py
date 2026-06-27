@@ -522,13 +522,14 @@ async def _send_email(
         host     = smtp["host"]
         port     = smtp.get("port") or 587
         username = smtp.get("username")
-        # Decrypt password
+        # SMTP-Passwort lesen
         password: str | None = None
         try:
-            from backend.services.config_service import get as cfg_get, decrypt_secret
-            raw_pw = await cfg_get("smtp_password")
-            if raw_pw:
-                password = decrypt_secret(raw_pw)
+            # Code-Review-Fix: config_service exportiert get_config (NICHT get) und
+            # entschlüsselt is_secret-Keys bereits intern → KEIN zweites decrypt_secret
+            # (das hätte den Klartext erneut zu entschlüsseln versucht → InvalidToken).
+            from backend.services.config_service import get_config as cfg_get
+            password = (await cfg_get("smtp_password")) or None
         except Exception:
             pass
 

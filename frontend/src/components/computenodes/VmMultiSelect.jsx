@@ -10,11 +10,13 @@
  * modes of the backup-job form.
  */
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../../api/client'
 
 const boxCls = 'border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800'
 
 export default function VmMultiSelect({ pveNode, value, onChange, emptyHint }) {
+  const { t } = useTranslation()
   const [vms, setVms]         = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
@@ -44,10 +46,10 @@ export default function VmMultiSelect({ pveNode, value, onChange, emptyHint }) {
         scoped.sort((a, b) => Number(a.vmid) - Number(b.vmid))
         setVms(scoped)
       })
-      .catch(() => { if (!cancelled) setError('VM-Liste konnte nicht geladen werden.') })
+      .catch(() => { if (!cancelled) setError(t('backup_jobs.list_load_error')) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [pveNode])
+  }, [pveNode, t])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -82,17 +84,17 @@ export default function VmMultiSelect({ pveNode, value, onChange, emptyHint }) {
   const clearAll = () => onChange('')
 
   if (loading) {
-    return <div className={`${boxCls} px-3 py-4 text-sm text-gray-400 dark:text-zinc-500`}>Lädt VM/LXC-Liste…</div>
+    return <div className={`${boxCls} px-3 py-4 text-sm text-gray-400 dark:text-zinc-500`}>{t('backup_jobs.loading_list')}</div>
   }
 
   if (error) {
-    return <div className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 rounded">{error}</div>
+    return <div className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">{error}</div>
   }
 
   if (vms.length === 0) {
     return (
       <div className={`${boxCls} px-3 py-4 text-sm text-gray-400 dark:text-zinc-500`}>
-        {emptyHint ?? 'Keine VMs/LXCs in dieser Proxmox-Installation gefunden.'}
+        {emptyHint ?? t('backup_jobs.none_found')}
       </div>
     )
   }
@@ -104,16 +106,16 @@ export default function VmMultiSelect({ pveNode, value, onChange, emptyHint }) {
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Suche nach Name oder VMID…"
-          className="flex-1 bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-sm rounded focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+          placeholder={t('backup_jobs.search_ph')}
+          className="flex-1 bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-sm rounded focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent"
         />
-        <button type="button" onClick={selectAllFiltered} className="btn-table shrink-0">Alle</button>
-        <button type="button" onClick={clearAll} className="btn-table shrink-0">Keine</button>
+        <button type="button" onClick={selectAllFiltered} className="btn-table shrink-0">{t('backup_jobs.btn_all')}</button>
+        <button type="button" onClick={clearAll} className="btn-table shrink-0">{t('backup_jobs.btn_none')}</button>
       </div>
 
       <div className={`${boxCls} max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-zinc-800`}>
         {filtered.length === 0 && (
-          <div className="px-3 py-4 text-sm text-gray-400 dark:text-zinc-500">Kein Treffer.</div>
+          <div className="px-3 py-4 text-sm text-gray-400 dark:text-zinc-500">{t('backup_jobs.no_match')}</div>
         )}
         {filtered.map(v => {
           const id = String(v.vmid)
@@ -127,16 +129,16 @@ export default function VmMultiSelect({ pveNode, value, onChange, emptyHint }) {
                 type="checkbox"
                 checked={isSel}
                 onChange={() => toggle(v.vmid)}
-                className="w-4 h-4 rounded accent-orange-500"
+                className="w-4 h-4 rounded accent-portal-accent"
               />
               <span className="text-xs font-mono text-gray-500 dark:text-zinc-400 w-12 shrink-0">{v.vmid}</span>
               <span className="text-sm text-gray-800 dark:text-zinc-200 flex-1 truncate">
-                {v.name ?? `VM ${v.vmid}`}
+                {v.name ?? t('backup_jobs.vm_fallback_name', { vmid: v.vmid })}
               </span>
               <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-zinc-500 shrink-0">
                 {v.type ?? 'qemu'}
               </span>
-              <span className={`text-[10px] shrink-0 ${v.status === 'running' ? 'text-green-500' : 'text-gray-400 dark:text-zinc-500'}`}>
+              <span className={`text-[10px] shrink-0 ${v.status === 'running' ? 'text-portal-success' : 'text-gray-400 dark:text-zinc-500'}`}>
                 {v.status}
               </span>
             </label>
@@ -146,8 +148,8 @@ export default function VmMultiSelect({ pveNode, value, onChange, emptyHint }) {
 
       <p className="text-[11px] text-gray-400 dark:text-zinc-500">
         {selected.size > 0
-          ? `${selected.size} ausgewählt: ${[...selected].join(', ')}`
-          : 'Keine Gäste ausgewählt.'}
+          ? t('backup_jobs.selected_summary', { count: selected.size, ids: [...selected].join(', ') })
+          : t('backup_jobs.none_selected')}
       </p>
 
       <span className="rq hidden" aria-hidden="true" />

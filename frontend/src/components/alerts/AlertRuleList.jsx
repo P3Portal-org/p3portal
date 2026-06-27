@@ -13,14 +13,14 @@ function ThresholdCell({ warning, critical }) {
   if (warning != null && critical != null) {
     return (
       <span className="font-mono text-xs">
-        <span className="text-yellow-600 dark:text-yellow-400">W:{warning}%</span>
+        <span className="text-portal-warn">W:{warning}%</span>
         {' / '}
-        <span className="text-red-600 dark:text-red-400">C:{critical}%</span>
+        <span className="text-portal-danger">C:{critical}%</span>
       </span>
     )
   }
-  if (warning != null) return <span className="font-mono text-xs text-yellow-600 dark:text-yellow-400">W:{warning}%</span>
-  if (critical != null) return <span className="font-mono text-xs text-red-600 dark:text-red-400">C:{critical}%</span>
+  if (warning != null) return <span className="font-mono text-xs text-portal-warn">W:{warning}%</span>
+  if (critical != null) return <span className="font-mono text-xs text-portal-danger">C:{critical}%</span>
   return <span className="text-gray-400 text-xs">—</span>
 }
 
@@ -96,7 +96,7 @@ export default function AlertRuleList({
                   {rule.sustained_polls}
                 </td>
                 <td className="px-3 py-2.5">
-                  <span className={`inline-block w-2 h-2 rounded-full ${rule.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-zinc-600'}`} />
+                  <span className={`inline-block w-2 h-2 rounded-full ${rule.enabled ? 'bg-portal-success' : 'bg-gray-300 dark:bg-zinc-600'}`} />
                 </td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2 justify-end">

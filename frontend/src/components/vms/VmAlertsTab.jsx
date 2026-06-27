@@ -21,15 +21,15 @@ const VmAlertPresetSection = PlusComponents.VmAlertPresetSection
 
 const SEVERITY_STYLE = {
   critical: {
-    dot: 'bg-red-500',
-    text: 'text-red-700 dark:text-red-400',
-    bg: 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800',
+    dot: 'bg-portal-danger',
+    text: 'text-portal-danger',
+    bg: 'bg-portal-danger/10 border-portal-danger/30',
     label: 'Kritisch',
   },
   warning: {
-    dot: 'bg-yellow-500',
-    text: 'text-yellow-700 dark:text-yellow-400',
-    bg: 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800',
+    dot: 'bg-portal-warn',
+    text: 'text-portal-warn',
+    bg: 'bg-portal-warn/10 border-portal-warn/30',
     label: 'Warnung',
   },
 }
@@ -49,8 +49,8 @@ function ActiveAlertsSection({ vmid }) {
 
   if (states.length === 0) {
     return (
-      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 py-2">
-        <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+      <div className="flex items-center gap-2 text-sm text-portal-success py-2">
+        <span className="w-2 h-2 rounded-full bg-portal-success shrink-0" />
         Keine aktiven Alerts
       </div>
     )
@@ -205,7 +205,7 @@ export default function VmAlertsTab({ vmid, nodeName, isAdmin }) {
               <div className="h-24 bg-gray-100 dark:bg-zinc-800 rounded" />
             </div>
           ) : error ? (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-400 rounded">
+            <div className="border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger rounded">
               {error}
             </div>
           ) : nodeId == null ? (
@@ -238,12 +238,12 @@ export default function VmAlertsTab({ vmid, nodeName, isAdmin }) {
                               {{ cpu_percent: 'CPU', mem_percent: 'RAM', disk_percent: 'Disk', status: 'Status' }[r.metric] ?? r.metric}
                             </td>
                             <td className="px-3 py-2 font-mono text-gray-600 dark:text-zinc-300">
-                              {r.warning_threshold != null && <span className="text-yellow-600 dark:text-yellow-400">W:{r.warning_threshold}%</span>}
+                              {r.warning_threshold != null && <span className="text-portal-warn">W:{r.warning_threshold}%</span>}
                               {r.warning_threshold != null && r.critical_threshold != null && ' / '}
-                              {r.critical_threshold != null && <span className="text-red-600 dark:text-red-400">C:{r.critical_threshold}%</span>}
+                              {r.critical_threshold != null && <span className="text-portal-danger">C:{r.critical_threshold}%</span>}
                             </td>
                             <td className="px-3 py-2 text-gray-400 dark:text-zinc-500 capitalize">
-                              {r.source}{r.override_applied && <span className="ml-1 text-orange-500">*</span>}
+                              {r.source}{r.override_applied && <span className="ml-1 text-portal-accent">*</span>}
                             </td>
                           </tr>
                         ))}
@@ -272,7 +272,7 @@ export default function VmAlertsTab({ vmid, nodeName, isAdmin }) {
                     VM-spezifische Regeln
                   </h3>
                   <button onClick={() => { setShowNewRule(true); setSaveError(null) }}
-                    className="text-xs text-orange-600 dark:text-orange-400 hover:underline transition-colors">
+                    className="text-xs text-portal-accent hover:underline transition-colors">
                     + Neue Regel
                   </button>
                 </div>

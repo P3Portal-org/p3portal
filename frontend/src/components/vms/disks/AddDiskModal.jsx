@@ -1,5 +1,6 @@
 // p3portal.org
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { listImageStorages, attachDisk } from '../../../api/vms'
 import { diskErrMsg, formatBytes, modalInputCls } from './diskHelpers'
 
@@ -10,6 +11,7 @@ const BUS_OPTIONS = [
 ]
 
 export default function AddDiskModal({ vmid, node, vmName, onClose, onSaved }) {
+  const { t } = useTranslation()
   const [storages, setStorages] = useState(null) // null = loading, [] = loaded
   const [storagesErr, setStoragesErr] = useState('')
   const [form, setForm] = useState({ size_gb: '32', storage: '', bus: 'scsi' })
@@ -30,15 +32,15 @@ export default function AddDiskModal({ vmid, node, vmName, onClose, onSaved }) {
         setStorages(rows)
         if (rows.length > 0) setForm((f) => ({ ...f, storage: f.storage || rows[0].name }))
       })
-      .catch((err) => { if (active) { setStorages([]); setStoragesErr(diskErrMsg(err)) } })
+      .catch((err) => { if (active) { setStorages([]); setStoragesErr(diskErrMsg(err, t)) } })
     return () => { active = false }
-  }, [node])
+  }, [node, t])
 
   const sizeNum = parseInt(form.size_gb, 10)
 
   const validate = () => {
-    if (Number.isNaN(sizeNum) || sizeNum < 1) { setError('Bitte eine gültige Größe (≥ 1 GB) angeben.'); return false }
-    if (!form.storage) { setError('Bitte einen Datastore wählen.'); return false }
+    if (Number.isNaN(sizeNum) || sizeNum < 1) { setError(t('vm_disks.add_validate_size')); return false }
+    if (!form.storage) { setError(t('vm_disks.add_validate_storage')); return false }
     return true
   }
 
@@ -57,7 +59,7 @@ export default function AddDiskModal({ vmid, node, vmName, onClose, onSaved }) {
       onSaved?.()
       onClose()
     } catch (err) {
-      setError(diskErrMsg(err))
+      setError(diskErrMsg(err, t))
       setArmed(false)
     } finally {
       setSaving(false)
@@ -71,10 +73,10 @@ export default function AddDiskModal({ vmid, node, vmName, onClose, onSaved }) {
       <div className="relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 shadow-xl w-full max-w-md max-h-[85vh] flex flex-col rounded-lg">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700 shrink-0">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Festplatte hinzufügen</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('vm_disks.add_title')}</h2>
             {vmName && <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">{vmName}</p>}
           </div>
-          <button onClick={onClose} aria-label="Schließen" className="btn-ghost">
+          <button onClick={onClose} aria-label={t('vm_disks.close')} className="btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -89,25 +91,25 @@ export default function AddDiskModal({ vmid, node, vmName, onClose, onSaved }) {
           )}
 
           <div>
-            <label htmlFor="disk-size" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">Größe (GB)</label>
+            <label htmlFor="disk-size" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">{t('vm_disks.add_label_size')}</label>
             <input id="disk-size" type="number" min={1} max={131072} value={form.size_gb}
               onChange={(e) => set('size_gb', e.target.value)} className={modalInputCls} />
           </div>
 
           <div>
-            <label htmlFor="disk-storage" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">Datastore</label>
+            <label htmlFor="disk-storage" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">{t('vm_disks.add_label_storage')}</label>
             {storages === null ? (
-              <p className="text-xs text-gray-400 dark:text-zinc-500 animate-pulse py-2">Lade Datastores…</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500 animate-pulse py-2">{t('vm_disks.add_loading_storages')}</p>
             ) : storages.length === 0 ? (
               <p className="text-xs text-portal-warn bg-portal-warn/10 border border-portal-warn/30 rounded px-3 py-2">
-                {storagesErr || 'Keine Datastores mit Image-Inhalt gefunden.'}
+                {storagesErr || t('vm_disks.add_no_storages')}
               </p>
             ) : (
               <select id="disk-storage" value={form.storage}
                 onChange={(e) => set('storage', e.target.value)} className={modalInputCls}>
                 {storages.map((s) => (
                   <option key={s.name} value={s.name}>
-                    {s.name} ({formatBytes(s.avail)} frei / {formatBytes(s.total)})
+                    {t('vm_disks.add_storage_option', { name: s.name, avail: formatBytes(s.avail), total: formatBytes(s.total) })}
                   </option>
                 ))}
               </select>
@@ -115,31 +117,34 @@ export default function AddDiskModal({ vmid, node, vmName, onClose, onSaved }) {
           </div>
 
           <div>
-            <label htmlFor="disk-bus" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">Bus / Interface</label>
+            <label htmlFor="disk-bus" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">{t('vm_disks.add_label_bus')}</label>
             <select id="disk-bus" value={form.bus}
               onChange={(e) => set('bus', e.target.value)} className={modalInputCls}>
               {BUS_OPTIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
             </select>
-            <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">Der nächste freie Index wird automatisch gewählt.</p>
+            <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">{t('vm_disks.add_bus_hint')}</p>
           </div>
 
           {/* Zweite Bestätigung */}
           {armed && (
             <p className="text-sm text-portal-warn bg-portal-warn/10 border border-portal-warn/30 rounded px-3 py-2.5">
-              Neue Festplatte <strong>{sizeNum} GB</strong> auf <span className="font-mono">{form.storage}</span>{' '}
-              ({BUS_OPTIONS.find((b) => b.value === form.bus)?.label}) anlegen? Zum Ausführen erneut bestätigen.
+              {t('vm_disks.add_armed', {
+                size: sizeNum,
+                storage: form.storage,
+                bus: BUS_OPTIONS.find((b) => b.value === form.bus)?.label,
+              })}
             </p>
           )}
         </form>
 
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-zinc-700 shrink-0">
           {armed && (
-            <button type="button" onClick={() => setArmed(false)} disabled={saving} className="btn-secondary mr-auto">Zurück</button>
+            <button type="button" onClick={() => setArmed(false)} disabled={saving} className="btn-secondary mr-auto">{t('vm_disks.back')}</button>
           )}
-          <button type="button" onClick={onClose} className="btn-secondary">Abbrechen</button>
+          <button type="button" onClick={onClose} className="btn-secondary">{t('vm_disks.cancel')}</button>
           <button type="button" onClick={handlePrimary} disabled={saving || storages === null || (storages?.length === 0)}
             className="btn-primary">
-            {saving ? 'Hänge an…' : armed ? 'Bestätigen' : 'Hinzufügen'}
+            {saving ? t('vm_disks.add_btn_saving') : armed ? t('vm_disks.confirm') : t('vm_disks.add_btn_attach')}
           </button>
         </div>
 

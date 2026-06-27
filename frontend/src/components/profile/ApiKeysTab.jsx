@@ -72,7 +72,7 @@ export default function ApiKeysTab({ allowedScopes, maxKeys }) {
             Persönliche API-Keys für Skripte, CI/CD-Pipelines und Automationen.
           </p>
           {maxKeys != null && (
-            <p className={`text-xs mt-0.5 ${atLimit ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-zinc-500'}`}>
+            <p className={`text-xs mt-0.5 ${atLimit ? 'text-portal-danger' : 'text-gray-400 dark:text-zinc-500'}`}>
               {activeCount} / {maxKeys} aktive Keys
               {!isPlus && maxKeys === 1 && (
                 <span className="ml-2 text-gray-400 dark:text-zinc-600">– Upgrade auf P3 Plus für mehr Keys</span>
@@ -100,10 +100,10 @@ export default function ApiKeysTab({ allowedScopes, maxKeys }) {
       </div>
 
       {error && (
-        <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">{error}</p>
+        <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">{error}</p>
       )}
       {revokeErr && (
-        <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">{revokeErr}</p>
+        <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">{revokeErr}</p>
       )}
 
       {/* Key list */}
@@ -130,12 +130,12 @@ export default function ApiKeysTab({ allowedScopes, maxKeys }) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{k.name}</span>
                     {!k.is_active && (
-                      <span className="text-xs bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 px-1.5 py-0.5">
+                      <span className="text-xs bg-portal-danger/10 text-portal-danger border border-portal-danger/30 px-1.5 py-0.5">
                         Widerrufen
                       </span>
                     )}
                     {k.is_active && k.expires_at && new Date(k.expires_at) < new Date() && (
-                      <span className="text-xs bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-1.5 py-0.5">
+                      <span className="text-xs bg-portal-warn/10 text-portal-warn border border-portal-warn/30 px-1.5 py-0.5">
                         Abgelaufen
                       </span>
                     )}

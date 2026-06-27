@@ -190,13 +190,13 @@ export default function ProxmoxTemplatesTab() {
         <div className="border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 overflow-hidden rounded-lg">
           <table className="w-full text-sm text-left">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900">
-                <th className="px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider">ID</th>
-                <th className="px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Name</th>
-                <th className="px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Typ</th>
-                <th className="px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Node</th>
-                <th className="px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Erstellt</th>
-                <th className="px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider text-right">Aktion</th>
+              <tr className="border-b border-gray-200 dark:border-zinc-700">
+                <th className="px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">ID</th>
+                <th className="px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Name</th>
+                <th className="px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Typ</th>
+                <th className="px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Node</th>
+                <th className="px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Erstellt</th>
+                <th className="text-right px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Aktion</th>
               </tr>
             </thead>
             <tbody>

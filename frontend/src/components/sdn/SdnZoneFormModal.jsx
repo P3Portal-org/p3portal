@@ -7,6 +7,7 @@
  * only real after the cluster-wide Apply.
  */
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createSdnZone, updateSdnZone, listSdnBridges } from '../../api/sdn'
 
 const CUSTOM = '__custom__'
@@ -18,15 +19,15 @@ const fieldCls = 'space-y-1'
 
 const ZONE_ID_RE = /^[A-Za-z][A-Za-z0-9]{0,7}$/
 
-function errMsg(err) {
+function errMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien (SDN.Allocate auf /sdn erforderlich).'
-  if (s === 503) return 'Admin-Token (SDN.Allocate) für diesen Cluster nicht konfiguriert.'
-  if (s === 422) return (typeof d === 'string' ? d : 'Ungültige Parameter – bitte Eingaben prüfen.')
-  if (s === 409) return 'Eine Zone mit dieser ID existiert bereits.'
-  if (s === 502) return 'Proxmox-API nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Speichern der Zone.'
+  if (s === 403) return t('sdn.zone.err_403')
+  if (s === 503) return t('sdn.zone.err_503')
+  if (s === 422) return (typeof d === 'string' ? d : t('sdn.zone.err_422'))
+  if (s === 409) return t('sdn.zone.err_409')
+  if (s === 502) return t('sdn.zone.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('sdn.zone.err_generic')
 }
 
 function buildInitialState(zone) {
@@ -55,6 +56,7 @@ function buildPayload(form) {
 }
 
 export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const isEdit = Boolean(zone)
   const [form, setForm]     = useState(() => buildInitialState(zone))
   const [saving, setSaving] = useState(false)
@@ -85,10 +87,10 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
     e.preventDefault()
     setWarnings([])
     if (!isEdit && !ZONE_ID_RE.test(form.id.trim())) {
-      setError('Zone-ID muss mit einem Buchstaben beginnen, alphanumerisch und ≤ 8 Zeichen sein.'); return
+      setError(t('sdn.zone.id_invalid')); return
     }
     if (form.type === 'vlan' && !form.bridge.trim()) {
-      setError('Eine VLAN-Zone benötigt eine Bridge (z. B. vmbr0).'); return
+      setError(t('sdn.zone.bridge_required')); return
     }
     setSaving(true)
     setError('')
@@ -101,7 +103,7 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(errMsg(err))
+      setError(errMsg(err, t))
     } finally {
       setSaving(false)
     }
@@ -117,9 +119,9 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700 shrink-0">
           <h2 id="sdn-zone-modal-title" className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isEdit ? `Zone bearbeiten – ${zone.id}` : 'SDN-Zone anlegen'}
+            {isEdit ? t('sdn.zone.title_edit', { id: zone.id }) : t('sdn.zone.title_new')}
           </h2>
-          <button onClick={onClose} aria-label="Schließen" className="btn-ghost">
+          <button onClick={onClose} aria-label={t('sdn.btn_close')} className="btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -138,7 +140,7 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
 
           {/* Type */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="sdnz-type">Typ <span className="text-portal-danger">*</span></label>
+            <label className={labelCls} htmlFor="sdnz-type">{t('sdn.zone.field_type')} <span className="text-portal-danger">*</span></label>
             <select
               id="sdnz-type"
               value={form.type}
@@ -146,31 +148,31 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
               disabled={isEdit}
               className={`${inputCls} ${isEdit ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <option value="simple">Simple (einfaches Overlay, NAT-fähig)</option>
-              <option value="vlan">VLAN (Bridge + VLAN-Trunk)</option>
+              <option value="simple">{t('sdn.zone.type_simple')}</option>
+              <option value="vlan">{t('sdn.zone.type_vlan')}</option>
             </select>
-            <p className={smallCls}>{isEdit ? 'Typ kann nicht geändert werden.' : 'Simple = ohne VLAN; VLAN = VNets als VLANs auf einer Bridge.'}</p>
+            <p className={smallCls}>{isEdit ? t('sdn.zone.type_hint_edit') : t('sdn.zone.type_hint_new')}</p>
           </div>
 
           {/* ID */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="sdnz-id">Zone-ID <span className="text-portal-danger">*</span></label>
+            <label className={labelCls} htmlFor="sdnz-id">{t('sdn.zone.field_id')} <span className="text-portal-danger">*</span></label>
             <input
               id="sdnz-id"
               type="text"
               value={form.id}
               onChange={set('id')}
               disabled={isEdit}
-              placeholder="z. B. zone1"
+              placeholder={t('sdn.zone.id_ph')}
               className={`${inputCls} ${isEdit ? 'opacity-60 cursor-not-allowed' : ''}`}
             />
-            <p className={smallCls}>{isEdit ? 'ID kann nicht geändert werden.' : 'Buchstabe zuerst, alphanumerisch, ≤ 8 Zeichen.'}</p>
+            <p className={smallCls}>{isEdit ? t('sdn.zone.id_hint_edit') : t('sdn.zone.id_hint_new')}</p>
           </div>
 
           {/* Bridge (VLAN only) — dropdown of cluster bridges + free-text fallback */}
           {form.type === 'vlan' && (
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="sdnz-bridge">Bridge <span className="text-portal-danger">*</span></label>
+              <label className={labelCls} htmlFor="sdnz-bridge">{t('sdn.zone.field_bridge')} <span className="text-portal-danger">*</span></label>
               {!customBridge && bridges.length > 0 ? (
                 <select
                   id="sdnz-bridge"
@@ -185,20 +187,20 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
                   }}
                   className={inputCls}
                 >
-                  <option value="">– Bridge wählen –</option>
+                  <option value="">{t('sdn.zone.bridge_select')}</option>
                   {bridges.map(b => <option key={b} value={b}>{b}</option>)}
-                  <option value={CUSTOM}>Eigener Wert…</option>
+                  <option value={CUSTOM}>{t('sdn.zone.bridge_custom')}</option>
                 </select>
               ) : (
                 <input id="sdnz-bridge" type="text" value={form.bridge} onChange={set('bridge')} placeholder="vmbr0" className={inputCls} />
               )}
               <p className={smallCls}>
                 {bridges.length > 0
-                  ? 'Physische/Linux-Bridge als VLAN-Trunk – Auswahl aus den im Cluster gefundenen Bridges.'
-                  : 'Physische/Linux-Bridge, die als VLAN-Trunk dient (z. B. vmbr0).'}
+                  ? t('sdn.zone.bridge_hint_list')
+                  : t('sdn.zone.bridge_hint_text')}
                 {customBridge && bridges.length > 0 && (
                   <button type="button" onClick={() => { setCustomBridge(false); setForm(prev => ({ ...prev, bridge: '' })) }} className="ml-2 underline">
-                    Aus Liste wählen
+                    {t('sdn.zone.bridge_from_list')}
                   </button>
                 )}
               </p>
@@ -208,14 +210,14 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
           {/* MTU + Nodes */}
           <div className="grid grid-cols-2 gap-4">
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="sdnz-mtu">MTU (optional)</label>
-              <input id="sdnz-mtu" type="number" min="128" max="65520" value={form.mtu} onChange={set('mtu')} placeholder="1500" className={inputCls} />
-              <p className={smallCls}>Üblich 1500; VXLAN-Overheads beachten.</p>
+              <label className={labelCls} htmlFor="sdnz-mtu">{t('sdn.zone.field_mtu')}</label>
+              <input id="sdnz-mtu" type="number" min="128" max="65520" value={form.mtu} onChange={set('mtu')} placeholder={t('sdn.zone.mtu_ph')} className={inputCls} />
+              <p className={smallCls}>{t('sdn.zone.mtu_hint')}</p>
             </div>
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="sdnz-nodes">Nodes (optional)</label>
-              <input id="sdnz-nodes" type="text" value={form.nodes} onChange={set('nodes')} placeholder="pve1,pve2" className={inputCls} />
-              <p className={smallCls}>Beschränkung auf bestimmte Nodes (kommasepariert).</p>
+              <label className={labelCls} htmlFor="sdnz-nodes">{t('sdn.zone.field_nodes')}</label>
+              <input id="sdnz-nodes" type="text" value={form.nodes} onChange={set('nodes')} placeholder={t('sdn.zone.nodes_ph')} className={inputCls} />
+              <p className={smallCls}>{t('sdn.zone.nodes_hint')}</p>
             </div>
           </div>
 
@@ -223,21 +225,21 @@ export default function SdnZoneFormModal({ zone, portalNodeId = null, onClose, o
           {form.type === 'simple' && (
             <div className="grid grid-cols-2 gap-4">
               <div className={fieldCls}>
-                <label className={labelCls} htmlFor="sdnz-dns">DNS-Server (optional)</label>
-                <input id="sdnz-dns" type="text" value={form.dns} onChange={set('dns')} placeholder="pve-dns" className={inputCls} />
+                <label className={labelCls} htmlFor="sdnz-dns">{t('sdn.zone.field_dns')}</label>
+                <input id="sdnz-dns" type="text" value={form.dns} onChange={set('dns')} placeholder={t('sdn.zone.dns_ph')} className={inputCls} />
               </div>
               <div className={fieldCls}>
-                <label className={labelCls} htmlFor="sdnz-dnszone">DNS-Zone (optional)</label>
-                <input id="sdnz-dnszone" type="text" value={form.dnszone} onChange={set('dnszone')} placeholder="example.local" className={inputCls} />
+                <label className={labelCls} htmlFor="sdnz-dnszone">{t('sdn.zone.field_dnszone')}</label>
+                <input id="sdnz-dnszone" type="text" value={form.dnszone} onChange={set('dnszone')} placeholder={t('sdn.zone.dnszone_ph')} className={inputCls} />
               </div>
             </div>
           )}
         </form>
 
         <div className="px-5 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl shrink-0">
-          <button type="button" onClick={onClose} disabled={saving} className="btn-secondary">Abbrechen</button>
+          <button type="button" onClick={onClose} disabled={saving} className="btn-secondary">{t('sdn.zone.cancel')}</button>
           <button type="submit" form="sdn-zone-form" disabled={saving} className="btn-primary">
-            {saving ? '…' : isEdit ? 'Speichern' : 'Zone anlegen'}
+            {saving ? '…' : isEdit ? t('sdn.zone.save') : t('sdn.zone.create')}
           </button>
         </div>
 

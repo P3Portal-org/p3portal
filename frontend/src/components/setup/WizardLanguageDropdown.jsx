@@ -45,7 +45,7 @@ export default function WizardLanguageDropdown() {
                 type="button"
                 onClick={() => select(lang.code)}
                 className={`w-full text-left px-3 py-2 text-xs hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
-                  lang.code === current.code ? 'font-semibold text-orange-500' : 'text-zinc-700 dark:text-zinc-300'
+                  lang.code === current.code ? 'font-semibold text-portal-accent' : 'text-zinc-700 dark:text-zinc-300'
                 }`}
               >
                 {lang.code === 'en' ? 'English' : 'Deutsch'}

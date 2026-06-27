@@ -4,15 +4,15 @@ import { listAlertStates, acknowledgeAlert } from '../../api/alerts'
 
 const SEVERITY_STYLE = {
   critical: {
-    bar: 'border-red-600 bg-red-50 dark:bg-red-950/40',
-    text: 'text-red-700 dark:text-red-400',
-    dot: 'bg-red-500',
+    bar: 'border-portal-danger/50 bg-portal-danger/10',
+    text: 'text-portal-danger',
+    dot: 'bg-portal-danger',
     label: 'Kritisch',
   },
   warning: {
-    bar: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/40',
-    text: 'text-yellow-700 dark:text-yellow-400',
-    dot: 'bg-yellow-500',
+    bar: 'border-portal-warn/50 bg-portal-warn/10',
+    text: 'text-portal-warn',
+    dot: 'bg-portal-warn',
     label: 'Warnung',
   },
 }

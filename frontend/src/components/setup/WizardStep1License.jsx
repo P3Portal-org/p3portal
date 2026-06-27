@@ -33,18 +33,18 @@ export default function WizardStep1License({ onNext }) {
       </div>
 
       {/* Hinweisbox */}
-      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-3">
+      <div className="bg-portal-warn/10 border border-portal-warn/30 rounded-lg p-4 space-y-3">
         <div className="flex items-start gap-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-amber-500 shrink-0 mt-0.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-portal-warn shrink-0 mt-0.5">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+          <p className="text-sm font-semibold text-portal-warn">
             {t('setup.s1_warn_title')}
           </p>
         </div>
-        <div className="text-sm text-amber-700 dark:text-amber-400 space-y-2 pl-8">
+        <div className="text-sm text-portal-warn space-y-2 pl-8">
           <p>{t('setup.s1_warn_p1')}</p>
           <p>
             {t('setup.s1_warn_p2')}
@@ -64,28 +64,28 @@ export default function WizardStep1License({ onNext }) {
         </svg>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           {t('setup.s1_info')}{' '}
-          <a href="https://p3portal.org" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">
+          <a href="https://p3portal.org" target="_blank" rel="noopener noreferrer" className="text-portal-accent hover:underline">
             p3portal.org
           </a>.
         </p>
       </div>
 
       {/* SECRET_KEY-Sicherheitshinweis */}
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
+      <div className="bg-portal-info/10 border border-portal-info/30 rounded-lg p-4 space-y-3">
         <div className="flex items-start gap-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-blue-500 shrink-0 mt-0.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-portal-info shrink-0 mt-0.5">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+          <p className="text-sm font-semibold text-portal-info">
             {t('setup.s1_secret_title')}
           </p>
         </div>
-        <div className="text-sm text-blue-700 dark:text-blue-400 space-y-2 pl-8">
+        <div className="text-sm text-portal-info space-y-2 pl-8">
           <p>{t('setup.s1_secret_p1')}</p>
-          <p>{t('setup.s1_secret_p2')} <code className="font-mono bg-blue-100 dark:bg-blue-900/40 px-1 rounded text-xs">.env</code></p>
+          <p>{t('setup.s1_secret_p2')} <code className="font-mono bg-portal-info/15 px-1 rounded text-xs">.env</code></p>
           <div className="flex items-center gap-2 mt-1">
-            <code className="flex-1 font-mono text-xs bg-blue-100 dark:bg-blue-900/40 px-3 py-2 rounded break-all select-all">
+            <code className="flex-1 font-mono text-xs bg-portal-info/15 px-3 py-2 rounded break-all select-all">
               SECRET_KEY={secretKey}
             </code>
             <button
@@ -97,7 +97,7 @@ export default function WizardStep1License({ onNext }) {
               {copied ? '✓' : t('setup.s1_secret_copy')}
             </button>
           </div>
-          <p className="text-xs text-blue-500 dark:text-blue-500">
+          <p className="text-xs text-portal-info">
             {t('setup.s1_secret_note')}
           </p>
         </div>
@@ -115,8 +115,8 @@ export default function WizardStep1License({ onNext }) {
           <div
             className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
               accepted
-                ? 'bg-orange-500 border-orange-500'
-                : 'bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 group-hover:border-orange-400'
+                ? 'bg-portal-accent border-portal-accent'
+                : 'bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600 group-hover:border-portal-accent'
             }`}
           >
             {accepted && (

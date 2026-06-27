@@ -77,7 +77,7 @@ function SingleAction({ action, vmid, node, vmStatus, onSuccess, onError, onConf
         title={cfg.label}
         className={`p-1.5 border transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
           cfg.danger
-            ? 'text-red-500 dark:text-red-400 border-red-200 dark:border-red-900 enabled:hover:bg-red-50 dark:enabled:hover:bg-red-950/30 enabled:hover:border-red-400 dark:enabled:hover:border-red-700'
+            ? 'text-portal-danger border-portal-danger/30 enabled:hover:bg-portal-danger/10 enabled:hover:border-portal-danger/50'
             : 'text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-700 enabled:hover:bg-gray-50 dark:enabled:hover:bg-zinc-800 enabled:hover:border-gray-400 dark:enabled:hover:border-zinc-500'
         }`}
       >
@@ -92,7 +92,7 @@ function SingleAction({ action, vmid, node, vmStatus, onSuccess, onError, onConf
       disabled={isDisabled || busy}
       className={`text-xs px-2 py-1 border transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
         cfg.danger
-          ? 'text-red-500 dark:text-red-400 border-red-200 dark:border-red-900 enabled:hover:bg-red-50 dark:enabled:hover:bg-red-950/30 enabled:hover:border-red-400 dark:enabled:hover:border-red-700'
+          ? 'text-portal-danger border-portal-danger/30 enabled:hover:bg-portal-danger/10 enabled:hover:border-portal-danger/50'
           : 'text-gray-600 dark:text-zinc-400 border-gray-200 dark:border-zinc-700 enabled:hover:bg-gray-50 dark:enabled:hover:bg-zinc-800 enabled:hover:border-gray-400 dark:enabled:hover:border-zinc-500'
       }`}
     >

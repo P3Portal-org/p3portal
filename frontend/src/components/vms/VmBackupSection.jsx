@@ -68,7 +68,7 @@ export default function VmBackupSection({ node, vmType, vmid, backupsData, backu
       </div>
 
       {actionErr && (
-        <div className="mb-3 text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 rounded">
+        <div className="mb-3 text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">
           {actionErr}
           <button onClick={() => setActionErr('')} className="btn-ghost ml-2">✕</button>
         </div>
@@ -76,7 +76,7 @@ export default function VmBackupSection({ node, vmType, vmid, backupsData, backu
 
       {/* Backup file list */}
       {backupsErr ? (
-        <p className="text-xs text-yellow-500 dark:text-yellow-400 mb-3">
+        <p className="text-xs text-portal-warn mb-3">
           Backups konnten nicht geladen werden.
         </p>
       ) : backupsData == null ? (
@@ -131,7 +131,7 @@ export default function VmBackupSection({ node, vmType, vmid, backupsData, backu
                 <div key={job.id} className="px-3 py-2.5 bg-white dark:bg-zinc-900">
                   <div className="flex items-center justify-between mb-0.5">
                     <span className="text-xs text-gray-700 dark:text-zinc-300 font-mono">{job.schedule || '–'}</span>
-                    <span className={`text-xs ${job.enabled ? 'text-green-500' : 'text-gray-400 dark:text-zinc-600'}`}>
+                    <span className={`text-xs ${job.enabled ? 'text-portal-success' : 'text-gray-400 dark:text-zinc-600'}`}>
                       {job.enabled ? 'aktiv' : 'inaktiv'}
                     </span>
                   </div>

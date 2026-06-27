@@ -6,6 +6,7 @@
  * The id is alphanumeric, ≤ 8 chars, letter-first. Staged as pending.
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createSdnVnet, updateSdnVnet } from '../../api/sdn'
 
 const inputCls = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent rounded'
@@ -15,15 +16,15 @@ const fieldCls = 'space-y-1'
 
 const VNET_ID_RE = /^[A-Za-z][A-Za-z0-9]{0,7}$/
 
-function errMsg(err) {
+function errMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien (SDN.Allocate auf /sdn erforderlich).'
-  if (s === 503) return 'Admin-Token (SDN.Allocate) für diesen Cluster nicht konfiguriert.'
-  if (s === 422) return (typeof d === 'string' ? d : 'Ungültige Parameter – bitte Eingaben prüfen.')
-  if (s === 409) return 'Ein VNet mit dieser ID existiert bereits.'
-  if (s === 502) return 'Proxmox-API nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Speichern des VNets.'
+  if (s === 403) return t('sdn.vnet.err_403')
+  if (s === 503) return t('sdn.vnet.err_503')
+  if (s === 422) return (typeof d === 'string' ? d : t('sdn.vnet.err_422'))
+  if (s === 409) return t('sdn.vnet.err_409')
+  if (s === 502) return t('sdn.vnet.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('sdn.vnet.err_generic')
 }
 
 function buildInitialState(vnet, zones) {
@@ -47,6 +48,7 @@ function buildPayload(form) {
 }
 
 export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const isEdit = Boolean(vnet)
   const [form, setForm]     = useState(() => buildInitialState(vnet, zones))
   const [saving, setSaving] = useState(false)
@@ -61,11 +63,11 @@ export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!isEdit && !VNET_ID_RE.test(form.id.trim())) {
-      setError('VNet-ID muss mit einem Buchstaben beginnen, alphanumerisch und ≤ 8 Zeichen sein.'); return
+      setError(t('sdn.vnet.id_invalid')); return
     }
-    if (!form.zone) { setError('Bitte eine Zone wählen.'); return }
+    if (!form.zone) { setError(t('sdn.vnet.zone_required')); return }
     if (zoneIsVlan && form.tag === '') {
-      setError('Ein VNet in einer VLAN-Zone benötigt einen VLAN-Tag (1–4094).'); return
+      setError(t('sdn.vnet.tag_required')); return
     }
     setSaving(true)
     setError('')
@@ -76,7 +78,7 @@ export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(errMsg(err))
+      setError(errMsg(err, t))
     } finally {
       setSaving(false)
     }
@@ -92,9 +94,9 @@ export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700 shrink-0">
           <h2 id="sdn-vnet-modal-title" className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isEdit ? `VNet bearbeiten – ${vnet.id}` : 'VNet anlegen'}
+            {isEdit ? t('sdn.vnet.title_edit', { id: vnet.id }) : t('sdn.vnet.title_new')}
           </h2>
-          <button onClick={onClose} aria-label="Schließen" className="btn-ghost">
+          <button onClick={onClose} aria-label={t('sdn.btn_close')} className="btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -108,30 +110,30 @@ export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null
 
           {zones.length === 0 && (
             <div className="text-xs text-portal-warn bg-portal-warn/10 border border-portal-warn/30 px-3 py-2 rounded">
-              ⚠ Es existiert noch keine Zone. Bitte zuerst eine SDN-Zone anlegen.
+              {t('sdn.vnet.no_zone_warn')}
             </div>
           )}
 
           {/* ID */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="sdnv-id">VNet-ID <span className="text-portal-danger">*</span></label>
+            <label className={labelCls} htmlFor="sdnv-id">{t('sdn.vnet.field_id')} <span className="text-portal-danger">*</span></label>
             <input
               id="sdnv-id"
               type="text"
               value={form.id}
               onChange={set('id')}
               disabled={isEdit}
-              placeholder="z. B. vnet1"
+              placeholder={t('sdn.vnet.id_ph')}
               className={`${inputCls} ${isEdit ? 'opacity-60 cursor-not-allowed' : ''}`}
             />
-            <p className={smallCls}>{isEdit ? 'ID kann nicht geändert werden.' : 'Buchstabe zuerst, alphanumerisch, ≤ 8 Zeichen.'}</p>
+            <p className={smallCls}>{isEdit ? t('sdn.vnet.id_hint_edit') : t('sdn.vnet.id_hint_new')}</p>
           </div>
 
           {/* Zone */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="sdnv-zone">Zone <span className="text-portal-danger">*</span></label>
+            <label className={labelCls} htmlFor="sdnv-zone">{t('sdn.vnet.field_zone')} <span className="text-portal-danger">*</span></label>
             <select id="sdnv-zone" value={form.zone} onChange={set('zone')} className={inputCls}>
-              <option value="">– Zone wählen –</option>
+              <option value="">{t('sdn.vnet.zone_select')}</option>
               {zones.map(z => (
                 <option key={z.id} value={z.id}>{z.id} ({z.type})</option>
               ))}
@@ -141,16 +143,16 @@ export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null
           {/* VLAN Tag (only for VLAN zones) */}
           {zoneIsVlan && (
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="sdnv-tag">VLAN-Tag <span className="text-portal-danger">*</span></label>
-              <input id="sdnv-tag" type="number" min="1" max="4094" value={form.tag} onChange={set('tag')} placeholder="100" className={inputCls} />
-              <p className={smallCls}>Pflicht in VLAN-Zonen. Gültiger Bereich 1–4094.</p>
+              <label className={labelCls} htmlFor="sdnv-tag">{t('sdn.vnet.field_tag')} <span className="text-portal-danger">*</span></label>
+              <input id="sdnv-tag" type="number" min="1" max="4094" value={form.tag} onChange={set('tag')} placeholder={t('sdn.vnet.tag_ph')} className={inputCls} />
+              <p className={smallCls}>{t('sdn.vnet.tag_hint')}</p>
             </div>
           )}
 
           {/* Alias */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="sdnv-alias">Alias (optional)</label>
-            <input id="sdnv-alias" type="text" value={form.alias} onChange={set('alias')} placeholder="z. B. Frontend-Netz" className={inputCls} />
+            <label className={labelCls} htmlFor="sdnv-alias">{t('sdn.vnet.field_alias')}</label>
+            <input id="sdnv-alias" type="text" value={form.alias} onChange={set('alias')} placeholder={t('sdn.vnet.alias_ph')} className={inputCls} />
           </div>
 
           {/* VLAN-aware */}
@@ -163,15 +165,15 @@ export default function SdnVnetFormModal({ vnet, zones = [], portalNodeId = null
               className="w-4 h-4 rounded accent-portal-accent"
             />
             <label htmlFor="sdnv-vlanaware" className="text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-              VLAN-aware (Gäste dürfen eigene VLAN-Tags setzen)
+              {t('sdn.vnet.vlanaware_label')}
             </label>
           </div>
         </form>
 
         <div className="px-5 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl shrink-0">
-          <button type="button" onClick={onClose} disabled={saving} className="btn-secondary">Abbrechen</button>
+          <button type="button" onClick={onClose} disabled={saving} className="btn-secondary">{t('sdn.vnet.cancel')}</button>
           <button type="submit" form="sdn-vnet-form" disabled={saving || zones.length === 0} className="btn-primary">
-            {saving ? '…' : isEdit ? 'Speichern' : 'VNet anlegen'}
+            {saving ? '…' : isEdit ? t('sdn.vnet.save') : t('sdn.vnet.create')}
           </button>
         </div>
 

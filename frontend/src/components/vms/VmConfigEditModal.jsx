@@ -151,13 +151,13 @@ export default function VmConfigEditModal({ detail, onClose, onSaved }) {
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
               <input type="checkbox" checked={form.onboot}
                 onChange={(e) => set('onboot', e.target.checked)}
-                className="accent-orange-500" />
+                className="accent-portal-accent" />
               Start bei Boot
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
               <input type="checkbox" checked={form.protection}
                 onChange={(e) => set('protection', e.target.checked)}
-                className="accent-orange-500" />
+                className="accent-portal-accent" />
               Lösch-Schutz
             </label>
           </div>

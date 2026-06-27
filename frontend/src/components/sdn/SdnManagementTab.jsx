@@ -12,6 +12,7 @@
  * versions without a reliable per-object state field (BUG-79-1 lesson).
  */
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   listSdnZones,
   listSdnVnets,
@@ -25,24 +26,24 @@ import SdnSubnetFormModal from './SdnSubnetFormModal'
 import SdnDeleteUsageConfirmModal from './SdnDeleteUsageConfirmModal'
 import ConfirmModal from '../common/ConfirmModal'
 
-function apiErrMsg(err) {
+function apiErrMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien für die SDN-Verwaltung (SDN.Allocate).'
-  if (s === 503) return 'Admin-Token (SDN.Allocate) für diesen Cluster nicht konfiguriert.'
-  if (s === 502) return 'Proxmox nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Ausführen der Aktion.'
+  if (s === 403) return t('sdn.err_403')
+  if (s === 503) return t('sdn.err_503')
+  if (s === 502) return t('sdn.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('sdn.err_generic')
 }
 
-function StateBadge({ pending, state }) {
+function StateBadge({ pending, state, t }) {
   if (!pending) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-portal-success/10 text-portal-success">
-        aktiv
+        {t('sdn.badge_active')}
       </span>
     )
   }
-  const label = state === 'deleted' ? 'wird gelöscht' : state === 'changed' ? 'geändert' : state === 'new' ? 'neu' : 'ausstehend'
+  const label = state === 'deleted' ? t('sdn.badge_deleted') : state === 'changed' ? t('sdn.badge_changed') : state === 'new' ? t('sdn.badge_new') : t('sdn.badge_pending')
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-portal-warn/10 text-portal-warn">
       {label}
@@ -63,20 +64,21 @@ function SectionHeader({ title, count, onCreate, createLabel, createDisabled }) 
   )
 }
 
-function RowActions({ onEdit, onDelete, busy }) {
+function RowActions({ onEdit, onDelete, busy, t }) {
   return (
     <div className="flex items-center gap-1.5 justify-end">
-      <button onClick={onEdit} disabled={busy} className="btn-table" title="Bearbeiten">Bearbeiten</button>
-      <button onClick={onDelete} disabled={busy} className="btn-table-danger" title="Löschen">Löschen</button>
+      <button onClick={onEdit} disabled={busy} className="btn-table" title={t('sdn.btn_edit')}>{t('sdn.btn_edit')}</button>
+      <button onClick={onDelete} disabled={busy} className="btn-table-danger" title={t('sdn.btn_delete')}>{t('sdn.btn_delete')}</button>
     </div>
   )
 }
 
 function thCls() {
-  return 'px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider'
+  return 'px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider'
 }
 
 export default function SdnManagementTab({ portalNodeId = null } = {}) {
+  const { t } = useTranslation()
   const [zones, setZones]     = useState(null)   // SdnZoneListResponse
   const [vnets, setVnets]     = useState(null)
   const [subnets, setSubnets] = useState(null)
@@ -96,13 +98,13 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
   const load = useCallback(() => {
     setLoading(true)
     Promise.all([
-      listSdnZones(portalNodeId).catch(err => ({ items: [], cluster_unreachable: true, detail: apiErrMsg(err) })),
+      listSdnZones(portalNodeId).catch(err => ({ items: [], cluster_unreachable: true, detail: apiErrMsg(err, t) })),
       listSdnVnets(portalNodeId).catch(() => ({ items: [] })),
       listSdnSubnets(portalNodeId).catch(() => ({ items: [] })),
     ])
       .then(([z, v, s]) => { setZones(z); setVnets(v); setSubnets(s) })
       .finally(() => setLoading(false))
-  }, [portalNodeId])
+  }, [portalNodeId, t])
 
   // Reset stale state when the selected installation changes, then reload.
   useEffect(() => { setPendingHint(false); setActionError(''); load() }, [load])
@@ -114,7 +116,7 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       await applySdn(portalNodeId)
       setPendingHint(false)
     } catch (err) {
-      throw new Error(apiErrMsg(err))
+      throw new Error(apiErrMsg(err, t))
     }
   }
   const handleRevert = async () => {
@@ -122,7 +124,7 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       await revertSdn(portalNodeId)
       setPendingHint(false)
     } catch (err) {
-      throw new Error(apiErrMsg(err))
+      throw new Error(apiErrMsg(err, t))
     }
   }
 
@@ -138,9 +140,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
   if (zones?.sdn_unavailable) {
     return (
       <div className="rounded-lg border border-portal-border bg-portal-bg px-4 py-6 text-center">
-        <p className="text-sm font-medium text-portal-text">SDN ist auf diesem Cluster nicht verfügbar</p>
+        <p className="text-sm font-medium text-portal-text">{t('sdn.unavailable_title')}</p>
         <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-          Das Proxmox-Paket <span className="font-mono">pve-sdn</span> ist nicht installiert oder die SDN-API antwortet nicht.
+          {t('sdn.unavailable_body')}
         </p>
       </div>
     )
@@ -149,9 +151,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
   if (zones?.permission_denied) {
     return (
       <div className="rounded-lg border border-portal-border bg-portal-bg px-4 py-6 text-center">
-        <p className="text-sm font-medium text-portal-text">Kein Zugriff in Proxmox</p>
+        <p className="text-sm font-medium text-portal-text">{t('sdn.no_access_title')}</p>
         <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-          Der konfigurierte Token hat kein Leserecht auf /cluster/sdn.
+          {t('sdn.no_access_body')}
         </p>
       </div>
     )
@@ -160,9 +162,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
   if (zones?.cluster_unreachable) {
     return (
       <div className="rounded-lg border border-portal-warn/30 bg-portal-warn/10 px-4 py-3 text-sm text-portal-warn">
-        Cluster nicht erreichbar – SDN-Konfiguration konnte nicht geladen werden.
+        {t('sdn.cluster_unreachable')}
         {zones.detail && (
-          <span className="block mt-1 text-xs text-portal-warn/90">Ursache: {zones.detail}</span>
+          <span className="block mt-1 text-xs text-portal-warn/90">{t('sdn.cluster_unreachable_cause', { detail: zones.detail })}</span>
         )}
       </div>
     )
@@ -192,14 +194,14 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       {hasPending && (
         <div className="rounded-lg border border-portal-warn/30 bg-portal-warn/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <p className="text-sm text-portal-warn">
-            ⏳ Es gibt ausstehende SDN-Änderungen. Sie werden erst nach &bdquo;Übernehmen&ldquo; <strong>cluster-weit</strong> wirksam.
+            {t('sdn.pending_banner')}
           </p>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => { setActionError(''); setShowApply(true) }} className="btn-primary text-xs">
-              Übernehmen (cluster-weit)
+              {t('sdn.btn_apply')}
             </button>
             <button onClick={() => { setActionError(''); setShowRevert(true) }} className="btn-secondary text-xs">
-              Verwerfen
+              {t('sdn.btn_revert')}
             </button>
           </div>
         </div>
@@ -211,7 +213,7 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
           type="text"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Suche Name / Typ / Zone…"
+          placeholder={t('sdn.search_ph')}
           className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs rounded focus:outline-none focus:border-portal-accent w-56"
         />
       </div>
@@ -219,29 +221,29 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       {actionError && (
         <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
           {actionError}
-          <button onClick={() => setActionError('')} className="ml-2 underline text-xs">Schließen</button>
+          <button onClick={() => setActionError('')} className="ml-2 underline text-xs">{t('sdn.btn_close')}</button>
         </div>
       )}
 
       {/* ── Zones ─────────────────────────────────────────────────────────── */}
       <section>
         <SectionHeader
-          title="Zonen"
+          title={t('sdn.section_zones')}
           count={zoneItems.length}
-          createLabel="+ Zone anlegen"
+          createLabel={t('sdn.btn_add_zone')}
           onCreate={() => { setActionError(''); setZoneModal(null) }}
         />
         <div className="rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-                  <th className={thCls()}>Name</th>
-                  <th className={thCls()}>Typ</th>
-                  <th className={thCls()}>Bridge / Nodes</th>
-                  <th className={thCls()}>MTU</th>
-                  <th className={thCls()}>Status</th>
-                  <th className={`${thCls()} text-right`}>Aktionen</th>
+                <tr className="border-b border-gray-200 dark:border-zinc-700">
+                  <th className={thCls()}>{t('sdn.col_name')}</th>
+                  <th className={thCls()}>{t('sdn.col_type')}</th>
+                  <th className={thCls()}>{t('sdn.col_bridge_nodes')}</th>
+                  <th className={thCls()}>{t('sdn.col_mtu')}</th>
+                  <th className={thCls()}>{t('sdn.col_status')}</th>
+                  <th className={`${thCls()} text-right`}>{t('sdn.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-100 dark:divide-zinc-800">
@@ -251,17 +253,18 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400">{z.type}</td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 font-mono">{z.bridge || z.nodes || '–'}</td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400">{z.mtu ?? '–'}</td>
-                    <td className="px-3 py-2.5"><StateBadge pending={z.pending} state={z.state} /></td>
+                    <td className="px-3 py-2.5"><StateBadge pending={z.pending} state={z.state} t={t} /></td>
                     <td className="px-3 py-2.5">
                       <RowActions
                         onEdit={() => { setActionError(''); setZoneModal(z) }}
                         onDelete={() => { setActionError(''); setDeleteTarget({ kind: 'zone', item: z }) }}
+                        t={t}
                       />
                     </td>
                   </tr>
                 ))}
                 {fZones.length === 0 && (
-                  <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">Keine Zonen.</td></tr>
+                  <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">{t('sdn.empty_zones')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -272,9 +275,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       {/* ── VNets ─────────────────────────────────────────────────────────── */}
       <section>
         <SectionHeader
-          title="VNets"
+          title={t('sdn.section_vnets')}
           count={vnetItems.length}
-          createLabel="+ VNet anlegen"
+          createLabel={t('sdn.btn_add_vnet')}
           createDisabled={zoneItems.length === 0}
           onCreate={() => { setActionError(''); setVnetModal(null) }}
         />
@@ -282,13 +285,13 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-                  <th className={thCls()}>Name</th>
-                  <th className={thCls()}>Zone</th>
-                  <th className={thCls()}>Tag</th>
-                  <th className={thCls()}>Alias</th>
-                  <th className={thCls()}>Status</th>
-                  <th className={`${thCls()} text-right`}>Aktionen</th>
+                <tr className="border-b border-gray-200 dark:border-zinc-700">
+                  <th className={thCls()}>{t('sdn.col_name')}</th>
+                  <th className={thCls()}>{t('sdn.col_zone')}</th>
+                  <th className={thCls()}>{t('sdn.col_tag')}</th>
+                  <th className={thCls()}>{t('sdn.col_alias')}</th>
+                  <th className={thCls()}>{t('sdn.col_status')}</th>
+                  <th className={`${thCls()} text-right`}>{t('sdn.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-100 dark:divide-zinc-800">
@@ -296,22 +299,23 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
                   <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors">
                     <td className="px-3 py-2.5 text-xs font-mono font-medium text-gray-800 dark:text-zinc-200 whitespace-nowrap">
                       {v.id}
-                      {v.vlanaware && <span className="ml-1.5 text-[9px] text-gray-400 dark:text-zinc-500">VLAN-aware</span>}
+                      {v.vlanaware && <span className="ml-1.5 text-[9px] text-gray-400 dark:text-zinc-500">{t('sdn.vlan_aware')}</span>}
                     </td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 font-mono">{v.zone || '–'}</td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400">{v.tag ?? '–'}</td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 max-w-[160px] truncate" title={v.alias || ''}>{v.alias || '–'}</td>
-                    <td className="px-3 py-2.5"><StateBadge pending={v.pending} state={v.state} /></td>
+                    <td className="px-3 py-2.5"><StateBadge pending={v.pending} state={v.state} t={t} /></td>
                     <td className="px-3 py-2.5">
                       <RowActions
                         onEdit={() => { setActionError(''); setVnetModal(v) }}
                         onDelete={() => { setActionError(''); setDeleteTarget({ kind: 'vnet', item: v }) }}
+                        t={t}
                       />
                     </td>
                   </tr>
                 ))}
                 {fVnets.length === 0 && (
-                  <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">Keine VNets.</td></tr>
+                  <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">{t('sdn.empty_vnets')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -322,9 +326,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       {/* ── Subnets ───────────────────────────────────────────────────────── */}
       <section>
         <SectionHeader
-          title="Subnets"
+          title={t('sdn.section_subnets')}
           count={subnetItems.length}
-          createLabel="+ Subnet anlegen"
+          createLabel={t('sdn.btn_add_subnet')}
           createDisabled={vnetItems.length === 0}
           onCreate={() => { setActionError(''); setSubnetModal(null) }}
         />
@@ -332,13 +336,13 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-                  <th className={thCls()}>CIDR</th>
-                  <th className={thCls()}>VNet</th>
-                  <th className={thCls()}>Gateway</th>
-                  <th className={thCls()}>SNAT</th>
-                  <th className={thCls()}>Status</th>
-                  <th className={`${thCls()} text-right`}>Aktionen</th>
+                <tr className="border-b border-gray-200 dark:border-zinc-700">
+                  <th className={thCls()}>{t('sdn.col_cidr')}</th>
+                  <th className={thCls()}>{t('sdn.col_vnet')}</th>
+                  <th className={thCls()}>{t('sdn.col_gateway')}</th>
+                  <th className={thCls()}>{t('sdn.col_snat')}</th>
+                  <th className={thCls()}>{t('sdn.col_status')}</th>
+                  <th className={`${thCls()} text-right`}>{t('sdn.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-100 dark:divide-zinc-800">
@@ -348,19 +352,20 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 font-mono">{s.vnet || '–'}</td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 font-mono">{s.gateway || '–'}</td>
                     <td className="px-3 py-2.5 text-center">
-                      {s.snat ? <span className="text-portal-success text-sm" title="SNAT aktiv">✓</span> : <span className="text-gray-300 dark:text-zinc-600 text-sm">–</span>}
+                      {s.snat ? <span className="text-portal-success text-sm" title={t('sdn.snat_active')}>✓</span> : <span className="text-gray-300 dark:text-zinc-600 text-sm">–</span>}
                     </td>
-                    <td className="px-3 py-2.5"><StateBadge pending={s.pending} state={s.state} /></td>
+                    <td className="px-3 py-2.5"><StateBadge pending={s.pending} state={s.state} t={t} /></td>
                     <td className="px-3 py-2.5">
                       <RowActions
                         onEdit={() => { setActionError(''); setSubnetModal(s) }}
                         onDelete={() => { setActionError(''); setDeleteTarget({ kind: 'subnet', item: s }) }}
+                        t={t}
                       />
                     </td>
                   </tr>
                 ))}
                 {fSubnets.length === 0 && (
-                  <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">Keine Subnets.</td></tr>
+                  <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">{t('sdn.empty_subnets')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -391,13 +396,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       {/* Apply (cluster-wide!) warning */}
       {showApply && (
         <ConfirmModal
-          title="SDN-Änderungen cluster-weit übernehmen"
-          body={
-            'Achtung: Der Apply lädt die SDN-Konfiguration auf ALLEN Nodes des Clusters neu (nicht nur einem). ' +
-            'Eine fehlerhafte SDN-Konfiguration kann die Netzwerk-Konnektivität cluster-weit stören. ' +
-            'Bei einem Fehler bleiben die ausstehenden Änderungen erhalten und können verworfen werden.'
-          }
-          confirmLabel="Cluster-weit übernehmen"
+          title={t('sdn.apply_title')}
+          body={t('sdn.apply_body')}
+          confirmLabel={t('sdn.apply_confirm')}
           variant="danger"
           onConfirm={handleApply}
           onClose={() => { setShowApply(false); load() }}
@@ -407,9 +408,9 @@ export default function SdnManagementTab({ portalNodeId = null } = {}) {
       {/* Revert confirm */}
       {showRevert && (
         <ConfirmModal
-          title="Ausstehende SDN-Änderungen verwerfen"
-          body="Alle noch nicht übernommenen SDN-Änderungen werden verworfen. Der aktive (zuletzt angewendete) Stand bleibt unverändert."
-          confirmLabel="Verwerfen"
+          title={t('sdn.revert_title')}
+          body={t('sdn.revert_body')}
+          confirmLabel={t('sdn.revert_confirm')}
           variant="primary"
           onConfirm={handleRevert}
           onClose={() => { setShowRevert(false); load() }}

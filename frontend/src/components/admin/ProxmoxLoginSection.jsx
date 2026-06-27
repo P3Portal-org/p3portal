@@ -5,9 +5,9 @@ import { getProxmoxLoginEnabled, setProxmoxLoginEnabled } from '../../api/admin'
 function WarningDialog({ onConfirm, onCancel }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white dark:bg-zinc-900 border border-yellow-500 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+      <div className="bg-white dark:bg-zinc-900 border border-portal-warn/50 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
         <div className="flex items-start gap-3 mb-4">
-          <span className="text-yellow-500 text-xl shrink-0">⚠</span>
+          <span className="text-portal-warn text-xl shrink-0">⚠</span>
           <div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
               Experimentelles Feature – Proxmox-Login
@@ -99,7 +99,7 @@ export default function ProxmoxLoginSection() {
             <div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Proxmox-Login</p>
-                <span className="px-1.5 py-0.5 text-xs font-semibold rounded bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700">
+                <span className="px-1.5 py-0.5 text-xs font-semibold rounded bg-portal-warn/15 text-portal-warn border border-portal-warn/30">
                   Experimental
                 </span>
               </div>
@@ -112,7 +112,7 @@ export default function ProxmoxLoginSection() {
               onClick={handleToggle}
               disabled={saving}
               className={`relative w-10 h-5 rounded-full transition-colors shrink-0 disabled:opacity-50 ${
-                enabled ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'
+                enabled ? 'bg-portal-accent' : 'bg-zinc-300 dark:bg-zinc-600'
               }`}
             >
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-5' : ''}`} />
@@ -120,9 +120,9 @@ export default function ProxmoxLoginSection() {
           </div>
 
           {enabled && (
-            <div className="mt-3 flex items-start gap-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2">
-              <span className="text-yellow-500 shrink-0 text-sm">⚠</span>
-              <p className="text-xs text-yellow-700 dark:text-yellow-400">
+            <div className="mt-3 flex items-start gap-2 bg-portal-warn/10 border border-portal-warn/30 rounded-lg px-3 py-2">
+              <span className="text-portal-warn shrink-0 text-sm">⚠</span>
+              <p className="text-xs text-portal-warn">
                 Proxmox-Login ist aktiv. Dieses Feature ist experimentell – Ansible-Playbooks und einige Portal-Funktionen sind für Proxmox-Nutzer eingeschränkt.
               </p>
             </div>

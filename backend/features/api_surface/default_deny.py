@@ -21,7 +21,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, Request, WebSocket, status
 
 from backend.features.api_surface.deps import UPK_SCOPE_MARKER_ATTR
 
@@ -42,6 +42,16 @@ NO_SCOPE_MARKER = "<no-scope-declared>"
 # Beim Start befüllte Menge der scope-tragenden Endpoint-Funktionen.
 # Starlette legt die getroffene Endpoint-Funktion unter scope["endpoint"] ab
 # (siehe Route.matches → child_scope), daher Identitätsvergleich gegen route.endpoint.
+#
+# ⚠️ ANNAHME / CONSTRAINT (Code-Review 2026-06-19, Punkt #3):
+# Diese Menge ist auf die *Funktions-Identität* (`route.endpoint`) gekeyt. Das ist
+# korrekt, SOLANGE eine Endpoint-Funktion nicht über ZWEI Routen mit
+# unterschiedlichem Scope-Zustand hängt. Heute ist das nie der Fall (jede
+# Endpoint-Funktion = genau eine Route). Würde künftig dieselbe Funktion auf einer
+# gescopten UND einer ungescopten Route registriert, würde der Türsteher beide als
+# „scope-tragend" behandeln → die ungescopte Route würde fälschlich durchgelassen.
+# In diesem Fall muss der Match auf (Funktion, Pfad/Methode) statt nur auf die
+# Funktion umgestellt werden (z. B. `(route.endpoint, route.path_format)`).
 _SCOPED_ENDPOINTS: set = set()
 
 
@@ -96,10 +106,21 @@ async def _audit_no_scope(token: str, request: Request) -> None:
     )
 
 
-async def upk_doorman(request: Request) -> None:
+async def upk_doorman(
+    request: Request = None,      # type: ignore[assignment]  # HTTP → injiziert; WS → bleibt None
+    websocket: WebSocket = None,  # type: ignore[assignment]  # WS → injiziert; HTTP → bleibt None
+) -> None:
     """Globale Dependency: Default-Deny für upk_-Keys auf ungescopten Routen.
 
     No-Op für JWT-Sessions und öffentliche Endpoints (kein upk_-Token im Header).
+
+    WICHTIG (WebSocket): Diese Dependency hängt app-global – FastAPI wendet sie
+    auch auf WebSocket-Routen an. Bei einem WS-Handshake injiziert FastAPI nur
+    `websocket`, NIE `request`. Ein zwingendes `request: Request` würde die
+    Dependency-Auflösung brechen und damit JEDEN WebSocket-Upgrade abreißen
+    (Job-Live-Logs, Stack-Deploy-Live-Log). Browser-WebSockets können ohnehin
+    keinen `Bearer upk_`-Header tragen (WS authentifiziert über `?token=`), daher
+    ist der Türsteher für WS immer No-Op: `request is None` → früh zurück.
 
     WICHTIG (BUG-97-1): Der Authorization-Header wird **identisch zu HTTPBearer**
     geparst – Scheme case-insensitiv (`scheme.lower() == "bearer"`, siehe
@@ -108,6 +129,9 @@ async def upk_doorman(request: Request) -> None:
     kleingeschriebenes `bearer upk_…` umgangen, während get_current_user den Key
     via HTTPBearer trotzdem authentifiziert → Default-Deny-Bypass.
     """
+    if request is None:
+        return  # WebSocket-Handshake → Türsteher inaktiv (WS nutzt ?token=, kein upk_-Header)
+
     auth = request.headers.get("Authorization", "")
     # Gleiche Zerlegung wie HTTPBearer (get_authorization_scheme_param: partition(" ")).
     scheme, _, credentials = auth.partition(" ")

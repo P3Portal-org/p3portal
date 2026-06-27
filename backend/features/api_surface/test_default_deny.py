@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 import pytest_asyncio
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, WebSocket
 from httpx import ASGITransport, AsyncClient
 
 from backend.core.deps import CurrentUser, get_current_user
@@ -271,3 +271,31 @@ def test_new_scopes_in_manifest_with_correct_plus_flag():
         assert entry.plus_only is plus_only, f"Scope {name!r} hat falsches plus_only ({entry.plus_only})"
         assert len(entry.endpoints) > 0, f"Scope {name!r} hat keine Endpoints"
         assert entry.curl_example, f"Scope {name!r} hat kein curl_example"
+
+
+# ── WebSocket-Regression: Türsteher darf WS-Upgrades nicht abreißen ───────────
+# Der app-globale upk_doorman wird von FastAPI auch auf WebSocket-Routen
+# angewandt. Vor dem Fix verlangte er zwingend `request: Request`, das bei einem
+# WS-Handshake nie injiziert wird → Dependency-Auflösung brach → JEDER WebSocket
+# wurde abgewiesen (Job-Live-Logs, Stack-Deploy-Live-Log: „Warte auf Ausgabe…").
+
+def _make_ws_app() -> FastAPI:
+    app = FastAPI(dependencies=[Depends(upk_doorman)])
+
+    @app.websocket("/ws")
+    async def ws_echo(websocket: WebSocket):
+        await websocket.accept()
+        msg = await websocket.receive_text()
+        await websocket.send_text(f"echo:{msg}")
+        await websocket.close()
+
+    return app
+
+
+def test_websocket_upgrade_passes_doorman():
+    """WS-Handshake gelingt trotz globalem upk_doorman (No-Op für WS)."""
+    from fastapi.testclient import TestClient
+    client = TestClient(_make_ws_app())
+    with client.websocket_connect("/ws") as ws:
+        ws.send_text("hello")
+        assert ws.receive_text() == "echo:hello"

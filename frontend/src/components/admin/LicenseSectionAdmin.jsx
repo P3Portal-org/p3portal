@@ -131,12 +131,12 @@ export default function LicenseSectionAdmin() {
         ) : (
           <>
             <Row label={t('admin.license.label_edition')}>
-              <span className={`font-medium ${details.valid ? 'text-green-600 dark:text-green-400' : 'text-zinc-500 dark:text-zinc-400'}`}>
+              <span className={`font-medium ${details.valid ? 'text-portal-success' : 'text-zinc-500 dark:text-zinc-400'}`}>
                 {EDITION_LABEL[details.edition] ?? details.edition}
               </span>
               {details.valid
-                ? <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">{t('admin.license.badge_active')}</span>
-                : <span className="ml-2 text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">
+                ? <span className="ml-2 text-xs bg-portal-success/15 text-portal-success px-2 py-0.5 rounded-full">{t('admin.license.badge_active')}</span>
+                : <span className="ml-2 text-xs bg-portal-danger/15 text-portal-danger px-2 py-0.5 rounded-full">
                     {reasonLabel(details.reason) ?? t('admin.license.badge_invalid')}
                   </span>
               }
@@ -196,7 +196,7 @@ export default function LicenseSectionAdmin() {
                     {t('admin.license.deactivate_confirm')}
                   </p>
                   {deactivateMsg && (
-                    <p className={`mt-1 text-xs ${deactivateMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <p className={`mt-1 text-xs ${deactivateMsg.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
                       {deactivateMsg.text}
                     </p>
                   )}
@@ -204,7 +204,7 @@ export default function LicenseSectionAdmin() {
                 <button
                   onClick={handleDeactivate}
                   disabled={deactivating}
-                  className="shrink-0 px-4 py-1.5 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="shrink-0 px-4 py-1.5 text-sm font-medium rounded-lg border border-portal-danger/30 text-portal-danger hover:bg-portal-danger/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {deactivating ? t('admin.license.deactivating') : t('admin.license.deactivate_btn')}
                 </button>
@@ -270,7 +270,7 @@ export default function LicenseSectionAdmin() {
             </button>
           </div>
           {uploadMsg && (
-            <p className={`mt-2 text-xs ${uploadMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <p className={`mt-2 text-xs ${uploadMsg.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
               {uploadMsg.text}
             </p>
           )}

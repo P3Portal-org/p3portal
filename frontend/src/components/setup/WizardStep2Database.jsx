@@ -111,7 +111,7 @@ export default function WizardStep1Database({ initial, onNext }) {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -134,16 +134,16 @@ export default function WizardStep1Database({ initial, onNext }) {
             onClick={() => set('db_type', value)}
             className={`text-left p-4 rounded-lg border-2 transition-colors ${
               form.db_type === value
-                ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
+                ? 'border-portal-accent bg-portal-accent/10'
                 : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
             }`}
           >
             <div className="flex items-center gap-2">
-              <p className={`text-sm font-semibold ${form.db_type === value ? 'text-orange-600 dark:text-orange-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+              <p className={`text-sm font-semibold ${form.db_type === value ? 'text-portal-accent' : 'text-zinc-800 dark:text-zinc-200'}`}>
                 {label}
               </p>
               {experimental && (
-                <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-portal-warn/10 text-portal-warn">
                   {t('setup.s2_experimental_badge')}
                 </span>
               )}
@@ -156,9 +156,9 @@ export default function WizardStep1Database({ initial, onNext }) {
       {/* PostgreSQL-Felder */}
       {isPostgres && (
         <div className="space-y-4">
-          <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2.5">
-            <span className="text-amber-500 shrink-0 text-sm mt-0.5">⚠</span>
-            <p className="text-xs text-amber-700 dark:text-amber-400">
+          <div className="flex items-start gap-2 bg-portal-warn/10 border border-portal-warn/30 rounded-lg px-3 py-2.5">
+            <span className="text-portal-warn shrink-0 text-sm mt-0.5">⚠</span>
+            <p className="text-xs text-portal-warn">
               {t('setup.s2_postgres_warn')}
             </p>
           </div>
@@ -244,7 +244,7 @@ export default function WizardStep1Database({ initial, onNext }) {
               {testing ? t('setup.testing') : t('setup.test_btn')}
             </button>
             {testResult && (
-              <span className={`text-sm ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+              <span className={`text-sm ${testResult.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
                 {testResult.ok ? t('setup.s2_test_ok') : `✗ ${testResult.error}`}
               </span>
             )}
@@ -267,7 +267,7 @@ export default function WizardStep1Database({ initial, onNext }) {
       )}
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
           {error}
         </p>
       )}

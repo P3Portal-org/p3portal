@@ -60,7 +60,7 @@ export default function OnboardingBlockModal({ scope = 'user', scopeRef = null, 
             <div className="text-sm text-gray-400 dark:text-zinc-500">{t('common.loading')}</div>
           )}
           {error && (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+            <div className="border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-sm text-portal-danger">
               {t('ansible_inventory.onb_error')}
             </div>
           )}

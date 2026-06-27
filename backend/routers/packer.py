@@ -31,6 +31,7 @@ from backend.models.packer import PackerBuildRequest, PackerDetail, PackerSummar
 from backend.services.iso_service import (
     check_iso_exists,
     delete_iso,
+    get_iso_storages,
     get_isos,
     get_nodes,
     get_storages,
@@ -210,6 +211,20 @@ async def get_proxmox_storages(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Proxmox API Fehler: {exc}")
 
 
+@router.get("/iso-storages", response_model=list[StorageInfo])
+async def get_proxmox_iso_storages(
+    node: str | None = Query(default=None, description="Proxmox Node-Name (default: PROXMOX_NODE)"),
+    _: CurrentUser = Depends(require_operator),
+) -> list[StorageInfo]:
+    resolved_node = node or get_proxmox_node()
+    await _require_packer_token_for_node(resolved_node)
+    try:
+        storages = await get_iso_storages(resolved_node)
+        return [StorageInfo(**s) for s in storages]
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Proxmox API Fehler: {exc}")
+
+
 @router.get("/isos", response_model=list[IsoEntry])
 async def get_proxmox_isos(
     node: str | None = Query(default=None, description="Proxmox Node-Name (default: PROXMOX_NODE)"),
@@ -295,7 +310,10 @@ async def download_iso(
             checksum_algorithm=body.checksum_algorithm,
             checksum=body.checksum,
             verify_certificates=body.verify_certificates,
+            storage=body.storage or "local",
         )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Download-Start fehlgeschlagen: {exc}")
 

@@ -5,8 +5,8 @@ import { deleteUser, setPortalPermissions } from '../../api/admin'
 import UserDeleteOwnershipStep from '../../features/owners/components/UserDeleteOwnershipStep'
 
 const roleBadgeCls = {
-  admin: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-800',
-  operator: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-800',
+  admin: 'bg-portal-accent/10 text-portal-accent border border-portal-accent/30',
+  operator: 'bg-portal-info/10 text-portal-info border border-portal-info/30',
   viewer: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700',
 }
 
@@ -87,21 +87,21 @@ export default function UserTable({ users, onRefresh, onEdit }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder={t('admin.user_table.search_placeholder')}
-          className="w-full text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-400"
+          className="w-full text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         />
       </div>
 
       {error && (
-        <p className="mb-3 text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+        <p className="mb-3 text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
           {error}
         </p>
       )}
 
       {/* Delete confirmation */}
       {confirmDelete && (
-        <div className="mb-3 p-3 bg-red-950/30 border border-red-800 flex items-center justify-between gap-4">
+        <div className="mb-3 p-3 bg-portal-danger/10 border border-portal-danger/30 flex items-center justify-between gap-4">
           <p
-            className="text-sm text-red-300"
+            className="text-sm text-portal-danger"
             dangerouslySetInnerHTML={{ __html: t('admin.user_table.confirm_delete', { username: confirmDelete.username }) }}
           />
           <div className="flex gap-2 shrink-0">
@@ -170,7 +170,7 @@ export default function UserTable({ users, onRefresh, onEdit }) {
                     <td className="py-2.5 px-3">
                       <span className={`inline-block px-2 py-0.5 text-xs border ${
                         u.active
-                          ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800'
+                          ? 'bg-portal-success/10 text-portal-success border-portal-success/30'
                           : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700'
                       }`}>
                         {u.active ? t('admin.user_table.status_active') : t('admin.user_table.status_inactive')}
@@ -181,7 +181,7 @@ export default function UserTable({ users, onRefresh, onEdit }) {
                         {(u.group_names ?? []).length === 0
                           ? <span className="text-xs text-gray-300 dark:text-zinc-600">—</span>
                           : (u.group_names ?? []).map(g => (
-                            <span key={g} className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full">{g}</span>
+                            <span key={g} className="text-xs bg-portal-accent/10 text-portal-accent px-1.5 py-0.5 rounded-full">{g}</span>
                           ))
                         }
                       </div>
@@ -191,7 +191,7 @@ export default function UserTable({ users, onRefresh, onEdit }) {
                         {(u.preset_names ?? []).length === 0
                           ? <span className="text-xs text-gray-300 dark:text-zinc-600">—</span>
                           : (u.preset_names ?? []).map(p => (
-                            <span key={p} className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 px-1.5 py-0.5 rounded">{p}</span>
+                            <span key={p} className="text-xs bg-portal-info/10 text-portal-info border border-portal-info/30 px-1.5 py-0.5 rounded">{p}</span>
                           ))
                         }
                       </div>
@@ -206,7 +206,7 @@ export default function UserTable({ users, onRefresh, onEdit }) {
                           title={t('admin.user_table.logs_toggle_title')}
                           className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 border transition-colors disabled:opacity-50 ${
                             (u.portal_permissions ?? []).includes('view_logs')
-                              ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800'
+                              ? 'bg-portal-success/10 text-portal-success border-portal-success/30'
                               : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700'
                           }`}
                         >

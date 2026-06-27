@@ -100,7 +100,7 @@ function CommandBlock({ tokenId, roleName, privs }) {
             title="Kopieren"
           >
             {copied ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-green-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-portal-success">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : <CopyIcon />}
@@ -145,7 +145,7 @@ function TokenPair({ label, idKey, secretKey, roleName, privs, form, onChange, n
           type="text"
           value={form[idKey]}
           onChange={(e) => { onChange(idKey, e.target.value); setTestResult(null) }}
-          className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent"
           placeholder="user@pve!tokenname"
         />
       </div>
@@ -156,7 +156,7 @@ function TokenPair({ label, idKey, secretKey, roleName, privs, form, onChange, n
             type={show ? 'text' : 'password'}
             value={form[secretKey]}
             onChange={(e) => { onChange(secretKey, e.target.value); setTestResult(null) }}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent pr-10"
             placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
           />
           <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 btn-ghost">
@@ -174,7 +174,7 @@ function TokenPair({ label, idKey, secretKey, roleName, privs, form, onChange, n
           {testing ? t('setup.testing') : t('setup.test_btn')}
         </button>
         {testResult && (
-          <span className={`text-xs ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+          <span className={`text-xs ${testResult.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
             {testResult.ok ? `✓ PVE ${testResult.version}` : `✗ ${testResult.error}`}
           </span>
         )}
@@ -195,7 +195,7 @@ export default function WizardStep5Tokens({ initial, nodeUrl, nodeVerifySsl, onN
     admin_token_id: initial?.admin_token_id ?? 'portal-admin@pve!portal-admin',
     admin_token_secret: initial?.admin_token_secret ?? '',
     // PROJ-76 Phase 2a: optional OpenTofu engine token (only sent/shown when Plus)
-    tofu_token_id: initial?.tofu_token_id ?? '',
+    tofu_token_id: initial?.tofu_token_id ?? 'portal-tofu@pve!portal-tofu',
     tofu_token_secret: initial?.tofu_token_secret ?? '',
   })
   const [error, setError] = useState('')
@@ -273,14 +273,14 @@ export default function WizardStep5Tokens({ initial, nodeUrl, nodeVerifySsl, onN
         </button>
         <span className="text-xs text-zinc-400">{t('setup.s5_global_test_hint')}</span>
         {testResult && (
-          <span className={`text-sm ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+          <span className={`text-sm ${testResult.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
             {testResult.ok ? `✓ PVE ${testResult.version}` : `✗ ${testResult.error}`}
           </span>
         )}
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
           {error}
         </p>
       )}

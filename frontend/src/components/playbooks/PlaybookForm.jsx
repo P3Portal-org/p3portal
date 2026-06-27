@@ -165,7 +165,7 @@ export default function PlaybookForm({ playbook }) {
             Preset
           </label>
           <select
-            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-portal-accent focus:border-transparent"
             defaultValue=""
             onChange={(e) => {
               const preset = (playbook.presets ?? []).find(p => p.label === e.target.value)
@@ -221,7 +221,7 @@ export default function PlaybookForm({ playbook }) {
               checked={autoAssignOwner}
               onChange={e => setAutoAssignOwner(e.target.checked)}
               disabled={ownerships?.used_at_limit}
-              className="w-4 h-4 accent-orange-500 disabled:cursor-not-allowed"
+              className="w-4 h-4 accent-portal-accent disabled:cursor-not-allowed"
             />
             <span className="text-sm text-gray-700 dark:text-zinc-300">
               {t('owners.deploy_checkbox_label')}
@@ -238,7 +238,7 @@ export default function PlaybookForm({ playbook }) {
       )}
 
       {submitError && (
-        <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        <div className="bg-portal-danger/10 border border-portal-danger/30 px-4 py-3 text-sm text-portal-danger">
           {submitError}
         </div>
       )}

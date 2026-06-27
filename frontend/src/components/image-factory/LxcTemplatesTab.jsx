@@ -1,5 +1,6 @@
 // p3portal.org
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLxcTemplates } from '../../hooks/useLxcTemplates'
 import { useAuth } from '../../hooks/useAuth'
 import { deleteLxcTemplate, getPortalNodes } from '../../api/cluster'
@@ -15,23 +16,23 @@ function Section({ children }) {
   )
 }
 
-function FailedNodesBanner({ nodes }) {
+function FailedNodesBanner({ nodes, t }) {
   if (!nodes || nodes.length === 0) return null
   return (
-    <div className="flex items-start gap-3 border border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/40 px-4 py-3 rounded-lg text-sm text-yellow-800 dark:text-yellow-300">
+    <div className="flex items-start gap-3 border border-portal-warn/30 bg-portal-warn/10 px-4 py-3 rounded-lg text-sm text-portal-warn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 mt-0.5 shrink-0">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
         <line x1="12" y1="9" x2="12" y2="13" />
         <line x1="12" y1="17" x2="12.01" y2="17" />
       </svg>
       <span>
-        Folgende Nodes nicht erreichbar: <span className="font-mono font-medium">{nodes.join(', ')}</span>. Template-Daten möglicherweise unvollständig.
+        {t('lxc_templates.failed_nodes')}<span className="font-mono font-medium">{nodes.join(', ')}</span>{t('lxc_templates.failed_nodes_suffix')}
       </span>
     </div>
   )
 }
 
-function DownloadableRow({ tmpl, canOperator, onOpenDownload }) {
+function DownloadableRow({ tmpl, canOperator, onOpenDownload, t }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors">
       <div className="flex-1 min-w-0">
@@ -51,14 +52,14 @@ function DownloadableRow({ tmpl, canOperator, onOpenDownload }) {
           onClick={() => onOpenDownload(tmpl)}
           className="btn-primary shrink-0 text-xs px-3 py-1.5"
         >
-          Download
+          {t('lxc_templates.download_btn')}
         </button>
       )}
     </div>
   )
 }
 
-function InstalledRow({ tmpl, canAdmin, onRequestDelete, deleting }) {
+function InstalledRow({ tmpl, canAdmin, onRequestDelete, deleting, t }) {
   const isMe = deleting === tmpl.volid
 
   return (
@@ -66,7 +67,7 @@ function InstalledRow({ tmpl, canAdmin, onRequestDelete, deleting }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm text-gray-900 dark:text-zinc-100 truncate">{tmpl.volid}</p>
         <p className="text-xs text-gray-400 dark:text-zinc-500">
-          Node: <span className="font-mono">{tmpl.portal_node_name ?? tmpl.node}</span>
+          {t('lxc_templates.node_label')}<span className="font-mono">{tmpl.portal_node_name ?? tmpl.node}</span>
           {tmpl.storage && ` · ${tmpl.storage}`}
           {tmpl.size && ` · ${(tmpl.size / (1024 * 1024)).toFixed(0)} MB`}
         </p>
@@ -77,7 +78,7 @@ function InstalledRow({ tmpl, canAdmin, onRequestDelete, deleting }) {
           disabled={isMe}
           className="btn-table-danger shrink-0"
         >
-          {isMe ? '…' : 'Löschen'}
+          {isMe ? t('lxc_templates.deleting') : t('lxc_templates.delete')}
         </button>
       )}
     </div>
@@ -85,6 +86,7 @@ function InstalledRow({ tmpl, canAdmin, onRequestDelete, deleting }) {
 }
 
 export default function LxcTemplatesTab() {
+  const { t } = useTranslation()
   const { role } = useAuth()
   const canAdmin = role === 'admin'
   const canOperator = role === 'admin' || role === 'operator'
@@ -100,15 +102,15 @@ export default function LxcTemplatesTab() {
   const [showUpload, setShowUpload] = useState(false)
   const [portalNodes, setPortalNodes] = useState(null)
 
-  const nodes = [...new Set(installed.map(t => t.portal_node_name ?? t.node).filter(Boolean))].sort()
+  const nodes = [...new Set(installed.map(tmpl => tmpl.portal_node_name ?? tmpl.node).filter(Boolean))].sort()
   const filteredInstalled = nodeFilter === 'ALL'
     ? installed
-    : installed.filter(t => (t.portal_node_name ?? t.node) === nodeFilter)
+    : installed.filter(tmpl => (tmpl.portal_node_name ?? tmpl.node) === nodeFilter)
 
   const filteredAvailable = availableSearch.trim()
-    ? available.filter(t => {
+    ? available.filter(tmpl => {
         const q = availableSearch.toLowerCase()
-        return (t.title ?? '').toLowerCase().includes(q) || t.template.toLowerCase().includes(q)
+        return (tmpl.title ?? '').toLowerCase().includes(q) || tmpl.template.toLowerCase().includes(q)
       })
     : available
 
@@ -141,10 +143,10 @@ export default function LxcTemplatesTab() {
     setMsg(null)
     try {
       await deleteLxcTemplate({ node: tmpl.portal_node_name ?? tmpl.node, storage: tmpl.storage, volid: tmpl.volid })
-      setMsg({ type: 'success', text: `${tmpl.volid} gelöscht.` })
+      setMsg({ type: 'success', text: t('lxc_templates.deleted', { volid: tmpl.volid }) })
       refetch()
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.detail ?? 'Löschen fehlgeschlagen.' })
+      setMsg({ type: 'error', text: err.response?.data?.detail ?? t('lxc_templates.delete_failed') })
     } finally {
       setDeleting(null)
     }
@@ -161,8 +163,8 @@ export default function LxcTemplatesTab() {
   if (isError) {
     return (
       <div className="p-6">
-        <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400 rounded-lg">
-          {errorMessage ?? 'Fehler beim Laden der Templates.'}
+        <div className="border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger rounded-lg">
+          {errorMessage ?? t('lxc_templates.load_failed')}
         </div>
       </div>
     )
@@ -170,10 +172,10 @@ export default function LxcTemplatesTab() {
 
   return (
     <div className="p-6 space-y-6">
-      <FailedNodesBanner nodes={failedNodes} />
+      <FailedNodesBanner nodes={failedNodes} t={t} />
 
       {msg && (
-        <p className={`text-sm ${msg.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        <p className={`text-sm ${msg.type === 'success' ? 'text-portal-success' : 'text-portal-danger'}`}>
           {msg.text}
         </p>
       )}
@@ -182,16 +184,16 @@ export default function LxcTemplatesTab() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-            Heruntergeladene Templates ({filteredInstalled.length})
+            {t('lxc_templates.installed_heading', { count: filteredInstalled.length })}
           </h2>
           <div className="flex items-center gap-2">
             {nodes.length > 1 && (
               <select
                 value={nodeFilter}
                 onChange={e => setNodeFilter(e.target.value)}
-                className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-portal-accent"
               >
-                <option value="ALL">Alle Nodes</option>
+                <option value="ALL">{t('lxc_templates.all_nodes')}</option>
                 {nodes.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             )}
@@ -205,17 +207,17 @@ export default function LxcTemplatesTab() {
                   <line x1="12" y1="3" x2="12" y2="15" />
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 </svg>
-                Upload
+                {t('lxc_templates.upload_btn')}
               </button>
             )}
           </div>
         </div>
         {filteredInstalled.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-zinc-500 py-4">Keine Templates heruntergeladen.</p>
+          <p className="text-sm text-gray-400 dark:text-zinc-500 py-4">{t('lxc_templates.no_installed')}</p>
         ) : (
           <Section>
-            {filteredInstalled.map(t => (
-              <InstalledRow key={t.volid} tmpl={t} canAdmin={canAdmin} onRequestDelete={setDeleteTarget} deleting={deleting} />
+            {filteredInstalled.map(tmpl => (
+              <InstalledRow key={tmpl.volid} tmpl={tmpl} canAdmin={canAdmin} onRequestDelete={setDeleteTarget} deleting={deleting} t={t} />
             ))}
           </Section>
         )}
@@ -225,13 +227,13 @@ export default function LxcTemplatesTab() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-            Verfügbare Templates ({availableSearch ? filteredAvailable.length + '/' + available.length : available.length})
+            {t('lxc_templates.available_heading', { count: availableSearch ? filteredAvailable.length + '/' + available.length : available.length })}
           </h2>
           <button
             onClick={refetch}
-            className="text-xs text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+            className="text-xs text-portal-accent hover:text-portal-accent transition-colors"
           >
-            ↻ Aktualisieren
+            {t('lxc_templates.refresh')}
           </button>
         </div>
         {available.length > 0 && (
@@ -243,23 +245,24 @@ export default function LxcTemplatesTab() {
               type="text"
               value={availableSearch}
               onChange={e => setAvailableSearch(e.target.value)}
-              placeholder="Templates filtern…"
-              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 placeholder-gray-400 dark:placeholder-zinc-500"
+              placeholder={t('lxc_templates.filter_placeholder')}
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded focus:outline-none focus:ring-1 focus:ring-portal-accent placeholder-gray-400 dark:placeholder-zinc-500"
             />
           </div>
         )}
         {available.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-zinc-500 py-4">Keine Templates verfügbar.</p>
+          <p className="text-sm text-gray-400 dark:text-zinc-500 py-4">{t('lxc_templates.no_available')}</p>
         ) : filteredAvailable.length === 0 ? (
-          <p className="text-sm text-gray-400 dark:text-zinc-500 py-4">Keine Templates für &bdquo;{availableSearch}&ldquo; gefunden.</p>
+          <p className="text-sm text-gray-400 dark:text-zinc-500 py-4">{t('lxc_templates.no_match', { query: availableSearch })}</p>
         ) : (
           <Section>
-            {filteredAvailable.map(t => (
+            {filteredAvailable.map(tmpl => (
               <DownloadableRow
-                key={t.template}
-                tmpl={t}
+                key={tmpl.template}
+                tmpl={tmpl}
                 canOperator={canOperator}
                 onOpenDownload={handleOpenDownload}
+                t={t}
               />
             ))}
           </Section>
@@ -291,9 +294,9 @@ export default function LxcTemplatesTab() {
 
       {deleteTarget && (
         <ConfirmModal
-          title="LXC-Template löschen"
-          body={`Template „${deleteTarget.volid}" wirklich löschen?`}
-          confirmLabel="Löschen"
+          title={t('lxc_templates.confirm_delete_title')}
+          body={t('lxc_templates.confirm_delete_body', { volid: deleteTarget.volid })}
+          confirmLabel={t('lxc_templates.delete')}
           variant="danger"
           onConfirm={async () => {
             const tmpl = deleteTarget

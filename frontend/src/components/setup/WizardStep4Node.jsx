@@ -80,7 +80,7 @@ export default function WizardStep4Node({ initial, onNext, onBack }) {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -119,7 +119,7 @@ export default function WizardStep4Node({ initial, onNext, onBack }) {
         <button
           type="button"
           onClick={() => set('verify_ssl', !form.verify_ssl)}
-          className={`relative w-10 h-5 rounded-full transition-colors ${form.verify_ssl ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+          className={`relative w-10 h-5 rounded-full transition-colors ${form.verify_ssl ? 'bg-portal-accent' : 'bg-zinc-300 dark:bg-zinc-600'}`}
         >
           <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.verify_ssl ? 'translate-x-5' : ''}`} />
         </button>
@@ -138,16 +138,16 @@ export default function WizardStep4Node({ initial, onNext, onBack }) {
             {testing ? t('setup.testing') : t('setup.test_btn')}
           </button>
           {connResult && !connResult.ok && (
-            <span className="text-sm text-red-500">✗ {connResult.error ?? t('setup.test_btn')}</span>
+            <span className="text-sm text-portal-danger">✗ {connResult.error ?? t('setup.test_btn')}</span>
           )}
         </div>
 
         {connResult?.ok && (
-          <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0">
+          <div className="flex items-center gap-2 bg-portal-success/10 border border-portal-success/30 rounded-lg px-3 py-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-portal-success shrink-0">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span className="text-sm text-green-700 dark:text-green-300">
+            <span className="text-sm text-portal-success">
               {connResult.version
                 ? t('setup.s4_test_ok', { version: connResult.version })
                 : t('setup.s4_test_ok_noversion')}
@@ -156,13 +156,13 @@ export default function WizardStep4Node({ initial, onNext, onBack }) {
         )}
 
         {connResult && !connResult.ok && (
-          <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-amber-500 shrink-0 mt-0.5">
+          <div className="flex items-start gap-2 bg-portal-warn/10 border border-portal-warn/30 rounded-lg px-3 py-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-portal-warn shrink-0 mt-0.5">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            <p className="text-xs text-amber-700 dark:text-amber-400">
+            <p className="text-xs text-portal-warn">
               {t('setup.s4_test_fail_hint')}
             </p>
           </div>
@@ -170,7 +170,7 @@ export default function WizardStep4Node({ initial, onNext, onBack }) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
           {error}
         </p>
       )}

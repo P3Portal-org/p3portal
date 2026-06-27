@@ -15,7 +15,7 @@ const UseApprovalCountHost = PlusComponents.UseApprovalCountHost
 // Bookmark-Icon für Favoriten-Einträge
 function BookmarkIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-4 h-4 shrink-0 text-orange-400">
+    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className="w-4 h-4 shrink-0 text-portal-accent">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
@@ -200,7 +200,7 @@ export default function V2Sidebar({ onNavClick }) {
               <polyline points="2 12 12 17 22 12" />
             </svg>
             <span className="flex-1">{t('stacks.title')}</span>
-            <PlusBadge className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
+            <PlusBadge className="w-3.5 h-3.5 text-portal-success" />
           </NavLink>
         )}
 

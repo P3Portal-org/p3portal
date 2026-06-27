@@ -106,7 +106,7 @@ function CommandBlock({ tokenId, roleName, privs }) {
             title={t('admin.nodes.pveum_copy')}
           >
             {copied ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-green-400">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-portal-success">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             ) : <CopyIcon />}
@@ -142,7 +142,7 @@ const EMPTY = {
   admin_token_id:    'portal-admin@pve!portal-admin',       admin_token_secret: '',
   packer_token_id:   'portal-packer@pve!portal-packer',     packer_token_secret: '',
   // PROJ-76 Phase 2a: optional OpenTofu engine token (only shown/sent when Plus)
-  tofu_token_id:     '',                                     tofu_token_secret: '',
+  tofu_token_id:     'portal-tofu@pve!portal-tofu',          tofu_token_secret: '',
   cluster_nodes: [],
 }
 
@@ -176,7 +176,7 @@ function TokenPairSection({ role, roleName, privs, label, hint, form, set, isEdi
   const [testResult, setTestResult] = useState(null)
   const idKey  = `${role}_token_id`
   const secKey = `${role}_token_secret`
-  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent'
   const canTest = Boolean(form[idKey]) && (Boolean(form[secKey]) || (isEdit && Boolean(nodeId)))
 
   const handleTokenTest = async () => {
@@ -207,7 +207,7 @@ function TokenPairSection({ role, roleName, privs, label, hint, form, set, isEdi
       <div>
         <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
         {required
-          ? <span className="ml-1 text-xs text-red-400">*</span>
+          ? <span className="ml-1 text-xs text-portal-danger">*</span>
           : <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500 italic">{t('common.optional')}</span>
         }
         <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">{hint}</span>
@@ -255,7 +255,7 @@ function TokenPairSection({ role, roleName, privs, label, hint, form, set, isEdi
           {testing ? '…' : t('admin.nodes.test_token_btn')}
         </button>
         {testResult && (
-          <span className={`text-xs ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+          <span className={`text-xs ${testResult.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
             {testResult.ok ? `✓ PVE ${testResult.version}` : `✗ ${testResult.error ?? t('common.error')}`}
           </span>
         )}
@@ -269,7 +269,7 @@ function ClusterNodesSection({ clusterNodes, onChange }) {
   const { t } = useTranslation()
   const [inputVal, setInputVal] = useState('')
   const inputRef = useRef(null)
-  const inputCls = 'flex-1 px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'flex-1 px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent'
 
   const addNode = () => {
     const name = inputVal.trim()
@@ -318,13 +318,13 @@ function ClusterNodesSection({ clusterNodes, onChange }) {
           {clusterNodes.map(name => (
             <span
               key={name}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono bg-portal-info/10 text-portal-info border border-portal-info/30"
             >
               {name}
               <button
                 type="button"
                 onClick={() => removeNode(name)}
-                className="ml-0.5 text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 leading-none"
+                className="ml-0.5 text-portal-info hover:text-portal-info/80 leading-none"
                 aria-label={t('admin.nodes.cluster_node_remove', { name })}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3">
@@ -472,7 +472,7 @@ export default function NodeFormModal({ node, onClose, onSaved }) {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -531,7 +531,7 @@ export default function NodeFormModal({ node, onClose, onSaved }) {
               <button
                 type="button"
                 onClick={() => set('verify_ssl', !form.verify_ssl)}
-                className={`relative w-9 h-5 rounded-full transition-colors ${form.verify_ssl ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                className={`relative w-9 h-5 rounded-full transition-colors ${form.verify_ssl ? 'bg-portal-accent' : 'bg-zinc-300 dark:bg-zinc-600'}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.verify_ssl ? 'translate-x-4' : ''}`} />
               </button>
@@ -564,7 +564,7 @@ export default function NodeFormModal({ node, onClose, onSaved }) {
                   max={300}
                   value={form.poll_interval}
                   onChange={(e) => set('poll_interval', Number(e.target.value))}
-                  className="w-28 px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-28 px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent"
                 />
                 <span className="text-xs text-zinc-400 dark:text-zinc-500">{t('admin.nodes.poll_interval_hint')}</span>
               </div>
@@ -576,7 +576,7 @@ export default function NodeFormModal({ node, onClose, onSaved }) {
                 <button
                   type="button"
                   onClick={toggleCluster}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${isCluster ? 'bg-blue-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${isCluster ? 'bg-portal-info' : 'bg-zinc-300 dark:bg-zinc-600'}`}
                   aria-checked={isCluster}
                   role="switch"
                 >
@@ -635,14 +635,14 @@ export default function NodeFormModal({ node, onClose, onSaved }) {
               </button>
               <span className="text-xs text-zinc-400 dark:text-zinc-500">{t('admin.nodes.test_uses_viewer')}</span>
               {testResult && (
-                <span className={`text-xs ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                <span className={`text-xs ${testResult.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
                   {testResult.ok ? `✓ PVE ${testResult.version}` : `✗ ${testResult.error ?? t('common.error')}`}
                 </span>
               )}
             </div>
 
             {error && (
-              <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+              <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}

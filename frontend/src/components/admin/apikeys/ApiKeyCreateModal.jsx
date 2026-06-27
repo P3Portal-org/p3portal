@@ -10,7 +10,7 @@ const ALL_SCOPES = [
   { id: 'packer:start', label: 'packer:start',  desc: 'Packer-Builds starten' },
 ]
 
-const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent'
+const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent focus:border-transparent'
 
 export default function ApiKeyCreateModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
@@ -74,7 +74,7 @@ export default function ApiKeyCreateModal({ onClose, onCreated }) {
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-              Name <span className="text-red-500">*</span>
+              Name <span className="text-portal-danger">*</span>
             </label>
             <input
               type="text"
@@ -103,7 +103,7 @@ export default function ApiKeyCreateModal({ onClose, onCreated }) {
           {/* Scopes */}
           <div>
             <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              Scopes <span className="text-red-500">*</span>
+              Scopes <span className="text-portal-danger">*</span>
             </label>
             <div className="space-y-2">
               {ALL_SCOPES.map(({ id, label, desc }) => (
@@ -112,7 +112,7 @@ export default function ApiKeyCreateModal({ onClose, onCreated }) {
                     type="checkbox"
                     checked={form.scopes.includes(id)}
                     onChange={() => toggleScope(id)}
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-orange-500 focus:ring-orange-500"
+                    className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-portal-accent focus:ring-portal-accent"
                   />
                   <div>
                     <span className="text-sm font-mono text-zinc-800 dark:text-zinc-200">{label}</span>
@@ -122,7 +122,7 @@ export default function ApiKeyCreateModal({ onClose, onCreated }) {
               ))}
             </div>
             {form.scopes.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">Mindestens ein Scope erforderlich.</p>
+              <p className="text-xs text-portal-danger mt-1">Mindestens ein Scope erforderlich.</p>
             )}
           </div>
 
@@ -134,7 +134,7 @@ export default function ApiKeyCreateModal({ onClose, onCreated }) {
                 type="checkbox"
                 checked={form.noExpiry}
                 onChange={(e) => set('noExpiry', e.target.checked)}
-                className="h-4 w-4 rounded border-zinc-300 text-orange-500 focus:ring-orange-500"
+                className="h-4 w-4 rounded border-zinc-300 text-portal-accent focus:ring-portal-accent"
               />
               <span className="text-sm text-zinc-700 dark:text-zinc-300">Kein Ablaufdatum</span>
             </label>
@@ -149,7 +149,7 @@ export default function ApiKeyCreateModal({ onClose, onCreated }) {
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-xs text-portal-danger bg-portal-danger/10 px-3 py-2 rounded-lg">{error}</p>
           )}
 
           <div className="flex justify-end gap-3 pt-2">

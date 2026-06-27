@@ -39,7 +39,7 @@ export default function NodeDetailPage() {
         <button
           onClick={refresh}
           disabled={loading}
-          className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition-colors"
+          className="text-xs text-portal-accent hover:underline disabled:opacity-40 transition-colors"
         >
           {loading ? 'Lädt…' : '↻ Aktualisieren'}
         </button>

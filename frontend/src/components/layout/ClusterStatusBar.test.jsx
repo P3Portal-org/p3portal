@@ -78,8 +78,8 @@ describe('ClusterStatusBar – Single-Node-Modus (Core)', () => {
   it('zeigt grünen Status-Dot wenn Node online ist', async () => {
     const { container } = renderBar()
     await flush()
-    // NodePill zeigt grünen Dot (bg-green-500) für Online-Nodes
-    const dot = container.querySelector('.bg-green-500')
+    // NodePill zeigt grünen Dot (bg-portal-success) für Online-Nodes
+    const dot = container.querySelector('.bg-portal-success')
     expect(dot).toBeInTheDocument()
   })
 
@@ -120,7 +120,7 @@ describe('ClusterStatusBar – Single-Node-Modus (Core)', () => {
       </MemoryRouter>
     )
     await flush()
-    const dot = offlineBar.container.querySelector('.bg-red-500')
+    const dot = offlineBar.container.querySelector('.bg-portal-danger')
     expect(dot).toBeInTheDocument()
   })
 

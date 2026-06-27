@@ -4,7 +4,7 @@ import { getUserSshKeys, addUserSshKey, deleteUserSshKeyById, getSshJobKeyStatus
 import { getSshKey } from '../../api/settings'
 import ConfirmModal from '../common/ConfirmModal'
 
-const inputCls = 'w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+const inputCls = 'w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition'
 const cardCls = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6'
 
 function keyPreview(key) {
@@ -188,7 +188,7 @@ export default function SshKeyTab() {
         </div>
 
         {error && (
-          <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 mb-4">{error}</p>
+          <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 mb-4">{error}</p>
         )}
 
         {keys.length === 0 && !showAdd && (
@@ -234,12 +234,12 @@ export default function SshKeyTab() {
             <p className="text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wide">Neuen Key hinzufügen</p>
 
             {addError && (
-              <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">{addError}</p>
+              <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">{addError}</p>
             )}
 
             <div>
               <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">
-                Bezeichnung <span className="text-red-500">*</span>
+                Bezeichnung <span className="text-portal-danger">*</span>
               </label>
               <input
                 type="text"
@@ -253,7 +253,7 @@ export default function SshKeyTab() {
 
             <div>
               <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">
-                SSH Public Key <span className="text-red-500">*</span>
+                SSH Public Key <span className="text-portal-danger">*</span>
               </label>
               <textarea
                 rows={3}
@@ -308,7 +308,7 @@ export default function SshKeyTab() {
               <button
                 onClick={handleJobKeyDelete}
                 disabled={jobKeyLoading}
-                className="text-xs text-red-500 hover:text-red-600 font-medium disabled:opacity-50"
+                className="text-xs text-portal-danger hover:text-portal-danger/80 font-medium disabled:opacity-50"
               >
                 Ja, löschen
               </button>
@@ -322,7 +322,7 @@ export default function SshKeyTab() {
           {!jobKeyMode && !confirmDeleteJobKey && (
             <div className="space-y-3">
               {jobKeyStatus?.has_key ? (
-                <span className="inline-flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-2.5 py-1 rounded-full font-medium">
+                <span className="inline-flex items-center gap-1.5 text-xs text-portal-success bg-portal-success/10 border border-portal-success/30 px-2.5 py-1 rounded-full font-medium">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>
                   Hinterlegt
                 </span>
@@ -375,14 +375,14 @@ export default function SshKeyTab() {
           {/* Sicherheitshinweis + Aktionen */}
           {(jobKeyMode === 'generate' || jobKeyMode === 'import') && (
             <div className="space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 space-y-2">
+              <div className="bg-portal-warn/10 border border-portal-warn/30 rounded-lg p-4 space-y-2">
                 <div className="flex items-start gap-2">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-portal-warn shrink-0 mt-0.5">
                     <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                   </svg>
-                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Sicherheitshinweis</p>
+                  <p className="text-xs font-semibold text-portal-warn">Sicherheitshinweis</p>
                 </div>
-                <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1 ml-6 list-disc">
+                <ul className="text-xs text-portal-warn space-y-1 ml-6 list-disc">
                   <li>Der <strong>private Schlüssel</strong> wird Fernet-verschlüsselt in der Datenbank gespeichert (AES-128-CBC, abgeleitet aus dem Portal-<code className="font-mono">SECRET_KEY</code>).</li>
                   <li>Wer sowohl die Datenbank als auch den <code className="font-mono">SECRET_KEY</code> kennt, kann den Schlüssel entschlüsseln.</li>
                   <li>Erstelle am besten ein <strong>dediziertes Schlüsselpaar</strong> nur für P3 Portal – nutze keinen persönlichen Schlüssel.</li>
@@ -393,9 +393,9 @@ export default function SshKeyTab() {
                     type="checkbox"
                     checked={jobKeyConfirmed}
                     onChange={e => setJobKeyConfirmed(e.target.checked)}
-                    className="mt-0.5 accent-orange-500"
+                    className="mt-0.5 accent-portal-accent"
                   />
-                  <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">
+                  <span className="text-xs text-portal-warn font-medium">
                     Ich verstehe das Risiko und verwende ausschließlich einen für P3 Portal erstellten Schlüssel.
                   </span>
                 </label>
@@ -424,7 +424,7 @@ export default function SshKeyTab() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">
-                      Privater SSH-Key (PEM-Format) <span className="text-red-500">*</span>
+                      Privater SSH-Key (PEM-Format) <span className="text-portal-danger">*</span>
                     </label>
                     <textarea
                       rows={6}
@@ -452,9 +452,9 @@ export default function SshKeyTab() {
           {/* Öffentlicher Key nach Generierung */}
           {jobKeyMode === 'generated' && generatedPublicKey && (
             <div className="space-y-3">
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
-                <p className="text-xs font-semibold text-green-800 dark:text-green-300 mb-1">Schlüsselpaar erfolgreich erstellt</p>
-                <p className="text-xs text-green-700 dark:text-green-400">
+              <div className="bg-portal-success/10 border border-portal-success/30 rounded-lg p-3">
+                <p className="text-xs font-semibold text-portal-success mb-1">Schlüsselpaar erfolgreich erstellt</p>
+                <p className="text-xs text-portal-success">
                   Der private Schlüssel ist verschlüsselt gespeichert. Hinterlege den folgenden öffentlichen Schlüssel
                   auf deinen Ziel-Servern in <code className="font-mono">~/.ssh/authorized_keys</code>:
                 </p>
@@ -479,8 +479,8 @@ export default function SshKeyTab() {
             </div>
           )}
 
-          {jobKeyErr && <p className="text-xs text-red-500">{jobKeyErr}</p>}
-          {jobKeyMsg && <p className="text-xs text-green-600 dark:text-green-400">{jobKeyMsg}</p>}
+          {jobKeyErr && <p className="text-xs text-portal-danger">{jobKeyErr}</p>}
+          {jobKeyMsg && <p className="text-xs text-portal-success">{jobKeyMsg}</p>}
         </div>
       </div>
 

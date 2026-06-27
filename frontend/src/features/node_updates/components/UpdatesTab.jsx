@@ -12,11 +12,11 @@ import { formatRelative, formatDate } from '../utils'
 function ErrorBanner({ error, lastSuccessAt }) {
   const { t } = useTranslation()
   return (
-    <div className="rounded-lg border border-[var(--portal-danger,#dc2626)] bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm">
-      <p className="font-medium text-red-700 dark:text-red-400">{t('nodeUpdates.last_refresh_failed')}</p>
-      <p className="mt-1 text-xs text-red-600 dark:text-red-400/80">{error}</p>
+    <div className="rounded-lg border border-[var(--portal-danger,#dc2626)] bg-portal-danger/10 px-4 py-3 text-sm">
+      <p className="font-medium text-portal-danger">{t('nodeUpdates.last_refresh_failed')}</p>
+      <p className="mt-1 text-xs text-portal-danger">{error}</p>
       {lastSuccessAt && (
-        <p className="mt-1 text-xs text-red-500 dark:text-red-400/60">
+        <p className="mt-1 text-xs text-portal-danger">
           {t('nodeUpdates.last_success')}: {formatDate(lastSuccessAt)}
         </p>
       )}
@@ -119,7 +119,7 @@ export default function UpdatesTab({ portalNodeId, active }) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
         {t('nodeUpdates.load_error')}
       </div>
     )
@@ -171,7 +171,7 @@ export default function UpdatesTab({ portalNodeId, active }) {
 
       {/* Fehler / Stale-Banner */}
       {refreshError && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-xs text-red-700 dark:text-red-400">
+        <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-xs text-portal-danger">
           {refreshError}
         </div>
       )}

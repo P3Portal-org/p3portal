@@ -23,25 +23,25 @@ function isError(status) {
 
 function StatusBadge({ status }) {
   if (!status || status === 'ERR') {
-    return <span className="font-mono font-bold text-red-600 dark:text-red-400">ERR</span>
+    return <span className="font-mono font-bold text-portal-danger">ERR</span>
   }
   const code = parseInt(status, 10)
   const isErr = code >= 400
   const is2xx = code >= 200 && code < 300
   const cls = isErr
-    ? 'text-red-600 dark:text-red-400 font-bold'
+    ? 'text-portal-danger font-bold'
     : is2xx
-      ? 'text-green-600 dark:text-green-400'
+      ? 'text-portal-success'
       : 'text-gray-600 dark:text-zinc-400'
   return <span className={`font-mono ${cls}`}>{status}</span>
 }
 
 function MethodBadge({ method }) {
   const colors = {
-    GET:    'text-blue-600 dark:text-blue-400',
-    POST:   'text-green-600 dark:text-green-400',
-    PUT:    'text-orange-600 dark:text-orange-400',
-    DELETE: 'text-red-600 dark:text-red-400',
+    GET:    'text-portal-info',
+    POST:   'text-portal-success',
+    PUT:    'text-portal-accent',
+    DELETE: 'text-portal-danger',
   }
   return (
     <span className={`font-mono font-semibold text-xs ${colors[method] ?? 'text-gray-600 dark:text-zinc-400'}`}>
@@ -78,14 +78,14 @@ export default function ProxmoxAuditTab({ entries, loading, error, refresh }) {
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
-          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         >
           {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <select
           value={methodFilter}
           onChange={e => setMethodFilter(e.target.value)}
-          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         >
           {METHOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
@@ -94,7 +94,7 @@ export default function ProxmoxAuditTab({ entries, loading, error, refresh }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Endpoint, Token, User…"
-          className="flex-1 min-w-[140px] text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="flex-1 min-w-[140px] text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         />
         <span className="text-xs text-gray-400 dark:text-zinc-500 shrink-0">
           {filtered.length} Einträge
@@ -102,7 +102,7 @@ export default function ProxmoxAuditTab({ entries, loading, error, refresh }) {
         <button
           onClick={refresh}
           disabled={loading}
-          className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition shrink-0"
+          className="text-xs text-portal-accent hover:underline disabled:opacity-40 transition shrink-0"
           title="Aktualisieren"
         >
           {loading ? 'Lädt…' : '↻ Aktualisieren'}
@@ -112,7 +112,7 @@ export default function ProxmoxAuditTab({ entries, loading, error, refresh }) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto bg-white dark:bg-zinc-900">
         {error && (
-          <div className="m-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-400">
+          <div className="m-3 border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger">
             Fehler beim Laden des Proxmox Audit-Logs
           </div>
         )}
@@ -147,7 +147,7 @@ export default function ProxmoxAuditTab({ entries, loading, error, refresh }) {
                     key={i}
                     className={`border-b border-gray-100 dark:border-zinc-800 ${
                       rowError
-                        ? 'bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30'
+                        ? 'bg-portal-danger/10 hover:bg-portal-danger/10'
                         : 'hover:bg-gray-50 dark:hover:bg-zinc-800/40'
                     }`}
                   >

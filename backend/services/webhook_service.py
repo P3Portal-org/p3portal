@@ -5,7 +5,7 @@ import asyncio
 import logging
 
 from backend.core.config import settings
-from backend.core.http_client import check_dns_rebinding, secure_outbound_client
+from backend.core.http_client import check_dns_rebinding, pin_url_to_ip, secure_outbound_client
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +78,16 @@ async def dispatch_webhook(
                 logger.warning("Webhook DNS-Rebinding check failed for %s: %s", callback_url, last_exc)
                 break  # no retry on security block
 
+            # Pin auf die geprüfte IP, damit httpx nicht ein drittes Mal auflöst
+            # (TOCTOU-Fenster zwischen Check und Request). SNI/Host bleiben der
+            # Original-Hostname → TLS-Verifikation bei verify_ssl=True intakt.
+            _pinned_url, _extra_headers = pin_url_to_ip(callback_url, _resolved_ip)
+            _extensions = {"sni_hostname": _hostname} if _hostname else None
             async with secure_outbound_client(timeout=timeout, verify=verify_ssl) as client:
-                response = await client.post(callback_url, json=payload)
+                response = await client.post(
+                    _pinned_url, json=payload, headers=_extra_headers,
+                    extensions=_extensions,
+                )
             if response.is_success:
                 _log_callback(
                     api_key_id, api_key_name or "unknown",

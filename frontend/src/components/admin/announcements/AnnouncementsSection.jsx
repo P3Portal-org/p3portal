@@ -40,7 +40,7 @@ function StatusBadge({ active, expired }) {
   }
   if (active) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-portal-success/15 text-portal-success">
         {t('admin.announcements.status_active')}
       </span>
     )
@@ -131,13 +131,13 @@ export default function AnnouncementsSection() {
       </div>
 
       {activeCount > 3 && (
-        <div className="mb-4 rounded-lg border border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/30 px-4 py-2.5 text-sm text-yellow-700 dark:text-yellow-400">
+        <div className="mb-4 rounded-lg border border-portal-warn/30 bg-portal-warn/10 px-4 py-2.5 text-sm text-portal-warn">
           {t('admin.announcements.many_active_hint', { count: activeCount })}
         </div>
       )}
 
       {fetchError && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg mb-4">{fetchError}</p>
+        <p className="text-sm text-portal-danger bg-portal-danger/10 px-3 py-2 rounded-lg mb-4">{fetchError}</p>
       )}
 
       {loading ? (
@@ -148,23 +148,23 @@ export default function AnnouncementsSection() {
         <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-zinc-700">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50">
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+              <tr className="border-b border-gray-200 dark:border-zinc-700">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
                   {t('admin.announcements.col_message')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
                   {t('admin.announcements.col_severity')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
                   {t('admin.announcements.col_status')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider hidden md:table-cell">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider hidden md:table-cell">
                   {t('admin.announcements.col_expires')}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider hidden lg:table-cell">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider hidden lg:table-cell">
                   {t('admin.announcements.col_created_by')}
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
                   {t('admin.announcements.col_actions')}
                 </th>
               </tr>
@@ -186,9 +186,9 @@ export default function AnnouncementsSection() {
                           onClick={() => !expired && handleToggleActive(item)}
                           disabled={expired}
                           title={expired ? t('admin.announcements.status_expired') : ''}
-                          className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 ${
+                          className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-portal-accent focus:ring-offset-1 ${
                             item.active && !expired
-                              ? 'bg-orange-500'
+                              ? 'bg-portal-accent'
                               : 'bg-zinc-300 dark:bg-zinc-600'
                           } ${expired ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           aria-label={t('admin.announcements.toggle_active_label')}

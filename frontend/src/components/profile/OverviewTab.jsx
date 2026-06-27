@@ -54,7 +54,7 @@ function PermissionsSection() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400">Portal-Zuweisungen</p>
-            <button onClick={reload} className="text-xs text-orange-500 hover:text-orange-600 transition-colors">
+            <button onClick={reload} className="text-xs text-portal-accent hover:text-portal-accent/80 transition-colors">
               Aktualisieren
             </button>
           </div>
@@ -100,7 +100,7 @@ export default function OverviewTab({ profile }) {
           }
         />
         {profile.must_change_pw && (
-          <div className="mt-4 px-3 py-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 text-xs text-orange-700 dark:text-orange-400">
+          <div className="mt-4 px-3 py-2 bg-portal-accent/10 border border-portal-accent/30 text-xs text-portal-accent">
             Passwortänderung erforderlich &ndash; bitte wechsle zum Tab &bdquo;Sicherheit&ldquo;.
           </div>
         )}

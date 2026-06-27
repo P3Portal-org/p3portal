@@ -24,7 +24,7 @@ from backend.models.vms import (
 from backend.services.audit_service import write_audit_log
 from backend.services.proxmox import ProxmoxAuth, ProxmoxClient, proxmox_client
 from backend.services.service_accounts import _extract_token, get_service_account_status
-from backend.services.rbac_service import check_permission, has_any_assignments
+from backend.services.permissions_resolver import resolve_user_permissions
 from backend.services.local_auth import get_user_by_username
 
 router = APIRouter(prefix="/api", tags=["vms"])
@@ -114,11 +114,23 @@ async def _dependency_impact(
     )
 
 
-async def _check_rbac(current_user: CurrentUser, vmid: int, vm_type: str, action: str) -> None:
+async def _check_rbac(
+    current_user: CurrentUser,
+    vmid: int,
+    vm_type: str,
+    action: str,
+    pve_node: str | None = None,
+) -> None:
     """Raises 403 if local user lacks the required action on this resource.
 
     - admin / operator: portal-wide access, always allowed.
     - viewer / restricted: RBAC assignments required; no assignments → blocked.
+
+    Code-Review-Fix: ``pve_node`` (der vom Caller bereits via ``_resolve_vm_access``
+    aufgelöste Proxmox-Node-Name) wird in die Portal-Node-ID übersetzt und an
+    ``resolve_user_permissions`` durchgereicht. Damit greift ein node-scoped
+    Assignment nur auf der richtigen Installation (kein Cross-Installation-Leak
+    bei kollidierenden VMIDs). Ohne ``pve_node`` bleibt das Verhalten unverändert.
     """
     if current_user.auth_type == "proxmox" or current_user.role in ("admin", "operator"):
         return
@@ -128,13 +140,19 @@ async def _check_rbac(current_user: CurrentUser, vmid: int, vm_type: str, action
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized",
         )
-    if not await has_any_assignments(user["id"]):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Resource assignment required for this action",
-        )
+    portal_node_id: int | None = None
+    if pve_node:
+        from backend.services.nodes_service import get_node_for_proxmox_name
+        node_row = await get_node_for_proxmox_name(pve_node)
+        portal_node_id = node_row.id if node_row else None
     res_type = "lxc" if vm_type == "lxc" else "vm"
-    if not await check_permission(user["id"], vmid, res_type, action):
+    # Code-Review-Fix (Befund 1C): über ALLE Quellen unionieren – direkte
+    # Assignments (PROJ-12) + Pool (PROJ-46) + Node-Scope (PROJ-47) + Owner
+    # (PROJ-48). Vorher zählte nur PROJ-12 → Pool/Node/Owner-Grants waren
+    # wirkungslos und ein viewer mit Pool-Zugriff bekam 403. Kein harter
+    # Decke: das zugewiesene Preset darf einen viewer im Scope hochstufen.
+    allowed = await resolve_user_permissions(user["id"], portal_node_id, vmid, res_type)
+    if action not in allowed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Action '{action}' not permitted on {res_type} {vmid}",
@@ -312,7 +330,7 @@ async def vm_start(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "start")
+        await _check_rbac(current_user, vmid, vm_type, "start", pve_node)
         task_id = await client.vm_power_action(auth, pve_node, vmid, "start", vm_type)
         return VmTaskResponse(task_id=task_id)
     except httpx.HTTPStatusError as exc:
@@ -330,7 +348,7 @@ async def vm_stop(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "stop")
+        await _check_rbac(current_user, vmid, vm_type, "stop", pve_node)
         await _dependency_impact(
             pve_node, vmid, confirm, "stop", current_user.username, current_user.auth_type
         )
@@ -351,7 +369,7 @@ async def vm_reboot(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "reboot")
+        await _check_rbac(current_user, vmid, vm_type, "reboot", pve_node)
         await _dependency_impact(
             pve_node, vmid, confirm, "reboot", current_user.username, current_user.auth_type
         )
@@ -380,7 +398,7 @@ async def update_vm_config(
     """
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "configure")
+        await _check_rbac(current_user, vmid, vm_type, "configure", pve_node)
         await _assert_not_stack_managed(pve_node, vmid, current_user.username, current_user.auth_type)
 
         updates: dict = {}
@@ -557,7 +575,7 @@ async def attach_disk(
     """Create + attach an additional disk to a QEMU VM (synchronous)."""
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "configure")
+        await _check_rbac(current_user, vmid, vm_type, "configure", pve_node)
         await _assert_not_stack_managed(pve_node, vmid, current_user.username, current_user.auth_type)
         if vm_type != "qemu":
             raise HTTPException(
@@ -597,7 +615,7 @@ async def resize_disk(
     """Grow an existing QEMU disk (synchronous; Proxmox cannot shrink)."""
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "configure")
+        await _check_rbac(current_user, vmid, vm_type, "configure", pve_node)
         await _assert_not_stack_managed(pve_node, vmid, current_user.username, current_user.auth_type)
         if vm_type != "qemu":
             raise HTTPException(
@@ -650,7 +668,7 @@ async def remove_disk(
     """
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "configure")
+        await _check_rbac(current_user, vmid, vm_type, "configure", pve_node)
         await _assert_not_stack_managed(pve_node, vmid, current_user.username, current_user.auth_type)
         if vm_type != "qemu":
             raise HTTPException(
@@ -705,7 +723,7 @@ async def list_snapshots(
 ) -> list[SnapshotInfo]:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "snapshot")
+        await _check_rbac(current_user, vmid, vm_type, "snapshot", pve_node)
         raw = await client.get_snapshots(auth, pve_node, vmid, vm_type)
         return [SnapshotInfo.model_validate(s) for s in raw if s.get("name") != "current"]
     except httpx.HTTPStatusError as exc:
@@ -723,7 +741,7 @@ async def create_snapshot(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "snapshot")
+        await _check_rbac(current_user, vmid, vm_type, "snapshot", pve_node)
         task_id = await client.create_snapshot(auth, pve_node, vmid, body.name, body.description, vm_type)
         return VmTaskResponse(task_id=task_id)
     except httpx.HTTPStatusError as exc:
@@ -744,7 +762,7 @@ async def rollback_snapshot(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "snapshot")
+        await _check_rbac(current_user, vmid, vm_type, "snapshot", pve_node)
         await _dependency_impact(
             pve_node, vmid, confirm, "rollback", current_user.username, current_user.auth_type
         )
@@ -765,7 +783,7 @@ async def delete_snapshot(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "snapshot")
+        await _check_rbac(current_user, vmid, vm_type, "snapshot", pve_node)
         task_id = await client.delete_snapshot(auth, pve_node, vmid, snap_name, vm_type)
         return VmTaskResponse(task_id=task_id)
     except httpx.HTTPStatusError as exc:
@@ -785,7 +803,7 @@ async def delete_vm(
 ) -> VmTaskResponse:
     try:
         client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-        await _check_rbac(current_user, vmid, vm_type, "delete")
+        await _check_rbac(current_user, vmid, vm_type, "delete", pve_node)
         # PROJ-76: single-VM delete blocked for stack-managed VMs (use stack destroy).
         await _assert_not_stack_managed(pve_node, vmid, current_user.username, current_user.auth_type)
         # PROJ-96: warn (resumable) when other VMs depend on this one.

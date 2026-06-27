@@ -1,8 +1,8 @@
 // p3portal.org
 function barColor(pct, warnAt, critAt) {
-  if (pct >= critAt) return 'bg-red-500'
-  if (pct >= warnAt) return 'bg-yellow-500'
-  return 'bg-orange-500'
+  if (pct >= critAt) return 'bg-portal-danger'
+  if (pct >= warnAt) return 'bg-portal-warn'
+  return 'bg-portal-accent'
 }
 
 export default function ResourceBar({ label, pct, detail, warnAt = 65, critAt = 85 }) {

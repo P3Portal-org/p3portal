@@ -69,7 +69,7 @@ function TemplateCard({ template, selected, isRunning, canAdmin, hasConflict, on
   return (
     <div className={`border transition-colors rounded-lg ${
       selected
-        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
+        ? 'border-portal-accent/50 bg-portal-accent/10'
         : 'border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-portal-accent dark:hover:border-portal-accent'
     }`}>
       <div className="p-4 cursor-pointer" onClick={() => onSelect(template)}>
@@ -82,8 +82,8 @@ function TemplateCard({ template, selected, isRunning, canAdmin, hasConflict, on
               </span>
             )}
             {isRunning && (
-              <span className="flex items-center gap-1 text-xs bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 px-2 py-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              <span className="flex items-center gap-1 text-xs bg-portal-accent/10 text-portal-accent px-2 py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-portal-accent animate-pulse" />
                 läuft
               </span>
             )}
@@ -93,13 +93,13 @@ function TemplateCard({ template, selected, isRunning, canAdmin, hasConflict, on
       </div>
       {canAdmin && (
         <div className="px-4 pb-3">
-          {deleteError && <p className="text-xs text-red-500 mb-1">{deleteError}</p>}
+          {deleteError && <p className="text-xs text-portal-danger mb-1">{deleteError}</p>}
           <div className="flex justify-end">
             {confirmDelete ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-red-600 dark:text-red-400">Löschen?</span>
+                <span className="text-xs text-portal-danger">Löschen?</span>
                 <button onClick={handleDeleteClick} disabled={deleting}
-                  className="text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-2 py-0.5 transition-colors">
+                  className="text-xs bg-portal-danger hover:bg-portal-danger disabled:opacity-50 text-white px-2 py-0.5 transition-colors">
                   {deleting ? '…' : 'Ja'}
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(false) }}
@@ -109,7 +109,7 @@ function TemplateCard({ template, selected, isRunning, canAdmin, hasConflict, on
               </div>
             ) : (
               <button onClick={handleDeleteClick}
-                className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">
+                className="text-xs text-portal-danger hover:text-portal-danger transition-colors">
                 Löschen
               </button>
             )}
@@ -166,7 +166,7 @@ export default function ImageFactoryPage() {
   const tabCls = (id) =>
     `px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
       activeTab === id
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -230,7 +230,7 @@ export default function ImageFactoryPage() {
             </div>
           )}
           {error && (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+            <div className="border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger">
               Fehler beim Laden.
             </div>
           )}
@@ -257,7 +257,7 @@ export default function ImageFactoryPage() {
           <div className="flex-1 overflow-y-auto p-6 bg-transparent">
             {detailLoading ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <svg className="animate-spin w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <svg className="animate-spin w-5 h-5 text-portal-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                 </svg>
               </div>

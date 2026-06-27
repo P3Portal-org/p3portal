@@ -35,7 +35,7 @@ function VmScheduledJobsTab({ vmid }) {
     [jobs, vmid],
   )
 
-  const thCls = 'px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider text-left'
+  const thCls = 'px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider text-left'
   const tdCls = 'px-4 py-2.5 text-sm'
 
   if (loading) {
@@ -54,7 +54,7 @@ function VmScheduledJobsTab({ vmid }) {
     <div className="overflow-x-auto border border-gray-200 dark:border-zinc-700 rounded-lg">
       <table className="w-full text-sm text-left">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900">
+          <tr className="border-b border-gray-200 dark:border-zinc-700">
             <th className={thCls}>Name</th>
             <th className={thCls}>Aktion</th>
             <th className={thCls}>Cron</th>
@@ -73,15 +73,15 @@ function VmScheduledJobsTab({ vmid }) {
               </td>
               <td className={`${tdCls} font-mono text-xs text-gray-500 dark:text-zinc-400`}>{j.cron_expression}</td>
               <td className={tdCls}>
-                <span className={`text-xs font-medium ${j.active ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-zinc-500'}`}>
+                <span className={`text-xs font-medium ${j.active ? 'text-portal-success' : 'text-gray-400 dark:text-zinc-500'}`}>
                   {j.active ? 'Aktiv' : 'Inaktiv'}
                 </span>
               </td>
               <td className={`${tdCls} text-gray-500 dark:text-zinc-400 tabular-nums`}>
                 <span>{fmtDate(j.last_run_at)}</span>
-                {j.last_run_status === 'success' && <span className="ml-1.5 text-green-500">✓</span>}
-                {j.last_run_status === 'failed'  && <span className="ml-1.5 text-red-500">✗</span>}
-                {j.last_run_status === 'running' && <span className="ml-1.5 text-orange-400 animate-pulse">⏳</span>}
+                {j.last_run_status === 'success' && <span className="ml-1.5 text-portal-success">✓</span>}
+                {j.last_run_status === 'failed'  && <span className="ml-1.5 text-portal-danger">✗</span>}
+                {j.last_run_status === 'running' && <span className="ml-1.5 text-portal-accent animate-pulse">⏳</span>}
               </td>
             </tr>
           ))}
@@ -232,7 +232,7 @@ export default function VmDetailPage() {
         <header className="h-12 flex items-center px-6 border-b border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0">
           <Link
             to="/dashboard"
-            className="text-xs text-orange-500 hover:text-orange-600 flex items-center gap-1"
+            className="text-xs text-portal-accent hover:text-portal-accent flex items-center gap-1"
           >
             ← Dashboard
           </Link>
@@ -240,8 +240,8 @@ export default function VmDetailPage() {
         <main className="flex-1 flex items-center justify-center bg-transparent px-6">
           <div className={`max-w-md w-full rounded-lg border px-6 py-5 text-sm ${
             s === 403 || s === 404
-              ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400'
-              : 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400'
+              ? 'border-portal-danger/30 bg-portal-danger/10 text-portal-danger'
+              : 'border-portal-warn/30 bg-portal-warn/10 text-portal-warn'
           }`}>
             <p className="font-medium mb-1">{s === 403 ? 'Zugriff verweigert' : s === 404 ? 'VM nicht gefunden' : 'Verbindungsfehler'}</p>
             <p className="text-xs opacity-80">{errLabel(detailErr)}</p>
@@ -254,7 +254,7 @@ export default function VmDetailPage() {
   const tabCls = (tab) =>
     `px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
       activeTab === tab
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -265,7 +265,7 @@ export default function VmDetailPage() {
         <div className="flex items-center gap-4 h-12">
           <Link
             to="/dashboard"
-            className="text-xs text-orange-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
+            className="text-xs text-portal-accent hover:text-portal-accent flex items-center gap-1 transition-colors"
           >
             ← Dashboard
           </Link>

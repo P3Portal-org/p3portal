@@ -33,7 +33,7 @@ export default function ApiKeyRevokeConfirmModal({ apiKey, onClose, onRevoked })
             Der Key wird sofort ungültig. Alle laufenden Requests, die diesen Key nutzen, erhalten danach <code className="font-mono">401 Unauthorized</code>. Der Key bleibt in der Liste sichtbar.
           </p>
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-xs text-portal-danger bg-portal-danger/10 px-3 py-2 rounded-lg">{error}</p>
           )}
         </div>
 

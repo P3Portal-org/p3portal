@@ -79,7 +79,7 @@ export default function VmGuestInfoSection({ guestInfo, loading }) {
 
       {loading && (
         <div className="flex items-center gap-2 py-2">
-          <span className="inline-block w-3.5 h-3.5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+          <span className="inline-block w-3.5 h-3.5 border-2 border-portal-accent/50 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-gray-400 dark:text-zinc-500">Guest Agent wird abgefragt…</span>
         </div>
       )}

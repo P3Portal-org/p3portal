@@ -30,7 +30,7 @@ function ActionPill({ action }) {
 
 function NodeActionPill({ action }) {
   return (
-    <span className="inline-block text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 px-1.5 py-0.5 mr-1 mb-0.5 rounded">
+    <span className="inline-block text-xs bg-portal-info/10 text-portal-info border border-portal-info/30 px-1.5 py-0.5 mr-1 mb-0.5 rounded">
       {NODE_ACTION_LABELS[action] ?? action}
     </span>
   )
@@ -137,13 +137,13 @@ export default function PresetTable() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Preset suchen…"
-          className="w-full text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-400"
+          className="w-full text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         />
       </div>
 
       {/* In-Use-Error Banner */}
       {inUseError && (
-        <div className="mb-3 text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded px-3 py-2 flex items-center justify-between">
+        <div className="mb-3 text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded px-3 py-2 flex items-center justify-between">
           <span>{inUseError}</span>
           <button onClick={() => setInUseError('')} className="btn-ghost ml-2">✕</button>
         </div>
@@ -161,7 +161,7 @@ export default function PresetTable() {
                 {panel === 'create' && presetLimit && !presetLimit.unlimited && (
                   <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
                     presetAtLimit
-                      ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                      ? 'bg-portal-danger/10 text-portal-danger'
                       : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'
                   }`}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3 shrink-0">
@@ -194,7 +194,7 @@ export default function PresetTable() {
         {loading ? (
           <p className="text-sm text-gray-500 dark:text-zinc-500 py-8 text-center">Lade Presets…</p>
         ) : fetchError ? (
-          <p className="text-sm text-red-400 py-8 text-center">{fetchError}</p>
+          <p className="text-sm text-portal-danger py-8 text-center">{fetchError}</p>
         ) : presets.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-zinc-500 py-8 text-center">
             Noch keine Presets angelegt.
@@ -206,11 +206,11 @@ export default function PresetTable() {
         ) : (
           <table className="w-full text-sm text-left">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-zinc-700 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider bg-gray-50 dark:bg-zinc-900">
-                <th className="px-4 py-2.5">Name</th>
-                <th className="px-4 py-2.5">Beschreibung</th>
-                <th className="px-4 py-2.5">Aktionen</th>
-                <th className="px-4 py-2.5 text-center">Zuweisungen</th>
+              <tr className="border-b border-gray-200 dark:border-zinc-700">
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Name</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Beschreibung</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Aktionen</th>
+                <th className="text-center px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Zuweisungen</th>
                 <th className="px-4 py-2.5" />
               </tr>
             </thead>
@@ -232,7 +232,7 @@ export default function PresetTable() {
                   <td className="px-4 py-3 text-center">
                     <span className={`text-xs px-2 py-0.5 ${
                       p.assignment_count > 0
-                        ? 'bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400'
+                        ? 'bg-portal-accent/10 text-portal-accent'
                         : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'
                     }`}>
                       {p.assignment_count}

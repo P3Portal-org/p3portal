@@ -9,6 +9,7 @@
 // Reine Read-View über gemockte API-Routen (kein echtes Backend); die server-
 // seitige RBAC/422-Durchsetzung deckt das Backend-pytest ab (inkl. BUG-90-1).
 import { test, expect } from '@playwright/test'
+import { Buffer } from 'node:buffer'
 
 // Standard-Base64 (atob-kompatibel) + kompaktes JSON, S618-Lehre.
 function mkToken(payload) {

@@ -16,6 +16,8 @@ from backend.services.config_service import get_config_sync, get_proxmox_verify_
 
 _ALLOWED_SCHEMES = {"http", "https"}
 _FILENAME_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._\-]{0,127}$")
+# Proxmox storage IDs: alnum + . - _ (verhindert Path-Injection in der Storage-URL)
+_STORAGE_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._\-]{0,63}$")
 
 VALID_HASH_ALGOS = {"md5", "sha1", "sha224", "sha256", "sha384", "sha512"}
 
@@ -138,25 +140,47 @@ async def get_nodes() -> list[dict]:
 
 
 async def get_isos(node: str) -> list[dict]:
-    """Return ISO list for a node: [{"filename": ..., "volid": ..., "size": ...}]."""
+    """Return ISO list for a node across ALL ISO-capable storages.
+
+    Früher war dies auf den 'local'-Storage hartkodiert → ISOs auf anderen
+    Storages waren unsichtbar. Jetzt werden alle Storages mit content=iso
+    durchsucht; das volid kodiert den Storage bereits (z.B. 'pool:iso/x.iso'),
+    daher funktionieren Löschen/Auswahl unverändert.
+    """
     auth_headers, base_url, verify_ssl = await _resolve_iso_auth(node)
     async with _proxmox_client(verify_ssl) as client:
-        resp = await client.get(
-            f"{base_url}/api2/json/nodes/{node}/storage/local/content",
+        sresp = await client.get(
+            f"{base_url}/api2/json/nodes/{node}/storage",
             params={"content": "iso"},
             headers=auth_headers,
         )
-        resp.raise_for_status()
-        data = resp.json().get("data", [])
-    result = []
-    for item in data:
-        volid = item.get("volid", "")
-        filename = volid.split("/")[-1] if "/" in volid else volid
-        result.append({
-            "filename": filename,
-            "volid": volid,
-            "size": item.get("size", 0),
-        })
+        sresp.raise_for_status()
+        storages = [
+            s["storage"]
+            for s in sresp.json().get("data", [])
+            if s.get("enabled", 1)
+        ]
+        result = []
+        for storage in storages:
+            try:
+                resp = await client.get(
+                    f"{base_url}/api2/json/nodes/{node}/storage/{storage}/content",
+                    params={"content": "iso"},
+                    headers=auth_headers,
+                )
+                resp.raise_for_status()
+                data = resp.json().get("data", [])
+            except Exception:
+                # best-effort: ein nicht lesbares Storage bricht die Liste nicht
+                continue
+            for item in data:
+                volid = item.get("volid", "")
+                filename = volid.split("/")[-1] if "/" in volid else volid
+                result.append({
+                    "filename": filename,
+                    "volid": volid,
+                    "size": item.get("size", 0),
+                })
     return sorted(result, key=lambda x: x["filename"])
 
 
@@ -193,6 +217,24 @@ async def get_storages(node: str) -> list[dict]:
     ]
 
 
+async def get_iso_storages(node: str) -> list[dict]:
+    """Return storage pools on a node that accept ISO uploads (content=iso)."""
+    auth_headers, base_url, verify_ssl = await _resolve_iso_auth(node)
+    async with _proxmox_client(verify_ssl) as client:
+        resp = await client.get(
+            f"{base_url}/api2/json/nodes/{node}/storage",
+            params={"content": "iso"},
+            headers=auth_headers,
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", [])
+    return [
+        {"name": s["storage"], "type": s.get("type", "")}
+        for s in data
+        if s.get("enabled", 1)
+    ]
+
+
 async def check_iso_exists(node: str, filename: str) -> bool:
     """Return True if the ISO already exists on the node's local storage."""
     isos = await get_isos(node)
@@ -205,6 +247,13 @@ async def query_url(url: str) -> dict:
     Returns {"filename": ..., "size": ..., "content_type": ...}.
     """
     validate_url(url)
+    # Code-Review (Befund 6): SSRF-Schutz für die user-gelieferte ISO-URL. Ohne
+    # diese Prüfung könnte ein Operator das Portal beliebige interne Adressen
+    # proben lassen (Loopback, Cloud-IMDS 169.254.169.254 …). is_unsafe_setup_target
+    # erlaubt RFC1918 (interne ISO-Mirror im LAN sind legitim), blockt aber
+    # Loopback/Link-Local/IMDS/Multicast. Wirft ValueError → 400 beim Caller.
+    from backend.core.http_client import validate_setup_target_url
+    validate_setup_target_url(url)
     filename = None
     size = None
     content_type = None
@@ -247,11 +296,14 @@ async def start_iso_download(
     checksum_algorithm: str | None,
     checksum: str | None,
     verify_certificates: bool,
+    storage: str = "local",
 ) -> str:
     """
-    Trigger a Proxmox download-url task.
+    Trigger a Proxmox download-url task on the given storage.
     Returns the task UPID string.
     """
+    if not _STORAGE_RE.match(storage):
+        raise ValueError(f"Ungültiger Storage-Name: {storage}")
     body: dict = {
         "url": url,
         "filename": filename,
@@ -266,7 +318,7 @@ async def start_iso_download(
     auth_headers, base_url, verify_ssl = await _resolve_iso_write_auth(node)
     async with _proxmox_client(verify_ssl) as client:
         resp = await client.post(
-            f"{base_url}/api2/json/nodes/{node}/storage/local/download-url",
+            f"{base_url}/api2/json/nodes/{node}/storage/{storage}/download-url",
             data=body,
             headers=auth_headers,
         )

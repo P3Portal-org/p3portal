@@ -79,9 +79,9 @@ function ScopeRow({ entry, isAllowed, selected, onToggle, expandedCurl, onToggle
             {entry.endpoints.map((ep, i) => (
               <div key={i} className="flex items-center gap-2 text-xs font-mono">
                 <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                  ep.method === 'GET'    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                  ep.method === 'POST'   ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                  ep.method === 'DELETE' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                  ep.method === 'GET'    ? 'bg-portal-info/10 text-portal-info' :
+                  ep.method === 'POST'   ? 'bg-portal-success/10 text-portal-success' :
+                  ep.method === 'DELETE' ? 'bg-portal-danger/10 text-portal-danger' :
                                            'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400'
                 }`}>{ep.method}</span>
                 <span className="text-gray-600 dark:text-zinc-400">{ep.path}</span>
@@ -196,7 +196,7 @@ export default function ApiKeyCreateModal({ onCreated, onClose }) {
               {createdKey ? 'API-Key erstellt' : 'Neuer API-Key'}
             </h2>
             {!createdKey && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              <p className="text-xs text-portal-warn mt-0.5">
                 Dieser Key kann nie mehr als dein Nutzer-Account. Pool-/VM-/Node-/Playbook-Beschränkungen gelten weiter.
               </p>
             )}
@@ -215,7 +215,7 @@ export default function ApiKeyCreateModal({ onCreated, onClose }) {
           {/* ── Nach Erstellung: Einmalige Anzeige ── */}
           {createdKey ? (
             <div className="space-y-4">
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-300">
+              <div className="p-3 bg-portal-warn/10 border border-portal-warn/30 rounded text-xs text-portal-warn">
                 <strong>Achtung:</strong> Kopiere den Key jetzt – er wird nur einmal angezeigt und kann danach nicht wiederhergestellt werden.
               </div>
 
@@ -234,7 +234,7 @@ export default function ApiKeyCreateModal({ onCreated, onClose }) {
                   <button type="button" onClick={handleCopy}
                     className={`shrink-0 px-3 py-2 text-xs border transition-colors ${
                       copied
-                        ? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30'
+                        ? 'border-portal-success text-portal-success bg-portal-success/10'
                         : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-300 hover:border-[var(--accent)] dark:hover:border-[var(--accent)]'
                     }`}>
                     {copied ? 'Kopiert!' : 'Kopieren'}
@@ -278,7 +278,7 @@ export default function ApiKeyCreateModal({ onCreated, onClose }) {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Name / Label <span className="text-red-500">*</span>
+                  Name / Label <span className="text-portal-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -294,7 +294,7 @@ export default function ApiKeyCreateModal({ onCreated, onClose }) {
 
               <div>
                 <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
-                  Berechtigungen (Scopes) <span className="text-red-500">*</span>
+                  Berechtigungen (Scopes) <span className="text-portal-danger">*</span>
                 </label>
                 {allScopes.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-zinc-500 py-4 text-center">Lade Scopes…</p>
@@ -335,7 +335,7 @@ export default function ApiKeyCreateModal({ onCreated, onClose }) {
               </div>
 
               {error && (
-                <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+                <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
                   {error}
                 </p>
               )}

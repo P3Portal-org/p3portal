@@ -112,7 +112,7 @@ export default function SnapshotModal({ vm, onClose }) {
         <div className="overflow-y-auto flex-1 p-5 space-y-5">
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">{error}</p>
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">{error}</p>
           )}
 
           {/* Snapshot list */}
@@ -175,10 +175,10 @@ export default function SnapshotModal({ vm, onClose }) {
                   placeholder="snapshot-name"
                   value={form.name}
                   onChange={(e) => { setNameError(''); setForm((f) => ({ ...f, name: e.target.value })) }}
-                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-mono"
+                  className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent font-mono"
                 />
                 {nameError
-                  ? <p className="mt-1 text-xs text-red-400">{nameError}</p>
+                  ? <p className="mt-1 text-xs text-portal-danger">{nameError}</p>
                   : <p className="mt-1 text-xs text-gray-400 dark:text-zinc-600">Buchstaben, Zahlen, _ und - · max. 40 Zeichen</p>
                 }
               </div>
@@ -187,7 +187,7 @@ export default function SnapshotModal({ vm, onClose }) {
                 placeholder="Beschreibung (optional)"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent"
               />
               <button
                 type="submit"

@@ -13,7 +13,7 @@ const REALMS = [
 ]
 
 const inputCls =
-  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent transition'
 
 export default function LoginPage() {
   const { t } = useTranslation()
@@ -148,7 +148,7 @@ export default function LoginPage() {
           )}
 
           {error && (
-            <p className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-3 py-2">
+            <p className="text-portal-danger text-sm bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
               {error}
             </p>
           )}

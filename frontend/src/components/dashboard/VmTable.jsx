@@ -1,5 +1,6 @@
 // p3portal.org
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import StatusBadge from '../ui/StatusBadge'
 import VmActionButtons from '../vms/VmActionButtons'
@@ -152,21 +153,42 @@ function CopyIpButton({ ip }) {
 
 function OverflowMenu({ items }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef(null)
+  // Das Menü wird per Portal an document.body gerendert (Fixed-Positionierung),
+  // damit es nicht vom overflow-x-auto-Container der Tabelle abgeschnitten wird.
+  const [coords, setCoords] = useState({ top: 0, left: 0 })
+  const btnRef = useRef(null)
+  const menuRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return
+    const r = btnRef.current.getBoundingClientRect()
+    setCoords({ top: r.bottom + 4, left: r.right })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
     function onDown(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+      if (btnRef.current?.contains(e.target)) return
+      if (menuRef.current?.contains(e.target)) return
+      setOpen(false)
     }
+    function close() { setOpen(false) }
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    window.addEventListener('resize', close)
+    // capture=true: fängt auch das Scrollen im overflow-Container der Tabelle ab,
+    // damit das gelöste Fixed-Menü nicht "neben" dem Button stehen bleibt.
+    window.addEventListener('scroll', close, true)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', close, true)
+    }
   }, [open])
 
   if (items.length === 0) return null
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative" ref={btnRef}>
       <button
         onClick={() => setOpen(v => !v)}
         title="Weitere Aktionen"
@@ -176,8 +198,12 @@ function OverflowMenu({ items }) {
           <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
         </svg>
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded shadow-lg min-w-[120px] py-0.5">
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: coords.top, left: coords.left, transform: 'translateX(-100%)' }}
+          className="z-50 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded shadow-lg min-w-[120px] py-0.5"
+        >
           {items.map(item => (
             <button
               key={item.label}
@@ -191,7 +217,8 @@ function OverflowMenu({ items }) {
               {item.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -334,7 +361,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
     return <p className="text-gray-500 dark:text-zinc-500 text-sm">Keine VMs gefunden.</p>
   }
 
-  const thBase = 'px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider'
+  const thBase = 'px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider'
 
   return (
     <>
@@ -362,7 +389,7 @@ export default function VmTable({ vms, userRole, onRefresh, viewMode = 'compact'
       <div className="overflow-x-auto border border-gray-200 dark:border-zinc-700 rounded-lg">
         <table className="w-full text-sm text-left">
           <thead>
-            <tr className={`border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900 ${thBase}`}>
+            <tr className="border-b border-gray-200 dark:border-zinc-700">
               {isOperator && (
                 <th className="px-3 py-2.5 w-8">
                   <input

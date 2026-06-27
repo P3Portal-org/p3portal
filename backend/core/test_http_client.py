@@ -42,6 +42,27 @@ class TestIsPrivateIp:
     def test_invalid_ip_blocked(self):
         assert is_private_ip("not-an-ip")
 
+    def test_ipv4_mapped_ipv6_loopback_blocked(self):
+        # ::ffff:127.0.0.1 ist ein IPv6Address und liegt in keinem IPv4-Netz –
+        # ohne ipv4_mapped-Normalisierung ein SSRF-Bypass (attacker-AAAA).
+        assert is_private_ip("::ffff:127.0.0.1")
+
+    def test_ipv4_mapped_ipv6_imds_blocked(self):
+        assert is_private_ip("::ffff:169.254.169.254")
+
+    def test_ipv4_mapped_ipv6_rfc1918_blocked(self):
+        assert is_private_ip("::ffff:10.0.0.5")
+
+    def test_cgnat_blocked(self):
+        assert is_private_ip("100.64.0.1")
+
+    def test_nat64_blocked(self):
+        assert is_private_ip("64:ff9b::7f00:1")
+
+    def test_ipv4_mapped_public_allowed(self):
+        # ::ffff:8.8.8.8 darf NICHT fälschlich blockiert werden.
+        assert not is_private_ip("::ffff:8.8.8.8")
+
 
 class TestMatchesAllowlist:
     def test_exact_match(self):
@@ -174,6 +195,16 @@ class TestIsUnsafeSetupTarget:
 
     def test_invalid_blocked(self):
         assert is_unsafe_setup_target("not-an-ip")
+
+    def test_ipv4_mapped_ipv6_loopback_blocked(self):
+        assert is_unsafe_setup_target("::ffff:127.0.0.1")
+
+    def test_ipv4_mapped_ipv6_imds_blocked(self):
+        assert is_unsafe_setup_target("::ffff:169.254.169.254")
+
+    def test_ipv4_mapped_rfc1918_still_allowed(self):
+        # Setup erlaubt RFC1918 – auch in IPv4-mapped-Form, kein False-Positive.
+        assert not is_unsafe_setup_target("::ffff:192.168.1.10")
 
 
 class TestValidateSetupTargetUrl:

@@ -30,7 +30,7 @@ export default function PinIcon({ pinned = false, disabled = false, className = 
         fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={`${base} text-orange-500 ${className}`}
+        className={`${base} text-portal-accent ${className}`}
         aria-label={title}
         role={title ? 'img' : undefined}
       >
@@ -53,7 +53,7 @@ export default function PinIcon({ pinned = false, disabled = false, className = 
       strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`${base} text-gray-400 dark:text-zinc-500 hover:text-orange-400 dark:hover:text-orange-400 ${className}`}
+      className={`${base} text-gray-400 dark:text-zinc-500 hover:text-portal-accent ${className}`}
       aria-label={title}
       role={title ? 'img' : undefined}
     >

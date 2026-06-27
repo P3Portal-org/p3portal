@@ -1,5 +1,6 @@
 // p3portal.org
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getLxcTemplateStorages, uploadLxcTemplate } from '../../api/cluster'
 
 const MAX_BYTES = 4 * 1024 * 1024 * 1024
@@ -7,9 +8,10 @@ const VALID_EXT = /\.(tar\.gz|tar\.zst)$/i
 const VALID_NAME = /^[a-zA-Z0-9._-]+\.(tar\.gz|tar\.zst)$/i
 
 const inputCls =
-  'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition rounded'
+  'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent/50 transition rounded'
 
 export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const [selectedNode, setSelectedNode] = useState(portalNodes[0]?.name ?? '')
   const [storages, setStorages] = useState([])
   const [selectedStorage, setSelectedStorage] = useState('')
@@ -41,15 +43,15 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
     setFile(null)
     if (!f) return
     if (!VALID_EXT.test(f.name)) {
-      setFileError('Nur .tar.gz und .tar.zst Dateien erlaubt.')
+      setFileError(t('lxc_templates.ul_err_ext'))
       return
     }
     if (!VALID_NAME.test(f.name)) {
-      setFileError('Dateiname darf nur [a-zA-Z0-9._-] und muss auf .tar.gz / .tar.zst enden.')
+      setFileError(t('lxc_templates.ul_err_name'))
       return
     }
     if (f.size > MAX_BYTES) {
-      setFileError('Datei überschreitet Maximum von 4 GB.')
+      setFileError(t('lxc_templates.ul_err_size'))
       return
     }
     setFile(f)
@@ -69,10 +71,10 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
           if (evt.total) setProgress(Math.round((evt.loaded / evt.total) * 100))
         },
       })
-      onSuccess(`${file.name} erfolgreich nach ${selectedNode}/${selectedStorage} hochgeladen.`)
+      onSuccess(t('lxc_templates.ul_success', { file: file.name, node: selectedNode, storage: selectedStorage }))
       onClose()
     } catch (err) {
-      setError(err.response?.data?.detail ?? 'Upload fehlgeschlagen.')
+      setError(err.response?.data?.detail ?? t('lxc_templates.ul_failed'))
       setProgress(null)
     } finally {
       setUploading(false)
@@ -89,11 +91,11 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">LXC Template hochladen</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{t('lxc_templates.ul_title')}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
-            aria-label="Schließen"
+            aria-label={t('lxc_templates.close')}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -106,10 +108,10 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
           {/* Node */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
-              Ziel-Node <span className="text-red-500">*</span>
+              {t('lxc_templates.target_node')} <span className="text-portal-danger">*</span>
             </label>
             {portalNodes.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-zinc-500">Keine Nodes konfiguriert.</p>
+              <p className="text-sm text-gray-400 dark:text-zinc-500">{t('lxc_templates.no_nodes_configured')}</p>
             ) : (
               <select
                 value={selectedNode}
@@ -126,13 +128,13 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
           {/* Storage */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
-              Ziel-Storage <span className="text-red-500">*</span>
+              {t('lxc_templates.target_storage')} <span className="text-portal-danger">*</span>
             </label>
             {storagesLoading ? (
               <div className="h-9 bg-gray-100 dark:bg-zinc-800 animate-pulse rounded" />
             ) : storages.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-zinc-500">
-                {selectedNode ? 'Kein Storage mit vztmpl-Unterstützung gefunden.' : 'Bitte Node wählen.'}
+                {selectedNode ? t('lxc_templates.no_vztmpl_storage') : t('lxc_templates.select_node_first')}
               </p>
             ) : (
               <select
@@ -150,18 +152,18 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
           {/* File */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
-              Template-Datei <span className="text-red-500">*</span>
+              {t('lxc_templates.ul_file_label')} <span className="text-portal-danger">*</span>
               <span className="ml-1 text-xs font-normal text-gray-400 dark:text-zinc-500">(.tar.gz / .tar.zst)</span>
             </label>
             <div
-              className="border-2 border-dashed border-gray-300 dark:border-zinc-600 rounded px-4 py-5 text-center cursor-pointer hover:border-orange-400 dark:hover:border-orange-500 transition-colors"
+              className="border-2 border-dashed border-gray-300 dark:border-zinc-600 rounded px-4 py-5 text-center cursor-pointer hover:border-portal-accent/50 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               {file ? (
                 <p className="text-sm text-gray-700 dark:text-zinc-300 font-mono truncate">{file.name}</p>
               ) : (
                 <p className="text-sm text-gray-400 dark:text-zinc-500">
-                  Datei hier ablegen oder <span className="text-orange-500">auswählen</span>
+                  {t('lxc_templates.ul_file_drop')} <span className="text-portal-accent">{t('lxc_templates.ul_file_select')}</span>
                 </p>
               )}
               <input
@@ -172,19 +174,19 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
                 className="hidden"
               />
             </div>
-            {fileError && <p className="text-xs text-red-500 dark:text-red-400">{fileError}</p>}
+            {fileError && <p className="text-xs text-portal-danger">{fileError}</p>}
           </div>
 
           {/* Progress */}
           {progress !== null && (
             <div className="space-y-1">
               <div className="flex justify-between text-xs text-gray-500 dark:text-zinc-400">
-                <span>Upload…</span>
+                <span>{t('lxc_templates.ul_progress')}</span>
                 <span>{progress}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-zinc-700 rounded-full h-1.5">
                 <div
-                  className="bg-orange-500 h-1.5 rounded-full transition-all"
+                  className="bg-portal-accent h-1.5 rounded-full transition-all"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -192,7 +194,7 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
           )}
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400 rounded-lg">
+            <div className="bg-portal-danger/10 border border-portal-danger/30 px-4 py-3 text-sm text-portal-danger rounded-lg">
               {error}
             </div>
           )}
@@ -204,7 +206,7 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
               disabled={uploading}
               className="btn-secondary flex-1"
             >
-              Abbrechen
+              {t('lxc_templates.cancel')}
             </button>
             <button
               type="button"
@@ -217,7 +219,7 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                     <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                   </svg>
-                  Hochladen…
+                  {t('lxc_templates.ul_uploading')}
                 </>
               ) : (
                 <>
@@ -226,7 +228,7 @@ export default function LxcUploadModal({ portalNodes, onClose, onSuccess }) {
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
-                  Hochladen
+                  {t('lxc_templates.ul_upload_btn')}
                 </>
               )}
             </button>

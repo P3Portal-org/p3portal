@@ -7,18 +7,20 @@
  * it only becomes real after the user applies the network reload.
  */
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { checkNetworkInterfaceUsage, deleteNetworkInterface } from '../../api/networks'
 
-function errMsg(err) {
+function errMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien (Sys.Modify auf /nodes erforderlich).'
-  if (s === 503) return 'Admin-Token für diese Node nicht konfiguriert.'
-  if (s === 502) return 'Proxmox-API nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Löschen des Interfaces.'
+  if (s === 403) return t('networks.del.err_403')
+  if (s === 503) return t('networks.del.err_503')
+  if (s === 502) return t('networks.del.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('networks.del.err_generic')
 }
 
 export default function DeleteUsageConfirmModal({ node, iface, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const isBridge = iface?.type === 'bridge'
   const [usage, setUsage]     = useState(null)   // { in_use, usages, incomplete }
   const [loading, setLoading] = useState(isBridge)
@@ -43,7 +45,7 @@ export default function DeleteUsageConfirmModal({ node, iface, onClose, onSucces
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(errMsg(err))
+      setError(errMsg(err, t))
       setDeleting(false)
     }
   }
@@ -61,21 +63,21 @@ export default function DeleteUsageConfirmModal({ node, iface, onClose, onSucces
       <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[85vh]">
         <div className="px-6 py-4 border-b border-gray-100 dark:border-zinc-800">
           <h2 id="net-delete-title" className="text-base font-semibold text-gray-900 dark:text-zinc-100">
-            Interface löschen – {iface?.iface}
+            {t('networks.delete.title', { name: iface?.iface })}
           </h2>
         </div>
 
         <div className="px-6 py-4 space-y-3 overflow-y-auto">
           {loading && (
-            <p className="text-sm text-gray-500 dark:text-zinc-400">Nutzungsprüfung läuft …</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-400">{t('networks.delete.checking')}</p>
           )}
 
           {!loading && isBridge && inUse && (
-            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3">
-              <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                ⚠ Diese Bridge wird noch von {usages.length} Gast/Gästen genutzt:
+            <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3">
+              <p className="text-sm font-medium text-portal-danger">
+                {t('networks.delete.in_use', { count: usages.length })}
               </p>
-              <ul className="mt-2 text-xs text-red-700/90 dark:text-red-400/90 space-y-0.5 max-h-40 overflow-y-auto">
+              <ul className="mt-2 text-xs text-portal-danger/90 space-y-0.5 max-h-40 overflow-y-auto">
                 {usages.map(u => (
                   <li key={`${u.kind}-${u.vmid}`}>
                     <span className="font-mono">{u.vmid}</span> {u.name}{' '}
@@ -83,36 +85,36 @@ export default function DeleteUsageConfirmModal({ node, iface, onClose, onSucces
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-xs text-red-600/80 dark:text-red-400/80">
-                Nach dem Löschen + Reload hängen die Netzwerkkarten dieser Gäste ins Leere.
+              <p className="mt-2 text-xs text-portal-danger/80">
+                {t('networks.delete.in_use_warn')}
               </p>
             </div>
           )}
 
           {!loading && isBridge && !inUse && (
             <p className="text-sm text-gray-700 dark:text-zinc-300">
-              Keine VM/LXC dieses Nodes referenziert die Bridge{usage?.incomplete ? ' (Prüfung war unvollständig).' : '.'}
+              {usage?.incomplete ? t('networks.delete.not_in_use_incomplete') : t('networks.delete.not_in_use')}
             </p>
           )}
 
           {!isBridge && (
             <p className="text-sm text-gray-700 dark:text-zinc-300">
-              VLAN-Interface <span className="font-mono">{iface?.iface}</span> wirklich löschen?
+              {t('networks.delete.vlan_confirm', { name: iface?.iface })}
             </p>
           )}
 
           <p className="text-xs text-gray-400 dark:text-zinc-500">
-            Die Löschung wird zunächst nur vorgemerkt (pending) und erst beim nächsten Reload aktiv.
+            {t('networks.delete.staged_hint')}
           </p>
 
           {usage?.incomplete && isBridge && (
-            <p className="text-[11px] text-yellow-600 dark:text-yellow-400">
-              Hinweis: Einige VM-Konfigurationen konnten nicht geprüft werden – die Liste ist evtl. unvollständig.
+            <p className="text-[11px] text-portal-warn">
+              {t('networks.delete.incomplete_hint')}
             </p>
           )}
 
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-lg px-3 py-2">
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -120,10 +122,10 @@ export default function DeleteUsageConfirmModal({ node, iface, onClose, onSucces
 
         <div className="px-6 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl">
           <button type="button" onClick={onClose} disabled={deleting} className="btn-secondary">
-            Abbrechen
+            {t('networks.delete.cancel')}
           </button>
           <button type="button" onClick={handleDelete} disabled={deleting || loading} className="btn-danger">
-            {deleting ? '…' : 'Löschen'}
+            {deleting ? '…' : t('networks.delete.confirm')}
           </button>
         </div>
         <span className="rq hidden" aria-hidden="true" />

@@ -1241,7 +1241,7 @@ async def _resolve_guest_fw(current_user: CurrentUser, vmid: int, node: str | No
     """Return (client, auth, pve_node, kind) for guest firewall ops, RBAC-checked."""
     from backend.routers.vms import _check_rbac, _resolve_vm_access
     client, auth, pve_node, vm_type = await _resolve_vm_access(current_user, vmid, node)
-    await _check_rbac(current_user, vmid, vm_type, "configure")
+    await _check_rbac(current_user, vmid, vm_type, "configure", pve_node)
     kind = "lxc" if vm_type == "lxc" else "qemu"
     return client, auth, pve_node, kind
 

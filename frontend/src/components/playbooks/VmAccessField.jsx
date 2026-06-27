@@ -98,7 +98,7 @@ export default function VmAccessField({ param, onChange }) {
   const inputBase =
     'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 ' +
     'text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 ' +
-    'focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition'
+    'focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition'
   const textareaBase = `${inputBase} text-xs font-mono resize-y`
   const hasAccessError = !!internalErrors.access
   const currentCombined = buildSshKeyFromState(profileKeys, checkedIds, manualKey)
@@ -110,7 +110,7 @@ export default function VmAccessField({ param, onChange }) {
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">
           {param.label}
-          {param.required && <span className="text-red-500 ml-1">*</span>}
+          {param.required && <span className="text-portal-danger ml-1">*</span>}
         </label>
         <div className="flex rounded border border-gray-300 dark:border-zinc-600 overflow-hidden text-sm">
           {[
@@ -123,7 +123,7 @@ export default function VmAccessField({ param, onChange }) {
               onClick={() => handleMode(opt.value)}
               className={`flex-1 px-3 py-2 text-center transition ${
                 mode === opt.value
-                  ? 'bg-orange-500 text-white font-medium'
+                  ? 'bg-portal-accent text-white font-medium'
                   : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-700'
               }`}
             >
@@ -137,17 +137,17 @@ export default function VmAccessField({ param, onChange }) {
       {mode === 'user' && (
         <div className="space-y-1">
           <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400">
-            Benutzername <span className="text-red-500">*</span>
+            Benutzername <span className="text-portal-danger">*</span>
           </label>
           <input
             type="text"
             value={username}
             onChange={e => handleUsername(e.target.value)}
             placeholder="z.B. chris"
-            className={`${inputBase} ${internalErrors.username ? 'border-red-500' : ''}`}
+            className={`${inputBase} ${internalErrors.username ? 'border-portal-danger' : ''}`}
           />
           {internalErrors.username && (
-            <p className="text-xs text-red-500">{internalErrors.username}</p>
+            <p className="text-xs text-portal-danger">{internalErrors.username}</p>
           )}
         </div>
       )}
@@ -166,7 +166,7 @@ export default function VmAccessField({ param, onChange }) {
                 key={k.id}
                 className={`flex items-start gap-2 cursor-pointer p-2 border rounded transition ${
                   checkedIds[k.id]
-                    ? 'border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/30'
+                    ? 'border-portal-accent/50 bg-portal-accent/10'
                     : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
                 }`}
               >
@@ -174,7 +174,7 @@ export default function VmAccessField({ param, onChange }) {
                   type="checkbox"
                   checked={!!checkedIds[k.id]}
                   onChange={e => handleKeyToggle(k.id, e.target.checked)}
-                  className="mt-0.5 w-4 h-4 border-gray-300 dark:border-zinc-600 text-orange-600 focus:ring-orange-500 flex-shrink-0"
+                  className="mt-0.5 w-4 h-4 border-gray-300 dark:border-zinc-600 text-portal-accent focus:ring-portal-accent flex-shrink-0"
                 />
                 <div className="min-w-0">
                   <span className="block text-xs font-medium text-gray-700 dark:text-zinc-300">{k.label}</span>
@@ -189,7 +189,7 @@ export default function VmAccessField({ param, onChange }) {
               <button
                 type="button"
                 onClick={() => setShowManual(true)}
-                className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
+                className="text-xs text-portal-accent hover:underline"
               >
                 + Weiteren Key manuell eingeben
               </button>
@@ -210,7 +210,7 @@ export default function VmAccessField({ param, onChange }) {
                   value={manualKey}
                   onChange={e => handleManualKey(e.target.value)}
                   placeholder="ssh-rsa AAAA… oder ssh-ed25519 AAAA…"
-                  className={`${textareaBase} ${hasAccessError && !password ? 'border-red-500' : ''}`}
+                  className={`${textareaBase} ${hasAccessError && !password ? 'border-portal-danger' : ''}`}
                 />
               </div>
             )}
@@ -221,7 +221,7 @@ export default function VmAccessField({ param, onChange }) {
             value={manualKey}
             onChange={e => handleManualKey(e.target.value)}
             placeholder="ssh-rsa AAAA… oder ssh-ed25519 AAAA…"
-            className={`${textareaBase} ${hasAccessError && !password ? 'border-red-500' : ''}`}
+            className={`${textareaBase} ${hasAccessError && !password ? 'border-portal-danger' : ''}`}
           />
         )}
       </div>
@@ -238,7 +238,7 @@ export default function VmAccessField({ param, onChange }) {
             value={password}
             onChange={e => handlePassword(e.target.value)}
             placeholder="••••••••"
-            className={`${inputBase} pr-10 ${hasAccessError && !currentCombined ? 'border-red-500' : ''}`}
+            className={`${inputBase} pr-10 ${hasAccessError && !currentCombined ? 'border-portal-danger' : ''}`}
           />
           <button
             type="button"
@@ -263,7 +263,7 @@ export default function VmAccessField({ param, onChange }) {
       </div>
 
       {hasAccessError && (
-        <p className="text-xs text-red-500">{internalErrors.access}</p>
+        <p className="text-xs text-portal-danger">{internalErrors.access}</p>
       )}
 
       <p className="text-xs text-gray-400 dark:text-zinc-500">

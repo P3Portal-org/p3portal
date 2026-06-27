@@ -55,12 +55,12 @@ function typeLabel(type) {
 }
 
 const STATUS_STYLE = {
-  OK:      { dot: 'bg-green-500',  text: 'text-green-700 dark:text-green-400',   label: 'OK' },
-  ok:      { dot: 'bg-green-500',  text: 'text-green-700 dark:text-green-400',   label: 'OK' },
-  RUNNING: { dot: 'bg-orange-400', text: 'text-orange-600 dark:text-orange-400', label: 'Läuft' },
-  running: { dot: 'bg-orange-400', text: 'text-orange-600 dark:text-orange-400', label: 'Läuft' },
-  ERROR:   { dot: 'bg-red-500',    text: 'text-red-700 dark:text-red-400',       label: 'Fehler' },
-  error:   { dot: 'bg-red-500',    text: 'text-red-700 dark:text-red-400',       label: 'Fehler' },
+  OK:      { dot: 'bg-portal-success',  text: 'text-portal-success',   label: 'OK' },
+  ok:      { dot: 'bg-portal-success',  text: 'text-portal-success',   label: 'OK' },
+  RUNNING: { dot: 'bg-portal-accent', text: 'text-portal-accent', label: 'Läuft' },
+  running: { dot: 'bg-portal-accent', text: 'text-portal-accent', label: 'Läuft' },
+  ERROR:   { dot: 'bg-portal-danger',    text: 'text-portal-danger',       label: 'Fehler' },
+  error:   { dot: 'bg-portal-danger',    text: 'text-portal-danger',       label: 'Fehler' },
 }
 
 function statusStyle(status) {
@@ -131,7 +131,7 @@ export default function ComputeEventsTab({ nodeName, active }) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
         {error}
       </div>
     )
@@ -149,13 +149,13 @@ export default function ComputeEventsTab({ nodeName, active }) {
     <div className="rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
       <table className="w-full">
         <thead>
-          <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Beschreibung</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Ressource</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Benutzer</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Startzeit</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Dauer</th>
+          <tr className="border-b border-gray-200 dark:border-zinc-700">
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Beschreibung</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Ressource</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Benutzer</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Status</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Startzeit</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Dauer</th>
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-zinc-900">

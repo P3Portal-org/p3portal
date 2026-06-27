@@ -48,11 +48,11 @@ export default function PlaybookUploadModal({ onClose, onUploaded }) {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
-              Playbook-Archiv <span className="text-red-500">*</span>
+              Playbook-Archiv <span className="text-portal-danger">*</span>
               <span className="ml-1 text-xs text-gray-400 dark:text-zinc-500">(.zip)</span>
             </label>
             <div
-              className="border border-dashed border-gray-300 dark:border-zinc-600 px-4 py-5 flex flex-col items-center gap-2 cursor-pointer hover:border-orange-400 dark:hover:border-orange-500 transition-colors"
+              className="border border-dashed border-gray-300 dark:border-zinc-600 px-4 py-5 flex flex-col items-center gap-2 cursor-pointer hover:border-portal-accent transition-colors"
               onClick={() => inputRef.current?.click()}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8 text-gray-300 dark:text-zinc-600">
@@ -105,16 +105,16 @@ ROLLENNAME/            ← Ansible-Role (gleiche Ebene)
               <p className="text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">Gültige <code className="font-mono">category</code>-Werte</p>
               <table className="text-xs w-full">
                 <tbody>
-                  <tr><td className="font-mono text-orange-600 dark:text-orange-400 pr-3 py-0.5">vm_deployment</td><td className="text-gray-500 dark:text-zinc-500">VM Deployment</td></tr>
-                  <tr><td className="font-mono text-orange-600 dark:text-orange-400 pr-3 py-0.5">lxc_deployment</td><td className="text-gray-500 dark:text-zinc-500">LXC Deployment</td></tr>
-                  <tr><td className="font-mono text-orange-600 dark:text-orange-400 pr-3 py-0.5">vm_lxc_config</td><td className="text-gray-500 dark:text-zinc-500">VM/LXC Konfiguration</td></tr>
+                  <tr><td className="font-mono text-portal-accent pr-3 py-0.5">vm_deployment</td><td className="text-gray-500 dark:text-zinc-500">VM Deployment</td></tr>
+                  <tr><td className="font-mono text-portal-accent pr-3 py-0.5">lxc_deployment</td><td className="text-gray-500 dark:text-zinc-500">LXC Deployment</td></tr>
+                  <tr><td className="font-mono text-portal-accent pr-3 py-0.5">vm_lxc_config</td><td className="text-gray-500 dark:text-zinc-500">VM/LXC Konfiguration</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            <div className="bg-portal-danger/10 border border-portal-danger/30 px-4 py-3 text-sm text-portal-danger">
               {error}
             </div>
           )}

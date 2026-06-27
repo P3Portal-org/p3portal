@@ -26,7 +26,7 @@ const ALL_NODE_ACTIONS = [
 const GROUP_LABELS = { basis: 'Basis', betrieb: 'Betrieb', admin: 'Admin' }
 
 const inputCls =
-  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition'
 
 export default function PresetForm({ preset, onSuccess, onCancel }) {
   const isEdit = !!preset
@@ -147,8 +147,8 @@ export default function PresetForm({ preset, onSuccess, onCancel }) {
                       onClick={() => toggleAction(action.id)}
                       className={`text-xs px-3 py-1.5 border transition-colors ${
                         active
-                          ? 'bg-orange-600 border-orange-600 text-white'
-                          : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-orange-400 dark:hover:border-orange-600 hover:text-orange-600 dark:hover:text-orange-400'
+                          ? 'bg-portal-accent border-portal-accent text-white'
+                          : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-portal-accent hover:text-portal-accent'
                       }`}
                     >
                       {action.label}
@@ -179,8 +179,8 @@ export default function PresetForm({ preset, onSuccess, onCancel }) {
                 onClick={() => toggleNodeAction(action.id)}
                 className={`text-xs px-3 py-1.5 border transition-colors ${
                   active
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-blue-400 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400'
+                    ? 'bg-portal-info border-portal-info text-white'
+                    : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-portal-info hover:text-portal-info'
                 }`}
               >
                 {action.label}
@@ -191,7 +191,7 @@ export default function PresetForm({ preset, onSuccess, onCancel }) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
           {error}
         </p>
       )}

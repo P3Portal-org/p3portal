@@ -168,14 +168,14 @@ export default function NodeAccessModal({ node, isPlus, onClose }) {
               <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900">
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wide">
+                    <tr className="border-b border-gray-200 dark:border-zinc-700">
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
                         {t('node_assignments.col_subject')}
                       </th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wide">
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">
                         {t('node_assignments.col_preset')}
                       </th>
-                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wide hidden sm:table-cell">
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider hidden sm:table-cell">
                         {t('node_assignments.col_added_at')}
                       </th>
                       <th className="px-4 py-2.5" />

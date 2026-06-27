@@ -21,13 +21,13 @@ export default function ProxmoxNodeSelector({ param, value, onChange, error }) {
 
   const base =
     'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 ' +
-    'text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition'
+    'text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition'
 
   return (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
 
       {loading ? (
@@ -39,15 +39,15 @@ export default function ProxmoxNodeSelector({ param, value, onChange, error }) {
             value={value ?? ''}
             onChange={e => onChange(param.id, e.target.value)}
             placeholder={param.default ?? 'Node-Name'}
-            className={`${base} ${error ? 'border-red-500' : ''}`}
+            className={`${base} ${error ? 'border-portal-danger' : ''}`}
           />
-          <p className="text-xs text-amber-500">{fetchError} Bitte manuell eingeben.</p>
+          <p className="text-xs text-portal-warn">{fetchError} Bitte manuell eingeben.</p>
         </div>
       ) : (
         <select
           value={value ?? ''}
           onChange={e => onChange(param.id, e.target.value)}
-          className={`${base} ${error ? 'border-red-500' : ''}`}
+          className={`${base} ${error ? 'border-portal-danger' : ''}`}
         >
           {nodes.length === 0 && <option value="">– Kein Node verfügbar –</option>}
           {nodes.map(n => (
@@ -58,7 +58,7 @@ export default function ProxmoxNodeSelector({ param, value, onChange, error }) {
         </select>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-portal-danger">{error}</p>}
     </div>
   )
 }

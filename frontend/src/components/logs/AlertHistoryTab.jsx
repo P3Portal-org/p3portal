@@ -2,10 +2,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { listAlertEvents, acknowledgeAlert } from '../../api/alerts'
 
-const SEVERITY_DOT = { critical: 'bg-red-500', warning: 'bg-yellow-500' }
-const SEVERITY_TEXT = { critical: 'text-red-600 dark:text-red-400', warning: 'text-yellow-600 dark:text-yellow-400' }
-const STATE_DOT = { firing: 'bg-red-400', resolved: 'bg-green-500' }
-const STATE_TEXT = { firing: 'text-red-600 dark:text-red-400', resolved: 'text-green-600 dark:text-green-400' }
+const SEVERITY_DOT = { critical: 'bg-portal-danger', warning: 'bg-portal-warn' }
+const SEVERITY_TEXT = { critical: 'text-portal-danger', warning: 'text-portal-warn' }
+const STATE_DOT = { firing: 'bg-portal-danger', resolved: 'bg-portal-success' }
+const STATE_TEXT = { firing: 'text-portal-danger', resolved: 'text-portal-success' }
 const STATE_LABEL = { firing: 'Auslösung', resolved: 'Erholt' }
 
 const METRIC_LABEL = {
@@ -60,7 +60,7 @@ export default function AlertHistoryTab() {
         <select
           value={filterState}
           onChange={e => setFilterState(e.target.value)}
-          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         >
           <option value="">Alle Status</option>
           <option value="firing">Auslösung</option>
@@ -71,12 +71,12 @@ export default function AlertHistoryTab() {
           value={filterVmid}
           onChange={e => setFilterVmid(e.target.value)}
           placeholder="VM-ID filtern…"
-          className="flex-1 text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="flex-1 text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         />
         <button
           onClick={load}
           disabled={loading}
-          className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition shrink-0"
+          className="text-xs text-portal-accent hover:underline disabled:opacity-40 transition shrink-0"
         >
           {loading ? 'Lade…' : '↻'}
         </button>
@@ -85,7 +85,7 @@ export default function AlertHistoryTab() {
       {/* Table */}
       <div className="flex-1 overflow-y-auto bg-white dark:bg-zinc-900">
         {error && (
-          <div className="m-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-400 rounded">
+          <div className="m-3 border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger rounded">
             {error}
           </div>
         )}
@@ -158,7 +158,7 @@ export default function AlertHistoryTab() {
                         <button
                           onClick={() => handleAck(ev)}
                           disabled={acking === ev.id}
-                          className="text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition"
+                          className="text-portal-accent hover:underline disabled:opacity-40 transition"
                         >
                           {acking === ev.id ? '…' : 'Best.'}
                         </button>

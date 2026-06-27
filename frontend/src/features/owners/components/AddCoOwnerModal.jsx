@@ -48,7 +48,7 @@ export default function AddCoOwnerModal({ existingOwnerIds = [], onClose, onAdd 
 
         <div className="px-6 py-4 space-y-4">
           {loadErr && (
-            <p className="text-sm text-red-500">{loadErr}</p>
+            <p className="text-sm text-portal-danger">{loadErr}</p>
           )}
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wide mb-1">
@@ -58,7 +58,7 @@ export default function AddCoOwnerModal({ existingOwnerIds = [], onClose, onAdd 
               value={selectedId}
               onChange={e => setSelectedId(e.target.value)}
               required
-              className="w-full border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-portal-accent"
             >
               <option value="">{t('owners.add_co_owner_placeholder')}</option>
               {users.map(u => (
@@ -66,7 +66,7 @@ export default function AddCoOwnerModal({ existingOwnerIds = [], onClose, onAdd 
               ))}
             </select>
           </div>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-portal-danger">{error}</p>}
         </div>
 
         <div className="px-6 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl">

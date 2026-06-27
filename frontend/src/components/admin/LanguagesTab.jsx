@@ -64,7 +64,7 @@ export default function LanguagesTab({ globalDefault, onDefaultChanged }) {
         </span>
         <div className="flex items-center gap-2">
           {msg && (
-            <span className={`text-xs ${msg.ok ? 'text-green-500' : 'text-red-500'}`}>{msg.text}</span>
+            <span className={`text-xs ${msg.ok ? 'text-portal-success' : 'text-portal-danger'}`}>{msg.text}</span>
           )}
           {isPlus && LanguagesAdminActions ? (
             <Suspense fallback={null}>
@@ -96,7 +96,7 @@ export default function LanguagesTab({ globalDefault, onDefaultChanged }) {
                   <span className="ml-2 text-xs text-gray-400 dark:text-zinc-600">{t('appearance.builtin')}</span>
                 )}
                 {globalDefault === lang.code && (
-                  <span className="ml-2 text-xs text-orange-500">{t('appearance.current_default')}</span>
+                  <span className="ml-2 text-xs text-portal-accent">{t('appearance.current_default')}</span>
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">

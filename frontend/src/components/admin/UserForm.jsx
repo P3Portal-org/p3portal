@@ -29,7 +29,7 @@ const ALL_SCOPES = [
 ]
 
 const inputCls =
-  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition'
 
 // ── Subcomponent: API Key Settings (only shown in edit mode) ─────────────────
 function ApiKeySettings({ userId }) {
@@ -103,7 +103,7 @@ function ApiKeySettings({ userId }) {
             checked={enabled}
             onChange={e => setEnabled(e.target.checked)}
           />
-          <div className="w-9 h-5 bg-gray-200 dark:bg-zinc-700 rounded-full peer-checked:bg-orange-500 transition-colors" />
+          <div className="w-9 h-5 bg-gray-200 dark:bg-zinc-700 rounded-full peer-checked:bg-portal-accent transition-colors" />
           <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
         </div>
         <span className="text-sm text-gray-700 dark:text-zinc-300">
@@ -123,7 +123,7 @@ function ApiKeySettings({ userId }) {
                 type="checkbox"
                 checked={allScopes}
                 onChange={e => setAllScopes(e.target.checked)}
-                className="accent-orange-500"
+                className="accent-portal-accent"
               />
               <span className="text-xs text-gray-700 dark:text-zinc-300">{t('admin.user_form.api_keys_allow_all')}</span>
             </label>
@@ -135,12 +135,12 @@ function ApiKeySettings({ userId }) {
                       type="checkbox"
                       checked={(scopes ?? []).includes(s.value)}
                       onChange={() => toggleScope(s.value)}
-                      className="mt-0.5 accent-orange-500"
+                      className="mt-0.5 accent-portal-accent"
                     />
                     <div>
                       <span className="text-xs font-mono text-gray-700 dark:text-zinc-300">{s.label}</span>
                       {s.isNew && (
-                        <span className="ml-1.5 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-1 py-0.5 rounded">Neu</span>
+                        <span className="ml-1.5 text-xs bg-portal-info/10 text-portal-info px-1 py-0.5 rounded">Neu</span>
                       )}
                       <p className="text-xs text-gray-400 dark:text-zinc-500">{s.desc}</p>
                     </div>
@@ -160,10 +160,10 @@ function ApiKeySettings({ userId }) {
       )}
 
       {error && (
-        <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-2 py-1.5">{error}</p>
+        <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-2 py-1.5">{error}</p>
       )}
       {success && (
-        <p className="text-xs text-green-400 bg-green-950/40 border border-green-800 px-2 py-1.5">{t('admin.user_form.api_keys_saved')}</p>
+        <p className="text-xs text-portal-success bg-portal-success/10 border border-portal-success/30 px-2 py-1.5">{t('admin.user_form.api_keys_saved')}</p>
       )}
 
       <button
@@ -217,15 +217,15 @@ function AccountStatusSection({ user, onRefresh }) {
           disabled={busy}
           className={`text-sm px-4 py-2 border transition-colors disabled:opacity-50 ${
             user.active
-              ? 'text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-950/30'
-              : 'text-green-600 dark:text-green-400 border-green-300 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950/30'
+              ? 'text-portal-accent border-portal-accent/50 hover:bg-portal-accent/10'
+              : 'text-portal-success border-portal-success/50 hover:bg-portal-success/10'
           }`}
         >
           {busy ? '…' : user.active ? t('admin.user_form.account_deactivate') : t('admin.user_form.account_activate')}
         </button>
       </div>
       {error && (
-        <p className="mt-2 text-xs text-red-400 bg-red-950/40 border border-red-800 px-2 py-1.5">{error}</p>
+        <p className="mt-2 text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-2 py-1.5">{error}</p>
       )}
     </div>
   )
@@ -273,7 +273,7 @@ function ResetPasswordSection({ userId }) {
             onChange={e => setPassword(e.target.value)}
             placeholder={t('admin.reset_password.label')}
             minLength={10}
-            className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 pr-10 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition"
+            className="w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 pr-10 text-sm focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition"
           />
           <button
             type="button"
@@ -297,10 +297,10 @@ function ResetPasswordSection({ userId }) {
         </div>
         <p className="text-xs text-gray-400 dark:text-zinc-600">{t('admin.reset_password.hint')}</p>
         {error && (
-          <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-2 py-1.5">{error}</p>
+          <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-2 py-1.5">{error}</p>
         )}
         {success && (
-          <p className="text-xs text-green-400 bg-green-950/40 border border-green-800 px-2 py-1.5">{t('admin.user_form.reset_pw_success')}</p>
+          <p className="text-xs text-portal-success bg-portal-success/10 border border-portal-success/30 px-2 py-1.5">{t('admin.user_form.reset_pw_success')}</p>
         )}
         <button
           type="button"
@@ -374,7 +374,7 @@ function PortalPermissionsSection({ user }) {
               checked={perms.includes(perm)}
               onChange={() => togglePerm(perm)}
             />
-            <div className="w-9 h-5 bg-gray-200 dark:bg-zinc-700 rounded-full peer-checked:bg-orange-500 transition-colors" />
+            <div className="w-9 h-5 bg-gray-200 dark:bg-zinc-700 rounded-full peer-checked:bg-portal-accent transition-colors" />
             <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
           </div>
           <span className="text-sm text-gray-700 dark:text-zinc-300">
@@ -384,15 +384,15 @@ function PortalPermissionsSection({ user }) {
       ))}
 
       {error && (
-        <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-2 py-1.5">{error}</p>
+        <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-2 py-1.5">{error}</p>
       )}
       {success && (
-        <p className="text-xs text-green-400 bg-green-950/40 border border-green-800 px-2 py-1.5">
+        <p className="text-xs text-portal-success bg-portal-success/10 border border-portal-success/30 px-2 py-1.5">
           {t('admin.user_form.portal_perms_saved')}
         </p>
       )}
 
-      <p className="text-xs text-amber-400/80 dark:text-amber-500/70 bg-amber-950/20 border border-amber-800/40 px-2 py-1.5">
+      <p className="text-xs text-portal-warn/90 bg-portal-warn/10 border border-portal-warn/30 px-2 py-1.5">
         {t('admin.user_form.portal_perms_jwt_hint')}
       </p>
 
@@ -589,7 +589,7 @@ export default function UserForm({ user, onSuccess, onCancel }) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
           {error}
         </p>
       )}

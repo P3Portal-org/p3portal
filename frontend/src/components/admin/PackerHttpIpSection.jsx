@@ -45,7 +45,7 @@ export default function PackerHttpIpSection() {
     }
   }
 
-  const inputCls = 'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition font-mono'
+  const inputCls = 'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition font-mono'
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 p-6 mt-6 rounded-lg">
@@ -61,7 +61,7 @@ export default function PackerHttpIpSection() {
         {!editing && (
           <button
             onClick={handleEdit}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors shrink-0 ml-4"
+            className="text-sm text-portal-accent hover:text-portal-accent/80 transition-colors shrink-0 ml-4"
           >
             {t('admin.packer_http_ip.btn_change')}
           </button>

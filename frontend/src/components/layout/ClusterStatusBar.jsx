@@ -6,17 +6,17 @@ import ToolingIndicators from '../../features/tooling/components/ToolingIndicato
 
 function MiniBar({ pct, color }) {
   const clamped = Math.min(100, Math.max(0, pct ?? 0))
-  const bar = color === 'blue' ? 'bg-blue-500' : 'bg-orange-500'
+  const bar = color === 'blue' ? 'bg-portal-info' : 'bg-portal-accent'
   const high = clamped > 80
   return (
     <span className="inline-flex items-center gap-1">
       <span className="inline-flex w-10 h-1.5 bg-white/20 rounded-full overflow-hidden shrink-0">
         <span
-          className={`h-1.5 rounded-full transition-all duration-500 ${high ? 'bg-red-500' : bar}`}
+          className={`h-1.5 rounded-full transition-all duration-500 ${high ? 'bg-portal-danger' : bar}`}
           style={{ width: `${clamped}%` }}
         />
       </span>
-      <span className={`tabular-nums text-[10px] ${high ? 'text-red-400' : ''}`}>
+      <span className={`tabular-nums text-[10px] ${high ? 'text-portal-danger' : ''}`}>
         {clamped.toFixed(0)}%
       </span>
     </span>
@@ -29,8 +29,8 @@ function NodePill({ node }) {
   const memPct = isOnline && node.maxmem ? (node.mem / node.maxmem) * 100 : null
 
   return (
-    <span className={`flex items-center gap-1.5 ${isOnline ? 'text-portal-text2' : 'text-red-400'}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-green-500' : 'bg-red-500'}`} />
+    <span className={`flex items-center gap-1.5 ${isOnline ? 'text-portal-text2' : 'text-portal-danger'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOnline ? 'bg-portal-success' : 'bg-portal-danger'}`} />
       <span className="font-medium">{node.node}</span>
       {cpuPct !== null && <MiniBar pct={cpuPct} color="orange" />}
       {memPct !== null && <MiniBar pct={memPct} color="blue" />}
@@ -67,12 +67,12 @@ export default function ClusterStatusBar() {
   const healthy = hasQuorum && ha === 'active'
   const noHA    = hasQuorum && (ha === 'none' || !ha)
 
-  const dotColor  = !hasQuorum ? 'bg-red-500' : healthy ? 'bg-green-500' : 'bg-yellow-400'
+  const dotColor  = !hasQuorum ? 'bg-portal-danger' : healthy ? 'bg-portal-success' : 'bg-portal-warn'
   const textColor = !hasQuorum
-    ? 'text-red-400'
+    ? 'text-portal-danger'
     : healthy
-    ? 'text-green-400'
-    : 'text-yellow-400'
+    ? 'text-portal-success'
+    : 'text-portal-warn'
   const label = !hasQuorum ? 'Kein Quorum' : healthy ? 'Cluster OK' : noHA ? 'HA inaktiv' : 'Cluster Warnung'
 
   // Single-node: show node name + per-node CPU/RAM

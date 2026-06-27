@@ -59,7 +59,7 @@ export default function SessionsTab() {
   return (
     <div className="space-y-4">
       {error && (
-        <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">{error}</p>
+        <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">{error}</p>
       )}
 
       {sessions.length === 0 ? (
@@ -71,14 +71,14 @@ export default function SessionsTab() {
               key={s.id}
               className={`flex items-start justify-between gap-4 p-3 border ${
                 s.is_current
-                  ? 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20'
+                  ? 'border-portal-accent/30 bg-portal-accent/10'
                   : 'border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/50'
               }`}
             >
               <div className="space-y-0.5 min-w-0">
                 <div className="flex items-center gap-2">
                   {s.is_current && (
-                    <span className="text-xs bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-700 px-1.5 py-0.5">
+                    <span className="text-xs bg-portal-accent/10 text-portal-accent border border-portal-accent/30 px-1.5 py-0.5">
                       Diese Sitzung
                     </span>
                   )}

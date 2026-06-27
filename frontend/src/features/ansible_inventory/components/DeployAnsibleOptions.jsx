@@ -27,7 +27,7 @@ export default function DeployAnsibleOptions({ onChange }) {
           type="checkbox"
           checked={manageForAnsible}
           onChange={e => setManageForAnsible(e.target.checked)}
-          className="w-4 h-4 accent-orange-500"
+          className="w-4 h-4 accent-portal-accent"
         />
         <span className="text-sm text-gray-700 dark:text-zinc-300">{t('ansible_inventory.deploy_manage_label')}</span>
       </label>
@@ -40,7 +40,7 @@ export default function DeployAnsibleOptions({ onChange }) {
               type="checkbox"
               checked={globalOptIn}
               onChange={e => setGlobalOptIn(e.target.checked)}
-              className="w-4 h-4 accent-orange-500"
+              className="w-4 h-4 accent-portal-accent"
             />
             <span className="text-sm text-gray-700 dark:text-zinc-300">{t('ansible_inventory.deploy_global_label')}</span>
           </label>

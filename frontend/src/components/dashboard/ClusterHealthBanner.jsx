@@ -52,18 +52,18 @@ export default function ClusterHealthBanner({ status, unreachable_nodes = [] }) 
     const hasQuorum = status.quorum
     const haStatus = status.ha_status
     clusterVariant = !hasQuorum
-      ? { bg: 'border-red-700 bg-red-950/40 dark:bg-red-950/40 bg-red-50', icon: '⚠', text: 'text-red-400', label: 'Kein Quorum – Cluster nicht funktionsfähig' }
+      ? { bg: 'border-portal-danger/30 bg-portal-danger/10 bg-portal-danger/10', icon: '⚠', text: 'text-portal-danger', label: 'Kein Quorum – Cluster nicht funktionsfähig' }
       : haStatus === 'active'
-      ? { bg: 'border-green-700 bg-green-950/40 dark:bg-green-950/40 bg-green-50', icon: '✓', text: 'text-green-400', label: `Cluster OK · ${status.node_count ?? '?'} Nodes · ${haLabel(haStatus)}` }
-      : { bg: 'border-yellow-700 bg-yellow-950/40 dark:bg-yellow-950/40 bg-yellow-50', icon: '⚠', text: 'text-yellow-400', label: `Quorum OK · ${status.node_count ?? '?'} Nodes · ${haLabel(haStatus)}` }
+      ? { bg: 'border-portal-success/30 bg-portal-success/10 bg-portal-success/10', icon: '✓', text: 'text-portal-success', label: `Cluster OK · ${status.node_count ?? '?'} Nodes · ${haLabel(haStatus)}` }
+      : { bg: 'border-portal-warn/30 bg-portal-warn/10 bg-portal-warn/10', icon: '⚠', text: 'text-portal-warn', label: `Quorum OK · ${status.node_count ?? '?'} Nodes · ${haLabel(haStatus)}` }
   }
 
   return (
     <div className="space-y-2">
       {showUnreachable && (
-        <div className="flex items-center gap-3 border border-orange-700 bg-orange-50 dark:bg-orange-950/40 rounded-lg px-4 py-2.5 text-sm">
-          <span className="font-bold text-orange-400">⚠</span>
-          <span className="flex-1 text-orange-400">
+        <div className="flex items-center gap-3 border border-portal-accent/30 bg-portal-accent/10 rounded-lg px-4 py-2.5 text-sm">
+          <span className="font-bold text-portal-accent">⚠</span>
+          <span className="flex-1 text-portal-accent">
             Nicht erreichbar: {unreachable_nodes.join(', ')}
           </span>
           <CloseButton onClick={dismissUnreachable} />

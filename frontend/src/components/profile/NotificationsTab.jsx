@@ -119,7 +119,7 @@ export default function NotificationsTab() {
             aria-checked={settings.email_enabled}
             onClick={() => setSettings(s => ({ ...s, email_enabled: !s.email_enabled }))}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-              settings.email_enabled ? 'bg-orange-500' : 'bg-gray-200 dark:bg-zinc-700'
+              settings.email_enabled ? 'bg-portal-accent' : 'bg-gray-200 dark:bg-zinc-700'
             }`}
           >
             <span
@@ -139,7 +139,7 @@ export default function NotificationsTab() {
               value={settings.email_address}
               onChange={e => setSettings(s => ({ ...s, email_address: e.target.value }))}
               placeholder="alert@example.com"
-              className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-accent"
             />
           </div>
         )}
@@ -158,7 +158,7 @@ export default function NotificationsTab() {
           <select
             value={settings.webhook_receiver_type}
             onChange={e => setSettings(s => ({ ...s, webhook_receiver_type: e.target.value }))}
-            className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+            className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-accent"
           >
             {WEBHOOK_RECEIVERS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
@@ -172,7 +172,7 @@ export default function NotificationsTab() {
             value={settings.webhook_url}
             onChange={e => setSettings(s => ({ ...s, webhook_url: e.target.value }))}
             placeholder={WEBHOOK_URL_PLACEHOLDERS[settings.webhook_receiver_type] ?? 'https://...'}
-            className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+            className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-accent"
           />
           {settings.webhook_receiver_type === 'gotify' && settings.webhook_url && (
             <p className="mt-1 text-xs text-portal-info">
@@ -199,7 +199,7 @@ export default function NotificationsTab() {
                   ? '•••• gespeichert – zum Überschreiben tippen'
                   : (WEBHOOK_TOKEN_PLACEHOLDERS[settings.webhook_receiver_type] ?? '')
               }
-              className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-accent"
             />
             {tokenAlreadySet && (
               <button
@@ -231,7 +231,7 @@ export default function NotificationsTab() {
         <select
           value={settings.min_severity}
           onChange={e => setSettings(s => ({ ...s, min_severity: e.target.value }))}
-          className="text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+          className="text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         >
           {SEVERITY_OPTIONS.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -240,7 +240,7 @@ export default function NotificationsTab() {
       </div>
 
       {msg && (
-        <p className={`text-sm ${msg.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        <p className={`text-sm ${msg.type === 'success' ? 'text-portal-success' : 'text-portal-danger'}`}>
           {msg.text}
         </p>
       )}

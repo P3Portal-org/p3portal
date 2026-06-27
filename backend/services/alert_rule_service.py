@@ -837,7 +837,9 @@ _SMTP_KEYS = ("smtp_host", "smtp_port", "smtp_username", "smtp_password", "smtp_
 
 
 async def get_smtp_config() -> dict:
-    from backend.services.config_service import get as cfg_get
+    # Code-Review-Fix: config_service exportiert get_config, NICHT get
+    # (unvollständiger Refactor → ImportError → 500 auf der SMTP-Settings-Route).
+    from backend.services.config_service import get_config as cfg_get
     host      = await cfg_get("smtp_host")
     port_str  = await cfg_get("smtp_port")
     username  = await cfg_get("smtp_username")
@@ -854,7 +856,8 @@ async def get_smtp_config() -> dict:
 
 
 async def update_smtp_config(config: dict) -> dict:
-    from backend.services.config_service import set as cfg_set
+    # Code-Review-Fix: config_service exportiert set_config, NICHT set.
+    from backend.services.config_service import set_config as cfg_set
     if "host" in config and config["host"] is not None:
         await cfg_set("smtp_host", config["host"], is_secret=False)
     if "port" in config and config["port"] is not None:

@@ -36,13 +36,13 @@ export default function ProxmoxBridgeSelector({ param, value, onChange, error, n
 
   const base =
     'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 ' +
-    'text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition'
+    'text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition'
 
   return (
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
 
       {!nodeValue && !loading && (
@@ -68,7 +68,7 @@ export default function ProxmoxBridgeSelector({ param, value, onChange, error, n
                 onChange(param.id, v)
               }
             }}
-            className={`${base} ${error ? 'border-red-500' : ''}`}
+            className={`${base} ${error ? 'border-portal-danger' : ''}`}
           >
             <option value="">– Template-Standard (vom Klon geerbt) –</option>
             {options.bridges?.length > 0 && (
@@ -90,12 +90,12 @@ export default function ProxmoxBridgeSelector({ param, value, onChange, error, n
               value={value ?? ''}
               onChange={e => onChange(param.id, e.target.value)}
               placeholder="z. B. vmbr0 oder vnet5"
-              className={`${base} ${error ? 'border-red-500' : ''}`}
+              className={`${base} ${error ? 'border-portal-danger' : ''}`}
             />
           )}
 
           {fetchError && (
-            <p className="text-xs text-amber-500">{fetchError} Bitte Namen manuell eingeben.</p>
+            <p className="text-xs text-portal-warn">{fetchError} Bitte Namen manuell eingeben.</p>
           )}
           {!fetchError && names.length === 0 && (
             <p className="text-xs text-gray-400 dark:text-zinc-500">
@@ -105,7 +105,7 @@ export default function ProxmoxBridgeSelector({ param, value, onChange, error, n
         </>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-portal-danger">{error}</p>}
     </div>
   )
 }

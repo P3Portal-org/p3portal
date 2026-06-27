@@ -12,7 +12,7 @@ export default function DeleteRequestButton({ hasPendingRequest, onDeleteRequest
 
   if (hasPendingRequest || done) {
     return (
-      <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+      <span className="text-xs text-portal-warn flex items-center gap-1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
@@ -31,7 +31,7 @@ export default function DeleteRequestButton({ hasPendingRequest, onDeleteRequest
           onChange={e => setReason(e.target.value)}
           placeholder={t('owners.delete_request_reason_placeholder')}
           rows={2}
-          className="w-full text-xs border border-gray-300 dark:border-zinc-600 rounded px-2 py-1.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 resize-none focus:outline-none focus:ring-1 focus:ring-orange-400"
+          className="w-full text-xs border border-gray-300 dark:border-zinc-600 rounded px-2 py-1.5 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 resize-none focus:outline-none focus:ring-1 focus:ring-portal-accent"
         />
         <div className="flex gap-2">
           <button

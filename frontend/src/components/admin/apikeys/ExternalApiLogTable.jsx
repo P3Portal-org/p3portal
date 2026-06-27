@@ -117,7 +117,7 @@ export default function ExternalApiLogTable() {
                   <td className={tdCls}>
                     <span className={`text-xs font-mono px-1.5 py-0.5 rounded ${
                       entry.auth_kind === 'upk'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                        ? 'bg-portal-info/10 text-portal-info'
                         : 'bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400'
                     }`}>
                       {entry.auth_kind ?? '–'}

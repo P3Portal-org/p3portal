@@ -5,6 +5,7 @@
  * or discards (revert) the staged changes. Proxmox is the single source of truth.
  */
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   listNetworkInterfaces,
   reloadNetwork,
@@ -15,13 +16,13 @@ import NetworkVlanFormModal from './NetworkVlanFormModal'
 import DeleteUsageConfirmModal from './DeleteUsageConfirmModal'
 import ConfirmModal from '../common/ConfirmModal'
 
-function apiErrMsg(err) {
+function apiErrMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien für die Netzwerk-Verwaltung.'
-  if (s === 503) return 'Admin-Token für diese Node nicht konfiguriert.'
-  if (s === 502) return 'Proxmox nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Ausführen der Aktion.'
+  if (s === 403) return t('networks.err_403')
+  if (s === 503) return t('networks.err_503')
+  if (s === 502) return t('networks.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('networks.err_generic')
 }
 
 function ifaceIp(iface) {
@@ -29,42 +30,43 @@ function ifaceIp(iface) {
   return iface.cidr || iface.cidr6 || '–'
 }
 
-function StatusBadge({ iface }) {
+function StatusBadge({ iface, t }) {
   if (iface.pending) {
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400">
-        ausstehend
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-portal-warn/10 text-portal-warn">
+        {t('networks.badge_pending')}
       </span>
     )
   }
   if (iface.active === false) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400">
-        inaktiv
+        {t('networks.badge_inactive')}
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-      aktiv
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-portal-success/10 text-portal-success">
+      {t('networks.badge_active')}
     </span>
   )
 }
 
-function RowActions({ iface, onEdit, onDelete, busy }) {
+function RowActions({ iface, onEdit, onDelete, busy, t }) {
   return (
     <div className="flex items-center gap-1.5 justify-end">
-      <button onClick={() => onEdit(iface)} disabled={busy} className="btn-table" title="Bearbeiten">
-        Bearbeiten
+      <button onClick={() => onEdit(iface)} disabled={busy} className="btn-table" title={t('networks.btn_edit')}>
+        {t('networks.btn_edit')}
       </button>
-      <button onClick={() => onDelete(iface)} disabled={busy} className="btn-table-danger" title="Löschen">
-        Löschen
+      <button onClick={() => onDelete(iface)} disabled={busy} className="btn-table-danger" title={t('networks.btn_delete')}>
+        {t('networks.btn_delete')}
       </button>
     </div>
   )
 }
 
 export default function ComputeNetworkTab({ nodeName, active }) {
+  const { t } = useTranslation()
   const [data, setData]       = useState(null)   // NetworkListResponse
   const [loading, setLoading] = useState(false)
   const [query, setQuery]     = useState('')
@@ -88,9 +90,9 @@ export default function ComputeNetworkTab({ nodeName, active }) {
     setLoading(true)
     listNetworkInterfaces(nodeName)
       .then(d => setData(d))
-      .catch(err => setData({ interfaces: [], node_unreachable: true, detail: apiErrMsg(err) }))
+      .catch(err => setData({ interfaces: [], node_unreachable: true, detail: apiErrMsg(err, t) }))
       .finally(() => setLoading(false))
-  }, [nodeName])
+  }, [nodeName, t])
 
   useEffect(() => {
     if (!active) return
@@ -124,7 +126,7 @@ export default function ComputeNetworkTab({ nodeName, active }) {
       await reloadNetwork(nodeName)
       setPendingHint(false)   // staged changes are now applied
     } catch (err) {
-      throw new Error(apiErrMsg(err))
+      throw new Error(apiErrMsg(err, t))
     }
   }
   const handleRevert = async () => {
@@ -132,7 +134,7 @@ export default function ComputeNetworkTab({ nodeName, active }) {
       await revertNetwork(nodeName)
       setPendingHint(false)   // staged changes discarded
     } catch (err) {
-      throw new Error(apiErrMsg(err))
+      throw new Error(apiErrMsg(err, t))
     }
   }
 
@@ -150,11 +152,11 @@ export default function ComputeNetworkTab({ nodeName, active }) {
 
   if (data?.node_unreachable) {
     return (
-      <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
-        Node nicht erreichbar – Netzwerk-Interfaces konnten nicht geladen werden.
+      <div className="rounded-lg border border-portal-warn/30 bg-portal-warn/10 px-4 py-3 text-sm text-portal-warn">
+        {t('networks.node_unreachable')}
         {data.detail && (
-          <span className="block mt-1 text-xs text-yellow-600/90 dark:text-yellow-500/90">
-            Ursache: {data.detail}
+          <span className="block mt-1 text-xs text-portal-warn/90">
+            {t('networks.node_unreachable_cause', { detail: data.detail })}
           </span>
         )}
       </div>
@@ -164,9 +166,9 @@ export default function ComputeNetworkTab({ nodeName, active }) {
   if (data?.permission_denied) {
     return (
       <div className="rounded-lg border border-portal-border bg-portal-bg px-4 py-6 text-center">
-        <p className="text-sm font-medium text-portal-text">Kein Zugriff in Proxmox</p>
+        <p className="text-sm font-medium text-portal-text">{t('networks.no_access_title')}</p>
         <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-          Der konfigurierte Token hat kein Leserecht auf /nodes/{nodeName}/network.
+          {t('networks.no_access_body', { node: nodeName })}
         </p>
       </div>
     )
@@ -188,16 +190,16 @@ export default function ComputeNetworkTab({ nodeName, active }) {
     <div className="space-y-3">
       {/* Pending-changes banner */}
       {hasPending && (
-        <div className="rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/30 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-yellow-700 dark:text-yellow-400">
-            ⏳ Es gibt ausstehende Netzwerk-Änderungen. Sie werden erst nach &bdquo;Übernehmen&ldquo; wirksam.
+        <div className="rounded-lg border border-portal-warn/30 bg-portal-warn/10 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-portal-warn">
+            {t('networks.pending_banner')}
           </p>
           <div className="flex items-center gap-2 shrink-0">
             <button onClick={() => { setActionError(''); setShowReload(true) }} className="btn-primary text-xs">
-              Übernehmen (Reload)
+              {t('networks.btn_apply')}
             </button>
             <button onClick={() => { setActionError(''); setShowRevert(true) }} className="btn-secondary text-xs">
-              Verwerfen (Revert)
+              {t('networks.btn_revert')}
             </button>
           </div>
         </div>
@@ -210,41 +212,41 @@ export default function ComputeNetworkTab({ nodeName, active }) {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Suche Name / Typ…"
-            className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs rounded focus:outline-none focus:border-orange-500 w-44"
+            placeholder={t('networks.search_ph')}
+            className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs rounded focus:outline-none focus:border-portal-accent w-44"
           />
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-2 py-1.5 text-xs rounded focus:outline-none focus:border-orange-500"
+            className="bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-2 py-1.5 text-xs rounded focus:outline-none focus:border-portal-accent"
           >
-            <option value="all">Alle Typen</option>
-            <option value="bridge">Bridges</option>
-            <option value="vlan">VLANs</option>
+            <option value="all">{t('networks.filter_all')}</option>
+            <option value="bridge">{t('networks.filter_bridges')}</option>
+            <option value="vlan">{t('networks.filter_vlans')}</option>
           </select>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={() => { setActionError(''); setBridgeModal(null) }} className="btn-primary text-xs">
-            + Bridge anlegen
+            {t('networks.btn_add_bridge')}
           </button>
           <button onClick={() => { setActionError(''); setVlanModal(null) }} className="btn-secondary text-xs">
-            + VLAN anlegen
+            {t('networks.btn_add_vlan')}
           </button>
         </div>
       </div>
 
       {/* Action error banner */}
       {actionError && (
-        <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
           {actionError}
-          <button onClick={() => setActionError('')} className="ml-2 underline text-xs">Schließen</button>
+          <button onClick={() => setActionError('')} className="ml-2 underline text-xs">{t('networks.btn_close')}</button>
         </div>
       )}
 
       {/* Empty state */}
       {interfaces.length === 0 && (
         <div className="py-10 text-center text-sm text-gray-400 dark:text-zinc-500">
-          Keine Bridges oder VLAN-Interfaces auf diesem Node.
+          {t('networks.empty_node')}
         </div>
       )}
 
@@ -254,14 +256,14 @@ export default function ComputeNetworkTab({ nodeName, active }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Name</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Typ</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">IP / CIDR</th>
-                  <th className="px-3 py-2 text-center text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Autostart</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Kommentar</th>
-                  <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Aktionen</th>
+                <tr className="border-b border-gray-200 dark:border-zinc-700">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_name')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_type')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_ip_cidr')}</th>
+                  <th className="text-center px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_autostart')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_status')}</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_comment')}</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('networks.col_actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-100 dark:divide-zinc-800">
@@ -270,34 +272,34 @@ export default function ComputeNetworkTab({ nodeName, active }) {
                     <td className="px-3 py-2.5 text-xs font-mono font-medium text-gray-800 dark:text-zinc-200 whitespace-nowrap">
                       {iface.iface}
                       {iface.bridge_vlan_aware && (
-                        <span className="ml-1.5 text-[9px] text-gray-400 dark:text-zinc-500">VLAN-aware</span>
+                        <span className="ml-1.5 text-[9px] text-gray-400 dark:text-zinc-500">{t('networks.vlan_aware')}</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 whitespace-nowrap">
-                      {iface.type === 'bridge' ? 'Bridge' : iface.type === 'vlan' ? 'VLAN' : iface.type}
+                      {iface.type === 'bridge' ? t('networks.type_bridge') : iface.type === 'vlan' ? t('networks.type_vlan') : iface.type}
                       {iface.type === 'vlan' && iface.vlan_id != null && (
-                        <span className="block text-[10px] text-gray-400 dark:text-zinc-500">Tag {iface.vlan_id}</span>
+                        <span className="block text-[10px] text-gray-400 dark:text-zinc-500">{t('networks.vlan_tag', { tag: iface.vlan_id })}</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-xs text-gray-600 dark:text-zinc-300 font-mono whitespace-nowrap">
                       {ifaceIp(iface)}
                       {iface.gateway && (
-                        <span className="block text-[10px] text-gray-400 dark:text-zinc-500">GW {iface.gateway}</span>
+                        <span className="block text-[10px] text-gray-400 dark:text-zinc-500">{t('networks.gateway_short', { gateway: iface.gateway })}</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       {iface.autostart
-                        ? <span className="text-green-500 text-sm" title="Autostart aktiv">✓</span>
-                        : <span className="text-gray-300 dark:text-zinc-600 text-sm" title="kein Autostart">–</span>}
+                        ? <span className="text-portal-success text-sm" title={t('networks.autostart_on')}>✓</span>
+                        : <span className="text-gray-300 dark:text-zinc-600 text-sm" title={t('networks.autostart_off')}>–</span>}
                     </td>
-                    <td className="px-3 py-2.5"><StatusBadge iface={iface} /></td>
+                    <td className="px-3 py-2.5"><StatusBadge iface={iface} t={t} /></td>
                     <td className="px-3 py-2.5 text-[11px] text-gray-500 dark:text-zinc-400 max-w-[160px] truncate" title={iface.comments || ''}>
                       {iface.comments || '–'}
                     </td>
                     <td className="px-3 py-2.5">
                       <RowActions
                         iface={iface}
-                        
+                        t={t}
                         onEdit={i => {
                           setActionError('')
                           if (i.type === 'vlan') setVlanModal(i)
@@ -311,7 +313,7 @@ export default function ComputeNetworkTab({ nodeName, active }) {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-3 py-6 text-center text-xs text-gray-400 dark:text-zinc-500">
-                      Keine Treffer für die aktuelle Suche/Filter.
+                      {t('networks.no_filter_match')}
                     </td>
                   </tr>
                 )}
@@ -354,13 +356,9 @@ export default function ComputeNetworkTab({ nodeName, active }) {
       {/* Reload (apply) warning */}
       {showReload && (
         <ConfirmModal
-          title="Änderungen übernehmen (Netzwerk-Reload)"
-          body={
-            'Der Node führt einen Netzwerk-Reload aus. Die Konnektivität zum Node kann dabei kurz gestört sein. ' +
-            'Bei einem Fehler bleiben die ausstehenden Änderungen erhalten und können verworfen werden. ' +
-            'Ändere möglichst nicht die Management-Bridge (vmbr0), über die der Node erreichbar ist.'
-          }
-          confirmLabel="Jetzt übernehmen"
+          title={t('networks.reload_title')}
+          body={t('networks.reload_body')}
+          confirmLabel={t('networks.reload_confirm')}
           variant="danger"
           onConfirm={handleReload}
           onClose={() => { setShowReload(false); load() }}
@@ -370,9 +368,9 @@ export default function ComputeNetworkTab({ nodeName, active }) {
       {/* Revert (discard) confirm */}
       {showRevert && (
         <ConfirmModal
-          title="Ausstehende Änderungen verwerfen"
-          body="Alle noch nicht übernommenen Netzwerk-Änderungen dieses Nodes werden verworfen. Der aktive Stand bleibt unverändert."
-          confirmLabel="Verwerfen"
+          title={t('networks.revert_title')}
+          body={t('networks.revert_body')}
+          confirmLabel={t('networks.revert_confirm')}
           variant="primary"
           onConfirm={handleRevert}
           onClose={() => { setShowRevert(false); load() }}

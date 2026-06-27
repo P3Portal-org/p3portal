@@ -190,7 +190,7 @@ export default function InstallationDiscoveryView() {
       {isLoading ? (
         <div className="text-sm text-gray-400 dark:text-zinc-500">{t('common.loading')}</div>
       ) : error ? (
-        <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+        <div className="border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-sm text-portal-danger">
           {t('ansible_inventory.load_error')}
         </div>
       ) : data?.error === 'node_unreachable' ? (
@@ -204,11 +204,11 @@ export default function InstallationDiscoveryView() {
           {/* Bulk-Leiste */}
           <div className="flex flex-wrap items-center gap-3 border border-gray-200 dark:border-zinc-700 rounded-md px-3 py-2">
             <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-zinc-300 cursor-pointer select-none">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-orange-500" />
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-portal-accent" />
               {t('ansible_inventory.select_all')}
             </label>
             <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-zinc-300 cursor-pointer select-none">
-              <input type="checkbox" checked={includePoolKey} onChange={(e) => setIncludePoolKey(e.target.checked)} className="w-4 h-4 accent-orange-500" />
+              <input type="checkbox" checked={includePoolKey} onChange={(e) => setIncludePoolKey(e.target.checked)} className="w-4 h-4 accent-portal-accent" />
               {t('ansible_inventory.include_pool_key')}
             </label>
             <span className="text-xs text-gray-400 dark:text-zinc-500">{t('ansible_inventory.n_selected', { count: selected.size })}</span>
@@ -237,7 +237,7 @@ export default function InstallationDiscoveryView() {
                     type="checkbox"
                     checked={selected.has(h.host_ref)}
                     onChange={() => toggle(h.host_ref)}
-                    className="w-4 h-4 accent-orange-500"
+                    className="w-4 h-4 accent-portal-accent"
                     aria-label={`VM ${h.vmid}`}
                   />
                   <div className="flex-1 min-w-0">

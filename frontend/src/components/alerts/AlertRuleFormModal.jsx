@@ -41,8 +41,8 @@ function field(label, children, hint) {
   )
 }
 
-const inputCls = "w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
-const checkCls = "w-4 h-4 rounded border-gray-300 dark:border-zinc-600 text-orange-500 focus:ring-orange-500 focus:ring-offset-0 bg-white dark:bg-zinc-800"
+const inputCls = "w-full text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-portal-accent"
+const checkCls = "w-4 h-4 rounded border-gray-300 dark:border-zinc-600 text-portal-accent focus:ring-portal-accent focus:ring-offset-0 bg-white dark:bg-zinc-800"
 
 export default function AlertRuleFormModal({ rule, onSave, onClose, loading, error, plusEnabled }) {
   const [form, setForm] = useState(EMPTY)
@@ -108,7 +108,7 @@ export default function AlertRuleFormModal({ rule, onSave, onClose, loading, err
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
           {error && (
-            <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-400 rounded">
+            <div className="border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger rounded">
               {error}
             </div>
           )}
@@ -198,7 +198,7 @@ export default function AlertRuleFormModal({ rule, onSave, onClose, loading, err
 
           {plusEnabled && (
             <div className="border-t border-gray-100 dark:border-zinc-800 pt-4 space-y-4">
-              <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">Plus – Benachrichtigungen</p>
+              <p className="text-xs font-semibold text-portal-accent uppercase tracking-wide">Plus – Benachrichtigungen</p>
               {field('Empfänger', (
                 <select
                   className={inputCls}

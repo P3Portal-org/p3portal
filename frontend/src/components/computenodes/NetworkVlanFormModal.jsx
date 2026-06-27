@@ -6,21 +6,22 @@
  * On edit the interface name + raw device + tag are read-only.
  */
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createNetworkInterface, updateNetworkInterface, listNetworkDevices } from '../../api/networks'
 
-const inputCls = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded'
+const inputCls = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent rounded'
 const labelCls = 'block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1'
 const fieldCls = 'space-y-1'
 
-function errMsg(err) {
+function errMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Fehlende Proxmox-Privilegien (Sys.Modify auf /nodes erforderlich).'
-  if (s === 503) return 'Admin-Token für diese Node nicht konfiguriert.'
-  if (s === 422) return (typeof d === 'string' ? d : 'Ungültige Parameter – bitte Eingaben prüfen.')
-  if (s === 409) return 'Ein Interface mit diesem Namen existiert bereits.'
-  if (s === 502) return 'Proxmox-API nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Speichern des VLAN-Interfaces.'
+  if (s === 403) return t('networks.vlan.err_403')
+  if (s === 503) return t('networks.vlan.err_503')
+  if (s === 422) return (typeof d === 'string' ? d : t('networks.vlan.err_422'))
+  if (s === 409) return t('networks.vlan.err_409')
+  if (s === 502) return t('networks.vlan.err_502')
+  return (typeof d === 'string' ? d : null) ?? t('networks.vlan.err_generic')
 }
 
 function buildInitialState(iface) {
@@ -70,6 +71,7 @@ function buildPayload(form, ifaceName) {
 }
 
 export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const isEdit = Boolean(iface)
   const [form, setForm]       = useState(() => buildInitialState(iface))
   const [devices, setDevices] = useState([])
@@ -94,10 +96,10 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
     e.preventDefault()
     setWarnings([])
     if (!isEdit) {
-      if (!form.rawDevice) { setError('Bitte ein Raw-Device auswählen.'); return }
+      if (!form.rawDevice) { setError(t('networks.vlan.raw_device_required')); return }
       const tagNum = parseInt(form.tag, 10)
       if (!Number.isInteger(tagNum) || tagNum < 1 || tagNum > 4094) {
-        setError('VLAN-Tag muss zwischen 1 und 4094 liegen.'); return
+        setError(t('networks.vlan.tag_invalid')); return
       }
     }
     setSaving(true)
@@ -113,7 +115,7 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(errMsg(err))
+      setError(errMsg(err, t))
     } finally {
       setSaving(false)
     }
@@ -130,9 +132,9 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700 shrink-0">
           <h2 id="vlan-modal-title" className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isEdit ? `VLAN bearbeiten – ${iface.iface}` : 'VLAN-Interface anlegen'}
+            {isEdit ? t('networks.vlan.title_edit', { name: iface.iface }) : t('networks.vlan.title_new')}
           </h2>
-          <button onClick={onClose} aria-label="Schließen" className="btn-ghost">
+          <button onClick={onClose} aria-label={t('networks.vlan.aria_close')} className="btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -142,12 +144,12 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
         {/* Body */}
         <form id="vlan-form" onSubmit={handleSubmit} className="overflow-y-auto px-5 py-5 space-y-5 flex-1">
           {error && (
-            <div className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 rounded">
+            <div className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">
               {error}
             </div>
           )}
           {warnings.length > 0 && (
-            <div className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 px-3 py-2 rounded">
+            <div className="text-xs text-portal-warn bg-portal-warn/10 border border-portal-warn/30 px-3 py-2 rounded">
               {warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
             </div>
           )}
@@ -155,10 +157,10 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
           {/* Raw device + Tag */}
           <div className="grid grid-cols-2 gap-4">
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="vl-rawdev">Raw-Device <span className="text-red-400">*</span></label>
+              <label className={labelCls} htmlFor="vl-rawdev">{t('networks.vlan.raw_device_label')} <span className="text-portal-danger">*</span></label>
               {devices.length > 0 && !isEdit ? (
                 <select id="vl-rawdev" value={form.rawDevice} onChange={set('rawDevice')} className={inputCls}>
-                  <option value="">– Gerät auswählen –</option>
+                  <option value="">{t('networks.vlan.raw_device_select_ph')}</option>
                   {devices.map(dev => <option key={dev} value={dev}>{dev}</option>)}
                 </select>
               ) : (
@@ -174,7 +176,7 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
               )}
             </div>
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="vl-tag">VLAN-Tag (1–4094) <span className="text-red-400">*</span></label>
+              <label className={labelCls} htmlFor="vl-tag">{t('networks.vlan.tag_label')} <span className="text-portal-danger">*</span></label>
               <input
                 id="vl-tag"
                 type="number"
@@ -191,18 +193,18 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
 
           {/* Derived name preview */}
           <div className="text-xs text-gray-500 dark:text-zinc-400">
-            Interface-Name:{' '}
+            {t('networks.vlan.iface_name_label')}{' '}
             <span className="font-mono text-gray-700 dark:text-zinc-200">{name || '—'}</span>
           </div>
 
           {/* IPv4 */}
           <div className="grid grid-cols-2 gap-4">
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="vl-cidr">IPv4 CIDR (optional)</label>
+              <label className={labelCls} htmlFor="vl-cidr">{t('networks.vlan.cidr4_label')}</label>
               <input id="vl-cidr" type="text" value={form.cidr} onChange={set('cidr')} placeholder="10.0.100.1/24" className={inputCls} />
             </div>
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="vl-gw">IPv4 Gateway (optional)</label>
+              <label className={labelCls} htmlFor="vl-gw">{t('networks.vlan.gw4_label')}</label>
               <input id="vl-gw" type="text" value={form.gateway} onChange={set('gateway')} placeholder="10.0.100.254" className={inputCls} />
             </div>
           </div>
@@ -210,7 +212,7 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
           {/* MTU + Autostart */}
           <div className="grid grid-cols-2 gap-4 items-end">
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="vl-mtu">MTU (optional)</label>
+              <label className={labelCls} htmlFor="vl-mtu">{t('networks.vlan.mtu_label')}</label>
               <input id="vl-mtu" type="number" min="128" max="65520" value={form.mtu} onChange={set('mtu')} placeholder="1500" className={inputCls} />
             </div>
             <div className="flex items-center gap-3 pb-2">
@@ -219,28 +221,28 @@ export default function NetworkVlanFormModal({ node, iface, onClose, onSuccess }
                 type="checkbox"
                 checked={form.autostart}
                 onChange={setBool('autostart')}
-                className="w-4 h-4 rounded accent-orange-500"
+                className="w-4 h-4 rounded accent-portal-accent"
               />
               <label htmlFor="vl-autostart" className="text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-                Autostart (beim Boot aktivieren)
+                {t('networks.vlan.autostart_label')}
               </label>
             </div>
           </div>
 
           {/* Comment */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="vl-comments">Kommentar (optional)</label>
-            <input id="vl-comments" type="text" value={form.comments} onChange={set('comments')} placeholder="z. B. VLAN 100 – Gäste" className={inputCls} />
+            <label className={labelCls} htmlFor="vl-comments">{t('networks.vlan.comment_label')}</label>
+            <input id="vl-comments" type="text" value={form.comments} onChange={set('comments')} placeholder={t('networks.vlan.comment_ph')} className={inputCls} />
           </div>
         </form>
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl shrink-0">
           <button type="button" onClick={onClose} disabled={saving} className="btn-secondary">
-            Abbrechen
+            {t('networks.vlan.cancel')}
           </button>
           <button type="submit" form="vlan-form" disabled={saving} className="btn-primary">
-            {saving ? '…' : isEdit ? 'Speichern' : 'VLAN anlegen'}
+            {saving ? '…' : isEdit ? t('networks.vlan.submit_edit') : t('networks.vlan.submit_new')}
           </button>
         </div>
 

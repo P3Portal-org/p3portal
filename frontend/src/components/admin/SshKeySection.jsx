@@ -78,7 +78,7 @@ export default function SshKeySection() {
         {!editing && (
           <button
             onClick={() => { setEditing(true); setDraft(current ?? ''); setOk('') }}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+            className="text-sm text-portal-accent hover:text-portal-accent/80 transition-colors"
           >
             {current ? t('admin.ssh_key.btn_change') : t('admin.ssh_key.btn_set')}
           </button>
@@ -96,7 +96,7 @@ export default function SshKeySection() {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-sm text-red-500 hover:text-red-600 dark:text-red-400 disabled:opacity-50 transition-colors shrink-0"
+                className="text-sm text-portal-danger hover:text-portal-danger/80 disabled:opacity-50 transition-colors shrink-0"
               >
                 {deleting ? t('admin.ssh_key.removing') : t('admin.ssh_key.btn_remove')}
               </button>
@@ -115,7 +115,7 @@ export default function SshKeySection() {
             value={draft}
             onChange={e => setDraft(e.target.value)}
             placeholder={t('admin.ssh_key.placeholder')}
-            className="w-full border px-3 py-2 text-xs font-mono bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition resize-y"
+            className="w-full border px-3 py-2 text-xs font-mono bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition resize-y"
           />
           <div className="flex gap-2">
             <button
@@ -135,8 +135,8 @@ export default function SshKeySection() {
         </div>
       )}
 
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-      {ok && <p className="mt-2 text-xs text-green-600 dark:text-green-400">{ok}</p>}
+      {error && <p className="mt-2 text-xs text-portal-danger">{error}</p>}
+      {ok && <p className="mt-2 text-xs text-portal-success">{ok}</p>}
       <span className="rq hidden" aria-hidden="true" />
     </div>
   )

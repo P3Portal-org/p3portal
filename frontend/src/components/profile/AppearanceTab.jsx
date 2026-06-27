@@ -71,7 +71,7 @@ export default function AppearanceTab() {
     ...languages.map(l => ({ value: l.code, label: l.name })),
   ]
 
-  const selectCls = 'w-full text-sm px-3 py-2 rounded border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500'
+  const selectCls = 'w-full text-sm px-3 py-2 rounded border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent'
   const labelCls = 'block text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5'
 
   return (
@@ -116,7 +116,7 @@ export default function AppearanceTab() {
             {saving ? t('common.loading') : t('common.save')}
           </button>
           {msg && (
-            <span className={`text-xs ${msg.ok ? 'text-green-500' : 'text-red-500'}`}>{msg.text}</span>
+            <span className={`text-xs ${msg.ok ? 'text-portal-success' : 'text-portal-danger'}`}>{msg.text}</span>
           )}
         </div>
       </div>

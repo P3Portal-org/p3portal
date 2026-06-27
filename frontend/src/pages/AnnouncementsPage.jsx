@@ -3,10 +3,10 @@ import { useAnnouncements } from '../hooks/useAnnouncements'
 
 const VARIANT = {
   info: {
-    bg: 'border-blue-700 dark:bg-blue-950/40 bg-blue-50',
-    text: 'text-blue-700 dark:text-blue-400',
+    bg: 'border-portal-info/30 bg-portal-info/10',
+    text: 'text-portal-info',
     label: 'Info',
-    labelBg: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+    labelBg: 'bg-portal-info/10 text-portal-info',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 shrink-0">
         <circle cx="12" cy="12" r="10" />
@@ -16,10 +16,10 @@ const VARIANT = {
     ),
   },
   warn: {
-    bg: 'border-yellow-700 dark:bg-yellow-950/40 bg-yellow-50',
-    text: 'text-yellow-700 dark:text-yellow-400',
+    bg: 'border-portal-warn/30 bg-portal-warn/10',
+    text: 'text-portal-warn',
     label: 'Warnung',
-    labelBg: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+    labelBg: 'bg-portal-warn/10 text-portal-warn',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 shrink-0">
         <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -29,10 +29,10 @@ const VARIANT = {
     ),
   },
   error: {
-    bg: 'border-red-700 dark:bg-red-950/40 bg-red-50',
-    text: 'text-red-700 dark:text-red-400',
+    bg: 'border-portal-danger/30 bg-portal-danger/10',
+    text: 'text-portal-danger',
     label: 'Fehler',
-    labelBg: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+    labelBg: 'bg-portal-danger/10 text-portal-danger',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 shrink-0">
         <circle cx="12" cy="12" r="10" />
@@ -65,7 +65,7 @@ export default function AnnouncementsPage() {
         )}
 
         {error && (
-          <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-4 py-3 rounded-lg">
+          <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-4 py-3 rounded-lg">
             Ankündigungen konnten nicht geladen werden.
           </p>
         )}

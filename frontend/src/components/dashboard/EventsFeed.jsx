@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom'
 import { getJobs } from '../../api/jobs'
 
 const STATUS_DOT = {
-  running: 'bg-orange-500 animate-pulse',
-  success: 'bg-green-500',
-  failed:  'bg-red-500',
+  running: 'bg-portal-accent animate-pulse',
+  success: 'bg-portal-success',
+  failed:  'bg-portal-danger',
   pending: 'bg-gray-400 dark:bg-zinc-500',
 }
 
@@ -58,7 +58,7 @@ export default function EventsFeed() {
         </span>
         <Link
           to="/events"
-          className="text-xs text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+          className="text-xs text-portal-accent hover:text-portal-accent transition-colors"
         >
           Alle →
         </Link>
@@ -86,7 +86,7 @@ export default function EventsFeed() {
                 <span className="text-xs text-gray-400 dark:text-zinc-500 font-mono">{job.username}</span>
               </span>
               <span className="text-xs text-gray-400 dark:text-zinc-500 shrink-0">{timeAgo(job.created_at)}</span>
-              <span className={`text-xs shrink-0 ${job.status === 'failed' ? 'text-red-500' : job.status === 'running' ? 'text-orange-500' : 'text-gray-400 dark:text-zinc-500'}`}>
+              <span className={`text-xs shrink-0 ${job.status === 'failed' ? 'text-portal-danger' : job.status === 'running' ? 'text-portal-accent' : 'text-gray-400 dark:text-zinc-500'}`}>
                 {STATUS_LABEL[job.status] ?? job.status}
               </span>
             </Link>

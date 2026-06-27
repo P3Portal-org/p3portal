@@ -43,6 +43,11 @@ export async function getPackerStorages(node) {
   return data
 }
 
+export async function getPackerIsoStorages(node) {
+  const { data } = await api.get('/api/packer/iso-storages', { params: { node } })
+  return data
+}
+
 export async function deletePackerIso(node, volid) {
   await api.delete('/api/packer/isos', { params: { node, volid } })
 }

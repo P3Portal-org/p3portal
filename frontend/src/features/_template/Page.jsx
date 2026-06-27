@@ -9,7 +9,7 @@ export default function FEATUREPage() {
   const { data, isLoading, error } = useFEATUREs();
 
   if (isLoading) return <div className="p-6 text-portal-text">{t('common.loading')}</div>;
-  if (error) return <div className="p-6 text-red-400">{error.message}</div>;
+  if (error) return <div className="p-6 text-portal-danger">{error.message}</div>;
 
   return (
     <div className="p-6">

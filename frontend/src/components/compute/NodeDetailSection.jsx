@@ -85,7 +85,7 @@ function NetworkTable({ ifaces }) {
               </td>
               <td className="py-2">
                 {iface.active
-                  ? <span className="text-green-600 dark:text-green-400">aktiv</span>
+                  ? <span className="text-portal-success">aktiv</span>
                   : <span className="text-gray-400 dark:text-zinc-500">inaktiv</span>
                 }
               </td>
@@ -124,7 +124,7 @@ export default function NodeDetailSection({ nodeName }) {
 
   if (error) {
     return (
-      <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400 rounded-lg">
+      <div className="border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger rounded-lg">
         Fehler: {error}
       </div>
     )

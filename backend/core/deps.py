@@ -28,6 +28,23 @@ class CurrentUser:
     api_key_id: int | None = field(default=None)
 
 
+def _db_not_ready(exc: Exception) -> bool:
+    """True, wenn die Exception ein 'Tabelle/Relation existiert nicht' ist
+    (uninitialisierte DB / Tests), sonst False (echter DB-Fehler).
+
+    Code-Review #6 (Option A): trennt den erwarteten Test-/Bootstrap-Fall vom
+    echten DB-Fehler, damit der Session-Revocation-Check nur im ersten Fall
+    fail-open ist und sonst fail-closed (siehe get_current_user).
+    """
+    m = str(exc).lower()
+    return (
+        "no such table" in m            # SQLite – Tabelle fehlt
+        or "does not exist" in m        # PostgreSQL (relation ... does not exist)
+        or "undefinedtable" in m        # PostgreSQL Fehlerklasse
+        or "nicht initialisiert" in m   # database.get_db() vor init_db() (Bootstrap/Tests)
+    )
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
 ) -> CurrentUser:
@@ -131,9 +148,18 @@ async def get_current_user(
                 )
         except HTTPException:
             raise
-        except Exception:
-            # DB not yet initialised (e.g. during tests without sessions table) – allow
-            pass
+        except Exception as exc:
+            # Code-Review #6 (Option A): NUR den erwarteten "DB/Tabelle noch nicht da"-
+            # Fall (uninitialisierte DB / Tests) durchlassen. Bei jedem anderen
+            # DB-Fehler fail-closed: eine evtl. widerrufene Session darf nicht
+            # ungeprüft weiterlaufen → 503 (Client retried, statt ausgeloggt zu
+            # werden, da es ein transienter Server-/DB-Fehler ist).
+            if not _db_not_ready(exc):
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Session konnte nicht verifiziert werden",
+                )
+            # sonst: Tabelle existiert noch nicht → wie bisher erlauben
 
     # PROJ-49: resolve local_users.id so permission checks can use user_id
     user_id: int | None = None

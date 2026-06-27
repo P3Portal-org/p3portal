@@ -1,16 +1,18 @@
 // p3portal.org
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render as rtlRender, screen, fireEvent, waitFor } from '@testing-library/react'
+import { I18nextProvider } from 'react-i18next'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+import i18n from '../../../i18n'
 import AddDiskModal from './AddDiskModal'
 import ResizeDiskModal from './ResizeDiskModal'
 import RemoveDiskModal from './RemoveDiskModal'
 import VmConfigSection from '../VmConfigSection'
 import { sizeToGib, formatBytes } from './diskHelpers'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k) => k }),
-}))
+// Wrap renders in the real i18n provider so t() resolves the German (default)
+// values – the assertions below check the rendered German UI strings.
+const render = (ui) => rtlRender(<I18nextProvider i18n={i18n}>{ui}</I18nextProvider>)
 
 vi.mock('../../../api/vms', () => ({
   listImageStorages: vi.fn(),

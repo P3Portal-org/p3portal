@@ -50,7 +50,7 @@ export default function PlaybookVmidRangeSection() {
     }
   }
 
-  const inputCls = 'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition'
+  const inputCls = 'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition'
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 p-6 mt-6 rounded-lg">
@@ -66,7 +66,7 @@ export default function PlaybookVmidRangeSection() {
         {!editing && (
           <button
             onClick={handleEdit}
-            className="text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-colors"
+            className="text-sm text-portal-accent hover:text-portal-accent/80 transition-colors"
           >
             {t('admin.vmid_range.btn_change')}
           </button>
@@ -126,8 +126,8 @@ export default function PlaybookVmidRangeSection() {
         </div>
       )}
 
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-      {ok && <p className="mt-2 text-xs text-green-600 dark:text-green-400">{ok}</p>}
+      {error && <p className="mt-2 text-xs text-portal-danger">{error}</p>}
+      {ok && <p className="mt-2 text-xs text-portal-success">{ok}</p>}
       <span className="rq hidden" aria-hidden="true" />
     </div>
   )

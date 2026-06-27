@@ -1,38 +1,40 @@
 // p3portal.org
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { startPackerBuild, getNextVmid } from '../../api/packer'
 import { getNodeDefaultStorages } from '../../api/admin'
 import PlaybookFormField from '../playbooks/PlaybookFormField'
 import { usePackerNodes } from '../../hooks/usePackerNodes'
 import IsoDownloadModal from './IsoDownloadModal'
 
-function validate(params, values) {
+function validate(params, values, t) {
   const errors = {}
   for (const p of params) {
     const val = values[p.id]
     if (p.required && (val === '' || val == null)) {
-      errors[p.id] = 'Pflichtfeld'
+      errors[p.id] = t('packer.field_required')
     }
     if (p.type === 'integer' && val !== '' && val != null) {
-      if (p.min != null && Number(val) < p.min) errors[p.id] = `Minimum: ${p.min}`
-      if (p.max != null && Number(val) > p.max) errors[p.id] = `Maximum: ${p.max}`
+      if (p.min != null && Number(val) < p.min) errors[p.id] = t('packer.field_min', { min: p.min })
+      if (p.max != null && Number(val) > p.max) errors[p.id] = t('packer.field_max', { max: p.max })
     }
   }
   return errors
 }
 
 const inputBase =
-  'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition'
+  'w-full border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent/50 transition'
 
 // ── VM-ID Feld mit Auto-Fill ──────────────────────────────────────────────────
 
 function VmIdField({ param, value, onChange, error, vmidRange, onRefresh, refreshing }) {
+  const { t } = useTranslation()
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
       <div className="flex items-center gap-2">
         <input
@@ -42,14 +44,14 @@ function VmIdField({ param, value, onChange, error, vmidRange, onRefresh, refres
           max={vmidRange?.max ?? param.max}
           required={param.required}
           onChange={e => onChange(param.id, e.target.value)}
-          className={`flex-1 border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition ${error ? 'border-red-400 dark:border-red-600' : ''}`}
+          className={`flex-1 border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent/50 transition ${error ? 'border-portal-danger/50' : ''}`}
         />
         <button
           type="button"
           onClick={onRefresh}
           disabled={refreshing}
-          title="Nächste freie ID laden"
-          className="shrink-0 px-2.5 py-2 border border-gray-300 dark:border-zinc-600 text-gray-500 dark:text-zinc-400 hover:border-orange-400 hover:text-orange-500 dark:hover:border-orange-500 dark:hover:text-orange-400 transition disabled:opacity-40"
+          title={t('packer.vmid_next_free')}
+          className="shrink-0 px-2.5 py-2 border border-gray-300 dark:border-zinc-600 text-gray-500 dark:text-zinc-400 hover:border-portal-accent/50 hover:text-portal-accent transition disabled:opacity-40"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}>
             <path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
@@ -58,10 +60,10 @@ function VmIdField({ param, value, onChange, error, vmidRange, onRefresh, refres
       </div>
       {vmidRange && (
         <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-          Bereich: {vmidRange.min}–{vmidRange.max}
+          {t('packer.vmid_range', { min: vmidRange.min, max: vmidRange.max })}
         </p>
       )}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+      {error && <p className="text-xs text-portal-danger mt-1">{error}</p>}
     </div>
   )
 }
@@ -69,23 +71,24 @@ function VmIdField({ param, value, onChange, error, vmidRange, onRefresh, refres
 // ── Node-Dropdown ─────────────────────────────────────────────────────────────
 
 function NodeDropdown({ param, value, onChange, nodes, loading, error }) {
+  const { t } = useTranslation()
   // Fallback to text input when API is unavailable
   if (error && nodes.length === 0) {
     return (
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
           {param.label}
-          {param.required && <span className="text-red-500 ml-1">*</span>}
+          {param.required && <span className="text-portal-danger ml-1">*</span>}
         </label>
         <input
           type="text"
           value={value ?? ''}
           onChange={e => onChange(param.id, e.target.value)}
-          placeholder="Node-Name eingeben"
+          placeholder={t('packer.node_input_placeholder')}
           className={inputBase}
         />
-        <p className="text-xs text-amber-600 dark:text-amber-400">
-          Node-Liste nicht verfügbar – bitte manuell eingeben.
+        <p className="text-xs text-portal-warn">
+          {t('packer.node_list_unavailable')}
         </p>
       </div>
     )
@@ -95,7 +98,7 @@ function NodeDropdown({ param, value, onChange, nodes, loading, error }) {
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
       <select
         value={value ?? ''}
@@ -103,7 +106,7 @@ function NodeDropdown({ param, value, onChange, nodes, loading, error }) {
         disabled={loading}
         className={inputBase}
       >
-        <option value="">{loading ? 'Lädt…' : '– Node auswählen –'}</option>
+        <option value="">{loading ? t('packer.loading') : t('packer.node_select_placeholder')}</option>
         {nodes.map(n => (
           <option key={n.name} value={n.name} disabled={n.status !== 'online'}>
             {n.name}{n.status !== 'online' ? ` (${n.status})` : ''}
@@ -117,15 +120,16 @@ function NodeDropdown({ param, value, onChange, nodes, loading, error }) {
 // ── Storage-Pool-Dropdown ─────────────────────────────────────────────────────
 
 function StoragePoolDropdown({ param, value, onChange, storages, loading, error, node }) {
+  const { t } = useTranslation()
   if (!node) {
     return (
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
           {param.label}
-          {param.required && <span className="text-red-500 ml-1">*</span>}
+          {param.required && <span className="text-portal-danger ml-1">*</span>}
         </label>
         <p className="text-xs text-gray-400 dark:text-zinc-500 italic py-2">
-          Erst eine Node auswählen.
+          {t('packer.storage_select_node_first')}
         </p>
       </div>
     )
@@ -136,17 +140,17 @@ function StoragePoolDropdown({ param, value, onChange, storages, loading, error,
       <div className="space-y-1">
         <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
           {param.label}
-          {param.required && <span className="text-red-500 ml-1">*</span>}
+          {param.required && <span className="text-portal-danger ml-1">*</span>}
         </label>
         <input
           type="text"
           value={value ?? ''}
           onChange={e => onChange(param.id, e.target.value)}
-          placeholder="Storage-Name eingeben"
+          placeholder={t('packer.storage_input_placeholder')}
           className={inputBase}
         />
-        <p className="text-xs text-amber-600 dark:text-amber-400">
-          Storage-Liste nicht verfügbar – bitte manuell eingeben.
+        <p className="text-xs text-portal-warn">
+          {t('packer.storage_list_unavailable')}
         </p>
       </div>
     )
@@ -156,7 +160,7 @@ function StoragePoolDropdown({ param, value, onChange, storages, loading, error,
     <div className="space-y-1">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
       <select
         value={value ?? ''}
@@ -164,7 +168,7 @@ function StoragePoolDropdown({ param, value, onChange, storages, loading, error,
         disabled={loading}
         className={inputBase}
       >
-        <option value="">{loading ? 'Lädt…' : '– Storage auswählen –'}</option>
+        <option value="">{loading ? t('packer.loading') : t('packer.storage_select_placeholder')}</option>
         {storages.map(s => (
           <option key={s.name} value={s.name}>
             {s.name} ({s.type})
@@ -179,21 +183,22 @@ function StoragePoolDropdown({ param, value, onChange, storages, loading, error,
 
 function IsoSelect({ param, value, onChange, isos, loading, error, node, onOpenDownload, onRefresh, downloadJob }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
           {param.label}
-          {param.required && <span className="text-red-500 ml-1">*</span>}
+          {param.required && <span className="text-portal-danger ml-1">*</span>}
         </label>
         {node && (
           <button
             type="button"
             onClick={onRefresh}
             disabled={loading}
-            className="text-xs text-gray-400 dark:text-zinc-500 hover:text-orange-500 dark:hover:text-orange-400 transition-colors disabled:opacity-50"
-            title="ISO-Liste aktualisieren"
+            className="text-xs text-gray-400 dark:text-zinc-500 hover:text-portal-accent transition-colors disabled:opacity-50"
+            title={t('packer.iso_refresh_list')}
           >
             {loading ? (
               <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -211,11 +216,11 @@ function IsoSelect({ param, value, onChange, isos, loading, error, node, onOpenD
 
       {!node ? (
         <p className="text-xs text-gray-400 dark:text-zinc-500 italic py-2">
-          Erst eine Node auswählen.
+          {t('packer.iso_select_node_first')}
         </p>
       ) : error ? (
-        <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-          ISO-Liste nicht verfügbar: {error.response?.data?.detail ?? error.message}
+        <div className="border border-portal-warn/30 bg-portal-warn/10 px-3 py-2 text-xs text-portal-warn">
+          {t('packer.iso_list_unavailable', { detail: error.response?.data?.detail ?? error.message })}
         </div>
       ) : (
         <select
@@ -230,33 +235,33 @@ function IsoSelect({ param, value, onChange, isos, loading, error, node, onOpenD
           disabled={loading}
           className={inputBase}
         >
-          <option value="">{loading ? 'Lädt…' : '– ISO auswählen –'}</option>
+          <option value="">{loading ? t('packer.loading') : t('packer.iso_select_placeholder')}</option>
           {isos.map(iso => (
             <option key={iso.volid} value={iso.volid}>{iso.filename}</option>
           ))}
-          <option value="__download__">⬇ ISO herunterladen…</option>
+          <option value="__download__">{t('packer.iso_download_option')}</option>
         </select>
       )}
 
       {!loading && !error && node && isos.length === 0 && (
         <p className="text-xs text-gray-400 dark:text-zinc-500">
-          Keine ISOs im local-Storage gefunden.{' '}
+          {t('packer.iso_none_in_local')}{' '}
           <button
             type="button"
             onClick={onOpenDownload}
-            className="text-orange-600 dark:text-orange-400 hover:underline"
+            className="text-portal-accent hover:underline"
           >
-            ISO herunterladen
+            {t('packer.iso_download_title')}
           </button>
         </p>
       )}
 
       {downloadJob && (
-        <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-3 py-2 text-xs text-blue-700 dark:text-blue-400">
+        <div className="flex items-center gap-2 bg-portal-info/10 border border-portal-info/30 px-3 py-2 text-xs text-portal-info">
           <svg className="animate-spin w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
-          <span>ISO-Download läuft</span>
+          <span>{t('packer.iso_download_running')}</span>
           <button
             type="button"
             onClick={() => navigate(`/events/${downloadJob.id}`)}
@@ -274,6 +279,7 @@ function IsoSelect({ param, value, onChange, isos, loading, error, node, onOpenD
 
 export default function PackerBuildForm({ template, isRunning, onBuildStarted }) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [values, setValues] = useState(() =>
     Object.fromEntries((template.parameters ?? []).map(p => [p.id, p.default ?? '']))
   )
@@ -342,8 +348,11 @@ export default function PackerBuildForm({ template, isRunning, onBuildStarted })
     if (!hasNodeParam || nodesLoading || nodesError || nodes.length !== 1) return
     const singleNode = nodes[0].name
     if (values.node === singleNode) return
-    setValues(v => ({ ...v, node: singleNode, iso_file: '', storage_pool: '' }))
-  }, [nodes, nodesLoading, nodesError, hasNodeParam, values.node])
+    // Admin-Default als Vorbelegung übernehmen (sonst greift unten der Fallback
+    // auf das erste verfügbare Storage). Kein stiller leerer storage_pool mehr.
+    const defaultStorage = nodeStorageDefaults[singleNode] ?? ''
+    setValues(v => ({ ...v, node: singleNode, iso_file: '', storage_pool: defaultStorage }))
+  }, [nodes, nodesLoading, nodesError, hasNodeParam, values.node, nodeStorageDefaults])
 
   // Reload ISOs whenever node selection changes
   useEffect(() => {
@@ -359,10 +368,19 @@ export default function PackerBuildForm({ template, isRunning, onBuildStarted })
     })
   }, [values.node, hasIsoParam, fetchIsos])
 
-  // Reload storage pools whenever node selection changes
+  // Reload storage pools whenever node selection changes und einen gültigen
+  // Storage vorbelegen: gültige (Admin-Default/Nutzer-)Wahl bleibt erhalten,
+  // sonst Fallback auf das erste verfügbare Storage. Verhindert den stillen
+  // local-lvm-Fallback ('storage does not exist'); Dropdown bleibt änderbar.
   useEffect(() => {
     if (!hasStorageParam || !values.node) return
-    fetchStorages(values.node)
+    fetchStorages(values.node).then(list => {
+      if (!Array.isArray(list) || list.length === 0) return
+      setValues(v => {
+        if (v.storage_pool && list.some(s => s.name === v.storage_pool)) return v
+        return { ...v, storage_pool: list[0].name }
+      })
+    }).catch(() => {})
   }, [values.node, hasStorageParam, fetchStorages])
 
   const handleChange = (id, val) => {
@@ -430,7 +448,7 @@ export default function PackerBuildForm({ template, isRunning, onBuildStarted })
       }
     } catch (err) {
       if (err.response?.status === 409) {
-        setSubmitError('Ein Build für dieses Template läuft bereits.')
+        setSubmitError(t('packer.build_already_running'))
       } else {
         setSubmitError(err.response?.data?.detail ?? 'Fehler beim Starten des Builds.')
       }
@@ -515,7 +533,7 @@ export default function PackerBuildForm({ template, isRunning, onBuildStarted })
         })}
 
         {submitError && (
-          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <div className="bg-portal-danger/10 border border-portal-danger/30 px-4 py-3 text-sm text-portal-danger">
             {submitError}
           </div>
         )}
@@ -531,22 +549,22 @@ export default function PackerBuildForm({ template, isRunning, onBuildStarted })
         >
           {isRunning ? (
             <>
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              Build läuft bereits
+              <span className="w-2 h-2 rounded-full bg-portal-accent animate-pulse" />
+              {t('packer.build_running')}
             </>
           ) : submitting ? (
             <>
               <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
-              Build wird gestartet…
+              {t('packer.build_starting')}
             </>
           ) : (
             <>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
                 <polygon points="5 3 19 12 5 21 5 3" />
               </svg>
-              Build starten
+              {t('packer.build_start')}
             </>
           )}
         </button>

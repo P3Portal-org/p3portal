@@ -1,19 +1,19 @@
 // p3portal.org
 // Shared helpers for the PROJ-81 disk management modals.
 
-// Map a disk write/read error to a German message (component surfaces are
-// hardcoded DE, consistent with VmConfigSection / PROJ-79/80 precedent).
-export function diskErrMsg(err) {
+// Map a disk write/read error to a localized message via the i18n `t`
+// function. Server-provided string details are surfaced verbatim.
+export function diskErrMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 400) return typeof d === 'string' ? d : 'Bestätigung stimmt nicht mit dem VM-Namen überein.'
-  if (s === 403) return typeof d === 'string' ? d : 'Keine Berechtigung für diese Festplatten-Operation.'
-  if (s === 404) return typeof d === 'string' ? d : 'Festplatte nicht gefunden.'
-  if (s === 409) return 'Diese VM wird von einem Stack verwaltet – Festplatten über die Stack-Definition ändern.'
-  if (s === 422) return typeof d === 'string' ? d : 'Ungültige Eingabe.'
-  if (s === 503) return typeof d === 'string' ? d : 'Service-Account nicht konfiguriert.'
-  if (s === 502) return 'Proxmox API nicht erreichbar.'
-  return (typeof d === 'string' && d) || 'Fehler bei der Festplatten-Operation.'
+  if (s === 400) return typeof d === 'string' ? d : t('vm_disks.err_400')
+  if (s === 403) return typeof d === 'string' ? d : t('vm_disks.err_403')
+  if (s === 404) return typeof d === 'string' ? d : t('vm_disks.err_404')
+  if (s === 409) return t('vm_disks.err_409')
+  if (s === 422) return typeof d === 'string' ? d : t('vm_disks.err_422')
+  if (s === 503) return typeof d === 'string' ? d : t('vm_disks.err_503')
+  if (s === 502) return t('vm_disks.err_502')
+  return (typeof d === 'string' && d) || t('vm_disks.err_generic')
 }
 
 // Parse a raw Proxmox size string ("32G", "512M", "1T", "1024") to whole GiB.

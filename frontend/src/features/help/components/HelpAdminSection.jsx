@@ -94,12 +94,12 @@ export default function HelpAdminSection() {
           <div className="overflow-x-auto border-t border-gray-100 dark:border-zinc-800">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50">
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-zinc-400">Key</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-zinc-400">{t('help.admin.col_lang')}</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-zinc-400">{t('help.admin.col_scope')}</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-zinc-400">{t('help.admin.col_user')}</th>
-                  <th className="text-left px-4 py-2 font-medium text-gray-500 dark:text-zinc-400">{t('help.admin.col_date')}</th>
+                <tr className="border-b border-gray-100 dark:border-zinc-800">
+                  <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Key</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('help.admin.col_lang')}</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('help.admin.col_scope')}</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('help.admin.col_user')}</th>
+                  <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('help.admin.col_date')}</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -202,7 +202,7 @@ export default function HelpAdminSection() {
 
 function ScopeBadge({ scope, t }) {
   if (scope === 'global') {
-    return <span className="inline-flex text-[10px] border rounded-full px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/40">{t('help.source.global')}</span>
+    return <span className="inline-flex text-[10px] border rounded-full px-2 py-0.5 bg-portal-info/10 text-portal-info border-portal-info/30">{t('help.source.global')}</span>
   }
   return <span className="inline-flex text-[10px] border rounded-full px-2 py-0.5 bg-gray-50 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 border-gray-200 dark:border-zinc-700">{t('help.source.user')}</span>
 }

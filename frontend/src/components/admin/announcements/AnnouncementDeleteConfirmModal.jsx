@@ -44,7 +44,7 @@ export default function AnnouncementDeleteConfirmModal({ announcement, onClose, 
           </p>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">{error}</p>
+            <p className="text-xs text-portal-danger bg-portal-danger/10 px-3 py-2 rounded-lg">{error}</p>
           )}
 
           <div className="flex justify-end gap-3 pt-2">

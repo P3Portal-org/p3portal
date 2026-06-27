@@ -141,6 +141,8 @@ async def _migrate_db(conn) -> None:
         ("nodes", "cluster_nodes TEXT NOT NULL DEFAULT ''"),
         # PROJ-33
         ("nodes", "poll_interval INTEGER NOT NULL DEFAULT 30"),
+        # Globale Node-Reihenfolge (Admin-konfigurierbar)
+        ("nodes", "position INTEGER NOT NULL DEFAULT 0"),
         # PROJ-35 SSH-Job-Key
         ("user_profiles", "ssh_private_key_enc TEXT"),
         # PROJ-47

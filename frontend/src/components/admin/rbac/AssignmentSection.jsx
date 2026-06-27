@@ -9,7 +9,7 @@ import {
 import { getNodes, getVms } from '../../../api/cluster'
 
 const inputCls =
-  'bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+  'bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition'
 
 const TYPE_LABELS = { vm: 'VM', lxc: 'LXC' }
 
@@ -138,7 +138,7 @@ export default function AssignmentSection({ userId }) {
       </div>
 
       {error && (
-        <p className="text-xs text-red-400 mb-3">{error}</p>
+        <p className="text-xs text-portal-danger mb-3">{error}</p>
       )}
 
       {/* Add form */}
@@ -206,7 +206,7 @@ export default function AssignmentSection({ userId }) {
           </div>
 
           {saveError && (
-            <p className="text-xs text-red-400">{saveError}</p>
+            <p className="text-xs text-portal-danger">{saveError}</p>
           )}
           <div className="flex gap-2 mt-2">
             <button
@@ -239,12 +239,12 @@ export default function AssignmentSection({ userId }) {
         <div className="border border-gray-200 dark:border-zinc-700 overflow-hidden">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-zinc-700 text-gray-500 dark:text-zinc-500 uppercase tracking-wider bg-gray-50 dark:bg-zinc-900">
-                <th className="px-3 py-2 text-left">Node</th>
-                <th className="px-3 py-2 text-left">Typ</th>
-                <th className="px-3 py-2 text-left">ID</th>
-                <th className="px-3 py-2 text-left">Preset</th>
-                <th className="px-3 py-2 text-left">Aktionen</th>
+              <tr className="border-b border-gray-200 dark:border-zinc-700">
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Node</th>
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Typ</th>
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">ID</th>
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Preset</th>
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">Aktionen</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -270,7 +270,7 @@ export default function AssignmentSection({ userId }) {
                     <button
                       type="button"
                       onClick={() => handleDelete(a)}
-                      className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                      className="text-portal-danger hover:text-portal-danger/80 transition-colors"
                       title="Zuweisung entfernen"
                     >
                       ✕

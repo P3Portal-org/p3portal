@@ -79,15 +79,6 @@ const IMPACT_409 = {
   },
 }
 
-// Verwaiste Kanten für die Aufräum-Sicht.
-const ORPHANS = [
-  {
-    id: 9, source_node_id: 1, source_vmid: 999, source_node: 'pve1', source_name: 'ghost-vm',
-    target_node_id: 1, target_vmid: 200, target_node: 'pve1', target_name: 'db-server',
-    dep_label: null, created_at: '2026-06-01T00:00:00Z', created_by: 1,
-    stale: true, stale_at: '2026-06-17T12:00:00Z', source_installation: 'Haupt', target_installation: 'Haupt',
-  },
-]
 
 // ── Common mocks (PROJ-92-Muster) ───────────────────────────────────────────────
 

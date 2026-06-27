@@ -5,7 +5,7 @@ import { changePassword } from '../../api/profile'
 const inputCls =
   'w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 ' +
   'text-gray-900 dark:text-zinc-100 pl-3 pr-9 py-2 text-sm ' +
-  'focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition'
+  'focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition'
 
 function EyeIcon({ visible }) {
   return visible ? (
@@ -31,7 +31,7 @@ function PasswordInput({ id, value, onChange, hasError }) {
         type={show ? 'text' : 'password'}
         value={value}
         onChange={onChange}
-        className={`${inputCls} ${hasError ? 'border-red-500' : ''}`}
+        className={`${inputCls} ${hasError ? 'border-portal-danger' : ''}`}
       />
       <button
         type="button"
@@ -55,7 +55,7 @@ export default function SecurityTab({ authType, onPasswordChanged }) {
   if (authType !== 'local') {
     return (
       <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
-        <div className="py-4 px-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-400">
+        <div className="py-4 px-3 bg-portal-info/10 border border-portal-info/30 text-sm text-portal-info">
           Ihr Passwort wird über Proxmox verwaltet. Eine Änderung ist nur direkt in Proxmox möglich.
         </div>
       </div>
@@ -98,12 +98,12 @@ export default function SecurityTab({ authType, onPasswordChanged }) {
     <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg p-6">
       <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
         {success && (
-          <p className="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 px-3 py-2">
+          <p className="text-xs text-portal-success bg-portal-success/10 border border-portal-success/30 px-3 py-2">
             Passwort erfolgreich geändert.
           </p>
         )}
         {errors.general && (
-          <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+          <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
             {errors.general}
           </p>
         )}
@@ -118,7 +118,7 @@ export default function SecurityTab({ authType, onPasswordChanged }) {
             onChange={e => setForm(f => ({ ...f, current: e.target.value }))}
             hasError={!!errors.current}
           />
-          {errors.current && <p className="text-xs text-red-400 mt-1">{errors.current}</p>}
+          {errors.current && <p className="text-xs text-portal-danger mt-1">{errors.current}</p>}
         </div>
 
         <div>
@@ -132,7 +132,7 @@ export default function SecurityTab({ authType, onPasswordChanged }) {
             hasError={!!errors.next}
           />
           {errors.next
-            ? <p className="text-xs text-red-400 mt-1">{errors.next}</p>
+            ? <p className="text-xs text-portal-danger mt-1">{errors.next}</p>
             : <p className="text-xs text-gray-400 dark:text-zinc-600 mt-1">Mindestens 10 Zeichen</p>
           }
         </div>
@@ -147,7 +147,7 @@ export default function SecurityTab({ authType, onPasswordChanged }) {
             onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
             hasError={!!errors.confirm}
           />
-          {errors.confirm && <p className="text-xs text-red-400 mt-1">{errors.confirm}</p>}
+          {errors.confirm && <p className="text-xs text-portal-danger mt-1">{errors.confirm}</p>}
         </div>
 
         <button

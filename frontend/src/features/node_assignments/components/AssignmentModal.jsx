@@ -16,7 +16,7 @@ const NODE_ACTION_LABELS = {
 }
 
 const selectCls =
-  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition rounded-md'
+  'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent transition rounded-md'
 
 export default function AssignmentModal({ node, users, groups, presets, existing, onClose, onSaved }) {
   const { t } = useTranslation()
@@ -101,8 +101,8 @@ export default function AssignmentModal({ node, users, groups, presets, existing
                     onClick={() => setSubjectType(type)}
                     className={`flex-1 text-xs px-3 py-1.5 border transition-colors rounded-md ${
                       subjectType === type
-                        ? 'bg-orange-600 border-orange-600 text-white'
-                        : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-orange-400'
+                        ? 'bg-portal-accent border-portal-accent/50 text-white'
+                        : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-portal-accent/50'
                     }`}
                   >
                     {t(`node_assignments.subject_type_${type}`)}
@@ -183,7 +183,7 @@ export default function AssignmentModal({ node, users, groups, presets, existing
 
           {/* Error */}
           {error && (
-            <p className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}

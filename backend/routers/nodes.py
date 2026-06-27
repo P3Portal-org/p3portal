@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.core.deps import CurrentUser, require_admin_or
 from backend.core.plus_protocol import plus_behavior
-from backend.models.nodes import NodeCreate, NodeResponse, NodeUpdate
+from backend.models.nodes import NodeCreate, NodeReorderRequest, NodeResponse, NodeUpdate
 from backend.services.config_service import set_config
 from backend.services.nodes_service import (
     count_nodes,
@@ -15,6 +15,7 @@ from backend.services.nodes_service import (
     get_default_node,
     get_node,
     list_nodes,
+    reorder_nodes,
     set_default_node,
     test_connection,
     update_node,
@@ -39,6 +40,7 @@ def _to_response(n) -> NodeResponse:
         tofu_token_id=getattr(n, "tofu_token_id", "") or "",
         cluster_nodes=getattr(n, "cluster_nodes", []) or [],
         poll_interval=getattr(n, "poll_interval", 30) or 30,
+        position=getattr(n, "position", 0) or 0,
         is_default=n.is_default,
         created_at=n.created_at,
         created_by=n.created_by,
@@ -68,6 +70,33 @@ async def _audit_tofu_token_set(node, username: str) -> None:
 @router.get("", response_model=list[NodeResponse])
 async def get_nodes(_: CurrentUser = Depends(require_admin_or("manage_nodes"))) -> list[NodeResponse]:
     nodes = await list_nodes()
+    return [_to_response(n) for n in nodes]
+
+
+@router.put("/reorder", response_model=list[NodeResponse])
+async def reorder_nodes_endpoint(
+    body: NodeReorderRequest,
+    current_user: CurrentUser = Depends(require_admin_or("manage_nodes")),
+) -> list[NodeResponse]:
+    """Globale Anzeige-Reihenfolge der Installationen setzen (Admin/manage_nodes).
+
+    Muss vor den /{node_id}-Routen definiert sein (Starlette matcht nach
+    Definitionsreihenfolge; 'reorder' würde sonst gegen {node_id:int} 422en).
+    """
+    try:
+        nodes = await reorder_nodes(body.node_ids)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    try:
+        from backend.services.audit_service import write_audit_log
+        await write_audit_log(
+            event_type="nodes_reordered",
+            username=current_user.username,
+            auth_type="local",
+            detail=f"Node-Reihenfolge geändert: {body.node_ids}",
+        )
+    except Exception:
+        pass
     return [_to_response(n) for n in nodes]
 
 

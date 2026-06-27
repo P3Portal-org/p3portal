@@ -11,7 +11,7 @@ function isTmpl(vm) {
   return vm.template === 1 || vm.template === true
 }
 
-const thBase = 'px-4 py-2.5 text-xs text-gray-500 dark:text-zinc-500 uppercase tracking-wider'
+const thBase = 'px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider'
 
 function TmplBadge({ vm }) {
   const label = vm.type === 'lxc' ? 'tmpl/CT' : 'tmpl'
@@ -248,7 +248,7 @@ export default function VmSection({ vms, loading, userRole, onRefresh, selectedN
             <div className="overflow-x-auto border border-gray-200 dark:border-zinc-700 rounded-lg">
               <table className="w-full text-sm text-left">
                 <thead>
-                  <tr className={`border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900`}>
+                  <tr className="border-b border-gray-200 dark:border-zinc-700">
                     <th className={thBase}>ID</th>
                     <th className={thBase}>Name</th>
                     <th className={thBase}>Typ</th>

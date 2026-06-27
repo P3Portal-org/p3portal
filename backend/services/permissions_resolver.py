@@ -265,24 +265,32 @@ async def can_user_execute_playbook(user_id: int, playbook_name: str) -> bool:
 
 # ── Bulk-Visibility (Dashboard, PROJ-30) ─────────────────────────────────────
 
-async def resolve_user_visible_vms(user_id: int, resources: list[dict]) -> set[tuple[int, int]]:
-    """Gibt das Set aller (node_id, vmid)-Paare zurück, auf die der User mindestens 'view' hat.
+ALL_ACTIONS: frozenset[str] = frozenset(
+    {"view", "start", "stop", "reboot", "snapshot", "configure", "delete", "clone"}
+)
 
-    Optimiert für Dashboard-Listing: aggregiert alle drei Pfade in einem Durchgang.
+
+async def resolve_user_vm_access(
+    user_id: int, resources: list[dict]
+) -> tuple[dict[tuple[int | None, int], set[str]], bool]:
+    """Bulk-Resolver für das Dashboard: gibt (perm_map, has_any_grant) zurück.
+
+    perm_map: ``{(node_id, vmid): {erlaubte Aktionen}}`` – Union aller 4 Pfade
+    (PROJ-12 direkt / PROJ-46 Pool / PROJ-47 Node-Scope / PROJ-48 Owner).
+    has_any_grant: True, wenn der User ÜBERHAUPT einen Grant irgendeiner Art hat.
+    Letzteres trennt „User hat Scope, aber nicht auf diese VMs" (→ leere Liste)
+    von „User hat gar keinen Scope" (→ Backward-Compat-Vollliste im Aufrufer).
 
     resources: Liste von dicts mit Pflichtfeldern node_id, vmid, resource_type.
     """
-    ALL_ACTIONS = {"view", "start", "stop", "reboot", "snapshot", "configure", "delete", "clone"}
-
     if not resources:
-        return set()
+        return {}, False
 
     async with get_db() as db:
         if await _is_admin(db, user_id):
-            return {(r["node_id"], r["vmid"]) for r in resources}
+            return {(r["node_id"], r["vmid"]): set(ALL_ACTIONS) for r in resources}, True
 
         group_ids = await _get_group_ids(db, user_id)
-        visible: set[tuple[int, int]] = set()
 
         # Pfad 1: PROJ-12 direkte Zuweisungen
         # Key: (resource_type, portal_node_id_or_None, vmid) – None = legacy, gilt für alle Nodes
@@ -345,7 +353,9 @@ async def resolve_user_visible_vms(user_id: int, resources: list[dict]) -> set[t
         )
         owner_vms: set[tuple[int, int]] = {(r[0], r[1]) for r in owner_result.fetchall()}
 
-    # Auswertung: Union aller Quellen je VM
+    has_any_grant = bool(direct_perms or pool_perms or node_perms or owner_vms)
+
+    perm_map: dict[tuple[int | None, int], set[str]] = {}
     for r in resources:
         node_id = r["node_id"]
         vmid = r["vmid"]
@@ -359,11 +369,17 @@ async def resolve_user_visible_vms(user_id: int, resources: list[dict]) -> set[t
         combined.update(pool_perms.get((node_id, vmid), set()))
         # Pfad 3
         combined.update(node_perms.get(node_id, set()))
-        # Pfad 4: Owner → view-Berechtigung (kein delete)
+        # Pfad 4: Owner → OWNER_ACTIONS (kein delete)
         if (node_id, vmid) in owner_vms:
             combined.update(OWNER_ACTIONS)
 
-        if "view" in combined:
-            visible.add((node_id, vmid))
+        if combined:
+            perm_map[(node_id, vmid)] = combined
 
-    return visible
+    return perm_map, has_any_grant
+
+
+async def resolve_user_visible_vms(user_id: int, resources: list[dict]) -> set[tuple[int, int]]:
+    """Set aller (node_id, vmid)-Paare, auf die der User mindestens 'view' hat."""
+    perm_map, _ = await resolve_user_vm_access(user_id, resources)
+    return {key for key, perms in perm_map.items() if "view" in perms}

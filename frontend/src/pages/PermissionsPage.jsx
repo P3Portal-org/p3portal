@@ -17,8 +17,8 @@ const AllowedPlaybooksSection = PlusComponents.AllowedPlaybooksSection
 const CAP_KEY_ORDER = ['vms', 'storage', 'sdn', 'nodes', 'access', 'dc']
 
 const ROLE_BADGE = {
-  admin:    'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400',
-  operator: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400',
+  admin:    'bg-portal-danger/10 text-portal-danger',
+  operator: 'bg-portal-accent/10 text-portal-accent',
   viewer:   'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400',
 }
 
@@ -61,7 +61,7 @@ function PackerTemplatesSection({ role }) {
             <li key={tt.id}>
               <Link
                 to="/packer"
-                className="flex items-center px-3 py-2 text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-orange-300 dark:hover:border-orange-700 transition-colors rounded-lg"
+                className="flex items-center px-3 py-2 text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-portal-accent/30 transition-colors rounded-lg"
               >
                 <span className="text-gray-800 dark:text-zinc-200">{tt.name}</span>
               </Link>
@@ -101,7 +101,7 @@ function ProxmoxView({ perms }) {
             ) : (
               <div className="flex flex-wrap gap-1">
                 {groups.map(g => (
-                  <span key={g} className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded">
+                  <span key={g} className="text-xs bg-portal-info/10 text-portal-info border border-portal-info/30 px-2 py-0.5 rounded">
                     {g}
                   </span>
                 ))}
@@ -113,7 +113,7 @@ function ProxmoxView({ perms }) {
 
       <Section title={t('permissions.section_capabilities')}>
         {!hasAnyCaps ? (
-          <div className="px-3 py-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 text-xs text-yellow-700 dark:text-yellow-400 rounded-lg">
+          <div className="px-3 py-2 bg-portal-warn/10 border border-portal-warn/30 text-xs text-portal-warn rounded-lg">
             {t('permissions.no_caps')}
           </div>
         ) : (
@@ -164,7 +164,7 @@ function NodeAssignmentsSection() {
                   </span>
                 </p>
                 {a.preset_node_actions?.length > 0 && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  <p className="text-xs text-portal-info mt-1">
                     {a.preset_node_actions
                       .map(act => t(NODE_ACTION_LABELS_PROFILE[act] ?? act, { defaultValue: act }))
                       .join(', ')}
@@ -235,7 +235,7 @@ export default function PermissionsPage() {
         {loading && <SkeletonBlock />}
 
         {error && !loading && (
-          <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center justify-between rounded-lg">
+          <div className="border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger flex items-center justify-between rounded-lg">
             <span>{t('permissions.load_error')}</span>
             <button
               onClick={reload}

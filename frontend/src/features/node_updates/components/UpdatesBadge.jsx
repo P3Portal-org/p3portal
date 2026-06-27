@@ -5,11 +5,11 @@ import { useNavigate } from 'react-router-dom'
 import { useNodeUpdatesBadgeData } from '../hooks'
 
 function badgeStyle(packageCount, securityCount, hasError, lastSuccessAt) {
-  if (hasError)         return 'text-[var(--portal-danger,#dc2626)]  bg-red-50    dark:bg-red-950/30   border-red-200   dark:border-red-800'
+  if (hasError)         return 'text-[var(--portal-danger,#dc2626)]  bg-portal-danger/10   border-portal-danger/30'
   if (!lastSuccessAt)   return 'text-gray-400 dark:text-zinc-500       bg-gray-50   dark:bg-zinc-800/40  border-gray-200  dark:border-zinc-700'
-  if (packageCount === 0) return 'text-[var(--portal-success,#16a34a)] bg-green-50  dark:bg-green-950/30 border-green-200 dark:border-green-800'
-  if (securityCount > 0)  return 'text-[var(--portal-warn,#ca8a04)]   bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800'
-  return 'text-[var(--portal-info,#2563eb)] bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'
+  if (packageCount === 0) return 'text-[var(--portal-success,#16a34a)] bg-portal-success/10 border-portal-success/30'
+  if (securityCount > 0)  return 'text-[var(--portal-warn,#ca8a04)]   bg-portal-warn/10 border-portal-warn/30'
+  return 'text-[var(--portal-info,#2563eb)] bg-portal-info/10 border-portal-info/30'
 }
 
 export default function UpdatesBadge({ portalNodeId, nodeName }) {

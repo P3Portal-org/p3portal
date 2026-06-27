@@ -32,9 +32,9 @@ function TabPinButton({ tabId, label }) {
 
 const STATUS_COLOR = {
   pending: 'text-gray-500 dark:text-zinc-400',
-  running: 'text-orange-600 dark:text-orange-400',
-  success: 'text-green-600 dark:text-green-400',
-  failed:  'text-red-600 dark:text-red-400',
+  running: 'text-portal-accent',
+  success: 'text-portal-success',
+  failed:  'text-portal-danger',
 }
 
 function JobRow({ job, active, onClick }) {
@@ -43,7 +43,7 @@ function JobRow({ job, active, onClick }) {
     <button
       onClick={onClick}
       className={`w-full text-left px-4 py-3 border-b border-gray-100 dark:border-zinc-800 transition-colors ${
-        active ? 'bg-orange-50 dark:bg-orange-950/20 border-l-2 border-l-orange-500' : 'hover:bg-gray-50 dark:hover:bg-zinc-800/60'
+        active ? 'bg-portal-accent/10 border-l-2 border-l-orange-500' : 'hover:bg-gray-50 dark:hover:bg-zinc-800/60'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -77,9 +77,9 @@ function LogPanel({ jobId }) {
 
   const STATUS_BADGE = {
     pending: 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400',
-    running: 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400',
-    success: 'bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-400',
-    failed:  'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-400',
+    running: 'bg-portal-accent/10 text-portal-accent',
+    success: 'bg-portal-success/10 text-portal-success',
+    failed:  'bg-portal-danger/10 text-portal-danger',
   }
 
   return (
@@ -96,7 +96,7 @@ function LogPanel({ jobId }) {
           </span>
           {job && (
             <span className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-              <span className="font-mono text-orange-600 dark:text-orange-400">{job.username}</span>
+              <span className="font-mono text-portal-accent">{job.username}</span>
               <span className="mx-1">·</span>
               {job.playbook}
             </span>
@@ -105,11 +105,11 @@ function LogPanel({ jobId }) {
         <div className="flex items-center gap-3 shrink-0">
           {status === 'running' && (
             <button onClick={handleCancel} disabled={cancelling}
-              className="text-xs text-red-600 dark:text-red-400 hover:underline disabled:opacity-40 transition">
+              className="text-xs text-portal-danger hover:underline disabled:opacity-40 transition">
               {cancelling ? 'Abbricht…' : 'Abbrechen'}
             </button>
           )}
-          <span className={`text-xs ${connected ? 'text-green-500' : 'text-gray-400 dark:text-zinc-500'}`}>
+          <span className={`text-xs ${connected ? 'text-portal-success' : 'text-gray-400 dark:text-zinc-500'}`}>
             {connected ? '● live' : '○ getrennt'}
           </span>
         </div>
@@ -207,7 +207,7 @@ function AuditLogsTab() {
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 dark:border-zinc-700 shrink-0 bg-gray-50 dark:bg-zinc-950">
         <select value={filterEvent} onChange={e => { setFilterEvent(e.target.value); setOffset(0) }}
-          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500">
+          className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent">
           <option value="">Alle Ereignisse</option>
           <option value="login_success">Login erfolgreich</option>
           <option value="login_failed">Login fehlgeschlagen</option>
@@ -220,13 +220,13 @@ function AuditLogsTab() {
         </select>
         <input type="text" value={filterUser} onChange={e => { setFilterUser(e.target.value); setOffset(0) }}
           placeholder="Nutzername"
-          className="flex-1 text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500" />
+          className="flex-1 text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent" />
         <button onClick={refresh} disabled={loading}
-          className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition shrink-0">
+          className="text-xs text-portal-accent hover:underline disabled:opacity-40 transition shrink-0">
           {loading ? '…' : '↻'}
         </button>
       </div>
-      {error && <div className="m-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-400 shrink-0">Fehler beim Laden</div>}
+      {error && <div className="m-3 border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger shrink-0">Fehler beim Laden</div>}
       {!loading && logs.length === 0 && (
         <div className="flex-1 flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-zinc-900">
           <p className="text-sm text-gray-500 dark:text-zinc-400">Keine Einträge gefunden.</p>
@@ -247,7 +247,7 @@ function AuditLogsTab() {
                       <span className="block truncate pr-1">{c.label}</span>
                       <span
                         onMouseDown={e => startResize(c.key, e)}
-                        className="absolute top-0 -right-1 h-full w-3 cursor-col-resize hover:bg-orange-400/50 z-10"
+                        className="absolute top-0 -right-1 h-full w-3 cursor-col-resize hover:bg-portal-accent/10 z-10"
                         title="Spaltenbreite ziehen"
                       />
                     </th>
@@ -294,7 +294,7 @@ function AuditLogsTab() {
               <select
                 value={pageSize}
                 onChange={e => { setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value)); setOffset(0) }}
-                className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                className="text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-portal-accent"
               >
                 <option value={25}>25</option>
                 <option value={50}>50</option>
@@ -306,9 +306,9 @@ function AuditLogsTab() {
             {showPager && (
               <div className="flex gap-2">
                 <button onClick={() => setOffset(o => Math.max(0, o - limit))} disabled={!hasPrev}
-                  className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40">← Zurück</button>
+                  className="text-xs text-portal-accent hover:underline disabled:opacity-40">← Zurück</button>
                 <button onClick={() => setOffset(o => o + limit)} disabled={!hasNext}
-                  className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40">Weiter →</button>
+                  className="text-xs text-portal-accent hover:underline disabled:opacity-40">Weiter →</button>
               </div>
             )}
           </div>
@@ -364,7 +364,7 @@ export default function EventsPage() {
   const tabCls = (id) =>
     `px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
       activeTab === id
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -377,7 +377,7 @@ export default function EventsPage() {
         </div>
         {activeTab === 'jobs' && (
           <button onClick={refresh} disabled={loading}
-            className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition">
+            className="text-xs text-portal-accent hover:underline disabled:opacity-40 transition">
             {loading ? 'Lädt…' : '↻ Aktualisieren'}
           </button>
         )}
@@ -400,7 +400,7 @@ export default function EventsPage() {
             <div className="flex flex-col border-b border-gray-200 dark:border-zinc-700 shrink-0">
               <div className="flex items-center gap-2 px-3 py-2">
                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                  className="flex-1 text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500">
+                  className="flex-1 text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent">
                   <option value="">Alle Status</option>
                   <option value="running">Läuft</option>
                   <option value="pending">Ausstehend</option>
@@ -419,12 +419,12 @@ export default function EventsPage() {
                 <div className="px-3 pb-2">
                   <input type="text" value={filterName} onChange={e => setFilterName(e.target.value)}
                     placeholder="Nutzer filtern"
-                    className="w-full text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                    className="w-full text-xs border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 placeholder-gray-400 dark:placeholder-zinc-500 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-portal-accent" />
                 </div>
               )}
             </div>
             <div className="flex-1 overflow-y-auto">
-              {error && <div className="m-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-400">Fehler beim Laden</div>}
+              {error && <div className="m-3 border border-portal-danger/30 bg-portal-danger/10 px-3 py-2 text-xs text-portal-danger">Fehler beim Laden</div>}
               {!loading && visibleJobs.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                   <p className="text-sm text-gray-500 dark:text-zinc-400">Keine Jobs gefunden.</p>

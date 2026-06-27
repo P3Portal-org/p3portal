@@ -48,7 +48,7 @@ export default function GuestHostList({ hosts, selected, onToggle, selectable = 
             checked={isManaged && selected.has(h.host_ref)}
             disabled={!isManaged}
             onChange={() => onToggle(h.host_ref)}
-            className="w-4 h-4 accent-orange-500 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-4 h-4 accent-portal-accent disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label={hostLabel(h)}
           />
         )}

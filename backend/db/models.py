@@ -240,6 +240,9 @@ nodes = Table(
     Column("tofu_token_secret", String, nullable=False, server_default=""),
     Column("cluster_nodes", String, nullable=False, server_default=""),  # PROJ-26
     Column("poll_interval", Integer, nullable=False, server_default="30"),  # PROJ-33
+    # Globale Anzeige-Reihenfolge der Installationen (Admin-konfigurierbar).
+    # 0 = noch nicht sortiert → Fallback auf is_default/id (bestehende Reihenfolge).
+    Column("position", Integer, nullable=False, server_default="0"),
     Column("is_default", Integer, nullable=False, server_default="0"),
     Column("created_at", String, nullable=False),
     Column("created_by", String, nullable=False, server_default="system"),

@@ -59,18 +59,18 @@ export default function LicenseStatusBanner() {
   let colorClass, tooltip
   if (isValid && status.reason === 'trial') {
     // PROJ-94: active trial — secondary reflection (the CTA lives in LicenseSectionAdmin)
-    colorClass = 'text-green-500'
+    colorClass = 'text-portal-success'
     tooltip = status.expiry
       ? `${t('admin.license.tooltip_trial')} · ${t('admin.license.tooltip_valid_until', { expiry: status.expiry })}`
       : t('admin.license.tooltip_trial')
   } else if (isValid) {
-    colorClass = 'text-green-500'
+    colorClass = 'text-portal-success'
     const parts = [status.edition === 'plus_v2' ? 'P3 Plus v2' : 'P3 Plus v1']
     if (status.contact_name) parts.push(status.contact_name)
     if (status.expiry) parts.push(t('admin.license.tooltip_valid_until', { expiry: status.expiry }))
     tooltip = parts.join(' · ')
   } else if (isError) {
-    colorClass = 'text-red-500'
+    colorClass = 'text-portal-danger'
     tooltip =
       status.reason === 'expired'
         ? t('admin.license.tooltip_expired', { expiry: status.expiry })

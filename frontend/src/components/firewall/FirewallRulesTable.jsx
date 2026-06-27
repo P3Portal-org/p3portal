@@ -12,7 +12,7 @@ import FirewallRuleFormModal from './FirewallRuleFormModal'
 import ConfirmModal from '../common/ConfirmModal'
 
 function thCls() {
-  return 'px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider'
+  return 'px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider'
 }
 
 function ruleToPayload(rule) {
@@ -163,7 +163,7 @@ export default function FirewallRulesTable({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px]">
               <thead>
-                <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
+                <tr className="border-b border-gray-200 dark:border-zinc-700">
                   <th className={thCls()}>#</th>
                   <th className={thCls()}>Richtung</th>
                   <th className={thCls()}>Aktion</th>

@@ -56,7 +56,7 @@ export default function TransferOwnerModal({ currentUserId, onClose, onTransfer 
               value={selectedId}
               onChange={e => setSelectedId(e.target.value)}
               required
-              className="w-full border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-portal-accent"
             >
               <option value="">{t('owners.transfer_user_placeholder')}</option>
               {users.map(u => (
@@ -69,11 +69,11 @@ export default function TransferOwnerModal({ currentUserId, onClose, onTransfer 
               type="checkbox"
               checked={confirmed}
               onChange={e => setConfirmed(e.target.checked)}
-              className="w-4 h-4 accent-orange-500"
+              className="w-4 h-4 accent-portal-accent"
             />
             {t('owners.transfer_confirm_check')}
           </label>
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-portal-danger">{error}</p>}
         </div>
 
         <div className="px-6 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl">

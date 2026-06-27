@@ -131,7 +131,7 @@ export default function HelpPage() {
                         </span>
                       )}
                       {source === 'global' && (
-                        <span className="text-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 rounded-full px-1.5 py-0.5">
+                        <span className="text-[10px] bg-portal-info/10 text-portal-info border border-portal-info/30 rounded-full px-1.5 py-0.5">
                           {t('help.source.global')}
                         </span>
                       )}

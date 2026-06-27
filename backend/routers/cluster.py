@@ -36,7 +36,8 @@ from backend.models.vms import (
 )
 from backend.services.proxmox import ProxmoxAuth, ProxmoxClient, proxmox_client
 from backend.services.service_accounts import _extract_token
-from backend.services.rbac_service import get_user_permissions, has_any_assignments, check_permission
+from backend.services.rbac_service import get_user_permissions
+from backend.services.permissions_resolver import resolve_user_vm_access
 from backend.services.local_auth import get_user_by_username
 from backend.services.settings_service import get_setting
 
@@ -450,34 +451,44 @@ async def _lookup_template_ctimes(
 async def apply_vm_rbac_filter(
     current_user: CurrentUser, vms: list[VmInfo]
 ) -> list[VmInfo]:
-    """Single-source RBAC filter (PROJ-12) reused by the dashboard *and*
-    PROJ-75 topology — guarantees no divergence (AC-RBAC-4).
+    """Single-source RBAC filter reused by the dashboard *and* PROJ-75 topology
+    — guarantees no divergence (AC-RBAC-4).
 
     - admin / operator / proxmox auth: full list
-    - restricted role: empty (no assignments → sees nothing)
-    - viewer/operator with assignments: only assigned VMs (sets ``permissions``)
-    - viewer/operator without assignments: full list (backwards compat)
+    - restricted role without any grant: empty (sees nothing)
+    - viewer/restricted *with* a grant (direct/pool/node/owner): only the
+      VMs that grant gives view on, node-aware + unioniert (sets ``permissions``)
+    - viewer without any grant: full list (backwards compat)
+
+    Code-Review-Fix (Befund 1C): konsumiert jetzt alle 4 Quellen über
+    ``resolve_user_vm_access`` (PROJ-12 direkt + PROJ-46 Pool + PROJ-47 Node-Scope
+    + PROJ-48 Owner) statt nur direkte Assignments – konsistent zur Aktions-
+    Durchsetzung. ``has_any_grant`` trennt „kein Scope" (Vollliste) von „Scope,
+    aber nicht auf diese VMs" (leere Liste).
     """
     if current_user.auth_type == "local" and current_user.role not in ("admin", "operator"):
         user = await get_user_by_username(current_user.username)
         if user is not None:
-            has_assignments = await has_any_assignments(user["id"])
-            if has_assignments or current_user.role == "restricted":
-                if not has_assignments:
-                    return []  # restricted with no assignments sees nothing
-                user_perms = await get_user_permissions(user["id"])
-                perm_map = {
-                    (p["resource_type"], p["resource_id"]): p["permissions"]
-                    for p in user_perms
+            resources = [
+                {
+                    "node_id": vm.portal_node_id,
+                    "vmid": vm.vmid,
+                    "resource_type": "lxc" if vm.type == "lxc" else "vm",
                 }
-                filtered = []
-                for vm in vms:
-                    res_type = "lxc" if vm.type == "lxc" else "vm"
-                    perms = perm_map.get((res_type, vm.vmid))
-                    if perms is not None and "view" in perms:
-                        vm.permissions = perms
-                        filtered.append(vm)
-                return filtered
+                for vm in vms
+            ]
+            perm_map, has_any_grant = await resolve_user_vm_access(user["id"], resources)
+            if not has_any_grant:
+                if current_user.role == "restricted":
+                    return []  # restricted ohne jeglichen Grant sieht nichts
+                return vms  # viewer ohne jeglichen Grant: Vollliste (Backward-Compat)
+            filtered = []
+            for vm in vms:
+                perms = perm_map.get((vm.portal_node_id, vm.vmid))
+                if perms and "view" in perms:
+                    vm.permissions = sorted(perms)
+                    filtered.append(vm)
+            return filtered
 
     return vms
 
@@ -788,13 +799,20 @@ async def _get_portal_node_write_auth(
     return client, auth
 
 
-async def _check_detail_access(current_user: CurrentUser, vmid: int, vm_type: str) -> None:
+async def _check_detail_access(
+    current_user: CurrentUser, vmid: int, vm_type: str, pve_node: str | None = None
+) -> None:
     """RBAC guard for VM detail page reads.
 
     - proxmox auth / admin / operator: always allowed
     - restricted: always blocked
-    - viewer without assignments: allowed (consistent with dashboard)
-    - viewer with assignments: must have 'view' on this specific VM
+    - viewer without any grant: allowed (consistent with dashboard backwards-compat)
+    - viewer with a grant (direct/pool/node/owner): must have 'view' on this VM
+
+    Code-Review-Fix (Befund 1C): konsumiert alle 4 Grant-Quellen über
+    ``resolve_user_vm_access`` (vorher nur direkte Assignments) + node-bewusst,
+    damit ein Pool-Viewer die Detailseite seiner Pool-VM öffnen kann (sonst war
+    sie im Dashboard sichtbar, aber das Detail-GET lieferte 403).
     """
     if current_user.auth_type == "proxmox" or current_user.role in ("admin", "operator"):
         return
@@ -803,10 +821,20 @@ async def _check_detail_access(current_user: CurrentUser, vmid: int, vm_type: st
     user = await get_user_by_username(current_user.username)
     if user is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    if not await has_any_assignments(user["id"]):
-        return  # viewer without assignments sees everything (consistent with dashboard)
+    portal_node_id: int | None = None
+    if pve_node:
+        from backend.services.nodes_service import get_node_for_proxmox_name
+        node_row = await get_node_for_proxmox_name(pve_node)
+        portal_node_id = node_row.id if node_row else None
     res_type = "lxc" if vm_type == "lxc" else "vm"
-    if not await check_permission(user["id"], vmid, res_type, "view"):
+    perm_map, has_any_grant = await resolve_user_vm_access(
+        user["id"],
+        [{"node_id": portal_node_id, "vmid": vmid, "resource_type": res_type}],
+    )
+    if not has_any_grant:
+        return  # viewer ohne jeglichen Grant sieht alles (konsistent zum Dashboard)
+    perms = perm_map.get((portal_node_id, vmid)) or set()
+    if "view" not in perms:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Not authorized to view {res_type} {vmid}",
@@ -885,7 +913,7 @@ async def get_vm_detail(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> VmDetailResponse:
     client, auth = await _get_client_auth_for_node(current_user, node)
-    await _check_detail_access(current_user, vmid, vm_type)
+    await _check_detail_access(current_user, vmid, vm_type, node)
     try:
         vm_status, vm_config = await asyncio.gather(
             client.get_vm_status_current(auth, node, vmid, vm_type),
@@ -962,7 +990,7 @@ async def get_vm_backups(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> VmBackupsResponse:
     client, auth = await _get_client_auth_for_node(current_user, node)
-    await _check_detail_access(current_user, vmid, vm_type)
+    await _check_detail_access(current_user, vmid, vm_type, node)
     try:
         storages = await client.get_node_backup_storages(auth, node)
     except httpx.HTTPStatusError as exc:
@@ -1075,7 +1103,7 @@ async def get_vm_guest_info(
     never returns 500 just because the guest agent is not available.
     """
     client, auth = await _get_client_auth_for_node(current_user, node)
-    await _check_detail_access(current_user, vmid, "qemu")
+    await _check_detail_access(current_user, vmid, "qemu", node)
     raw = await client.get_guest_info(auth, node, vmid)
     return GuestInfoResponse.model_validate(raw)
 
@@ -1088,7 +1116,7 @@ async def get_lxc_interfaces(
 ) -> list[LxcNetworkInterface]:
     """Return all network interfaces (with IPs + MAC) for an LXC container."""
     client, auth = await _get_client_auth_for_node(current_user, node)
-    await _check_detail_access(current_user, vmid, "lxc")
+    await _check_detail_access(current_user, vmid, "lxc", node)
     raw_list = await client.get_lxc_interfaces(auth, node, vmid)
     return [LxcNetworkInterface.model_validate(r) for r in raw_list]
 

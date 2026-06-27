@@ -99,11 +99,11 @@ export default function AliasesManager({ api, title = 'Aliases' }) {
         <div className="rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
           <table className="w-full min-w-[420px]">
             <thead>
-              <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Name</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">IP / CIDR</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Kommentar</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Aktionen</th>
+              <tr className="border-b border-gray-200 dark:border-zinc-700">
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Name</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">IP / CIDR</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Kommentar</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">Aktionen</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-zinc-900 divide-y divide-gray-100 dark:divide-zinc-800">

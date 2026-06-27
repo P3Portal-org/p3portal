@@ -72,7 +72,7 @@ export default function OwnerSection({ resourceType, nodeId, vmid, isAdmin, curr
 
       {/* Error */}
       {error && (
-        <p className="mb-2 text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 rounded">
+        <p className="mb-2 text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">
           {error}
           <button type="button" onClick={() => setError('')} className="ml-2 text-xs underline">{t('common.dismiss')}</button>
         </p>
@@ -99,7 +99,7 @@ export default function OwnerSection({ resourceType, nodeId, vmid, isAdmin, curr
                 <div>
                   <span className="text-sm font-medium text-gray-900 dark:text-zinc-100">{owner.username}</span>
                   {isSelf && (
-                    <span className="ml-2 text-xs bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-1.5 py-0.5 rounded border border-orange-200 dark:border-orange-800">
+                    <span className="ml-2 text-xs bg-portal-accent/10 text-portal-accent px-1.5 py-0.5 rounded border border-portal-accent/30">
                       {t('owners.you_badge')}
                     </span>
                   )}
@@ -132,7 +132,7 @@ export default function OwnerSection({ resourceType, nodeId, vmid, isAdmin, curr
                       type="button"
                       disabled={busy}
                       onClick={() => handleRemove(owner.user_id)}
-                      className="text-xs px-2.5 py-1 rounded border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-40"
+                      className="text-xs px-2.5 py-1 rounded border border-portal-danger/30 text-portal-danger hover:bg-portal-danger/10 transition-colors disabled:opacity-40"
                     >
                       {t('owners.remove_btn')}
                     </button>

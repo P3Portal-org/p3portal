@@ -47,7 +47,7 @@ export default function BackupCreateModal({ node, vmType, vmid, storages, onClos
     }
   }
 
-  const selectClass = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded'
+  const selectClass = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent rounded'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -73,7 +73,7 @@ export default function BackupCreateModal({ node, vmType, vmid, storages, onClos
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <p className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 rounded">
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">
               {error}
             </p>
           )}
@@ -82,7 +82,7 @@ export default function BackupCreateModal({ node, vmType, vmid, storages, onClos
           <div>
             <label className="block text-xs text-gray-500 dark:text-zinc-400 mb-1.5">Storage</label>
             {storages.length === 0 ? (
-              <p className="text-xs text-yellow-500 dark:text-yellow-400">
+              <p className="text-xs text-portal-warn">
                 Keine Backup-Storages auf diesem Node konfiguriert.
               </p>
             ) : (

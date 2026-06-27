@@ -197,9 +197,12 @@ def _sync_run(
         # PKR_VAR_* is the Packer convention for env-var injection of variables
         env["PKR_VAR_proxmox_api_password"] = proxmox_credentials["password"]
     else:
-        # Service-account mode: inject token credentials (existing behaviour)
+        # Service-account mode: token_id ist nicht geheim (Cmdline ok); das Secret
+        # geht per Env-Var (PKR_VAR_* → var.proxmox_api_token_secret in der HCL,
+        # verhaltensgleich zu -var), damit es nicht auf der Kommandozeile landet
+        # (/proc/<pid>/cmdline, PACKER_LOG). Analog zum Passwort-Pfad oben.
         cmd += ["-var", f"proxmox_api_token_id={token_id}"]
-        cmd += ["-var", f"proxmox_api_token_secret={token_secret}"]
+        env["PKR_VAR_proxmox_api_token_secret"] = token_secret
 
     # Wenn gesetzt: Portal-Host-IP für den Packer-HTTP-Server (preseed.cfg)
     # DB-Wert (portal_config) hat Vorrang vor Env-Variable

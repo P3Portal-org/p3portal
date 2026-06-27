@@ -27,7 +27,7 @@ function LastUpdated({ date, onRefresh, loading }) {
       <button
         onClick={onRefresh}
         disabled={loading}
-        className="text-orange-500 hover:underline disabled:opacity-40 transition-colors"
+        className="text-portal-accent hover:underline disabled:opacity-40 transition-colors"
       >
         {loading ? t('dashboard.refreshing') : t('dashboard.refresh')}
       </button>
@@ -52,7 +52,7 @@ function ErrorBanner({ error, isLocalUser }) {
       : t('dashboard.err_default')
 
   return (
-    <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+    <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
       {t('dashboard.err_prefix')}{msg}
     </div>
   )

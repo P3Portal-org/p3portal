@@ -4,39 +4,41 @@
  * Handles all four VM-selection modes: all, vmids, pool, all-except-exclusion.
  */
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createBackupJob, updateBackupJob, listBackupJobPools, listBackupJobStorages } from '../../api/backupJobs'
 import BackupSchedulePicker from './BackupSchedulePicker'
 import VmMultiSelect from './VmMultiSelect'
 
+// Option keys (labels resolved via i18n in render)
 const MODE_OPTIONS = [
-  { value: 'snapshot', label: 'Snapshot (VM läuft weiter)' },
-  { value: 'stop',     label: 'Stop (VM wird gestoppt)' },
-  { value: 'suspend',  label: 'Suspend (VM wird pausiert)' },
+  { value: 'snapshot', labelKey: 'mode_snapshot' },
+  { value: 'stop',     labelKey: 'mode_stop' },
+  { value: 'suspend',  labelKey: 'mode_suspend' },
 ]
 
 const COMPRESS_OPTIONS = [
-  { value: 'zstd', label: 'zstd (Standard, schnell)' },
-  { value: 'lzo',  label: 'lzo (schnell, weniger Kompression)' },
-  { value: 'gzip', label: 'gzip (langsam, beste Kompression)' },
-  { value: '0',    label: 'Keine Kompression' },
+  { value: 'zstd', labelKey: 'compress_zstd' },
+  { value: 'lzo',  labelKey: 'compress_lzo' },
+  { value: 'gzip', labelKey: 'compress_gzip' },
+  { value: '0',    labelKey: 'compress_none' },
 ]
 
 // VM-selection modes
 const VM_SEL_MODES = [
-  { value: 'all',     label: 'Alle Gäste' },
-  { value: 'vmids',   label: 'Bestimmte VMIDs' },
-  { value: 'pool',    label: 'Pool' },
-  { value: 'exclude', label: 'Alle außer Ausschluss' },
+  { value: 'all',     labelKey: 'vmsel_all' },
+  { value: 'vmids',   labelKey: 'vmsel_vmids' },
+  { value: 'pool',    labelKey: 'vmsel_pool' },
+  { value: 'exclude', labelKey: 'vmsel_exclude' },
 ]
 
-function errMsg(err) {
+function errMsg(err, t) {
   const s = err?.response?.status
   const d = err?.response?.data?.detail
-  if (s === 403) return 'Keine Berechtigung für Backup-Job-Verwaltung (fehlende Proxmox-Privilegien).'
-  if (s === 503) return 'Admin-Service-Account für diese Node nicht konfiguriert.'
-  if (s === 422) return (typeof d === 'string' ? d : 'Ungültige Parameter – bitte Eingaben prüfen.')
-  if (s === 502) return 'Proxmox-API nicht erreichbar.'
-  return (typeof d === 'string' ? d : null) ?? 'Fehler beim Speichern des Backup-Jobs.'
+  if (s === 403) return t('backup_jobs.form_err_403')
+  if (s === 503) return t('backup_jobs.form_err_503')
+  if (s === 422) return (typeof d === 'string' ? d : t('backup_jobs.form_err_422'))
+  if (s === 502) return t('backup_jobs.form_err_502')
+  return (typeof d === 'string' ? d : null) ?? t('backup_jobs.form_err_generic')
 }
 
 /** Build initial form state from an existing job (edit) or defaults (create). */
@@ -125,12 +127,13 @@ function buildPayload(form) {
   return payload
 }
 
-const inputCls  = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded'
+const inputCls  = 'w-full bg-gray-50 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent rounded'
 const labelCls  = 'block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1'
 const smallCls  = 'text-[11px] text-gray-400 dark:text-zinc-500 mt-1'
 const fieldCls  = 'space-y-1'
 
 export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
+  const { t } = useTranslation()
   const isEdit = Boolean(job)
   const [form, setForm]       = useState(() => buildInitialState(job))
   const [pools, setPools]     = useState([])
@@ -160,13 +163,13 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.schedule.trim()) { setError('Zeitplan ist Pflichtfeld.'); return }
-    if (!form.storage.trim())  { setError('Storage ist Pflichtfeld.'); return }
+    if (!form.schedule.trim()) { setError(t('backup_jobs.val_schedule_required')); return }
+    if (!form.storage.trim())  { setError(t('backup_jobs.val_storage_required')); return }
     if (form.vmSelMode === 'vmids' && !form.vmids.trim()) {
-      setError('Bitte mindestens eine VMID eingeben.'); return
+      setError(t('backup_jobs.val_vmid_required')); return
     }
     if (form.vmSelMode === 'pool' && !form.pool.trim()) {
-      setError('Bitte einen Pool auswählen.'); return
+      setError(t('backup_jobs.val_pool_required')); return
     }
 
     setSaving(true)
@@ -181,7 +184,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
       onSuccess?.()
       onClose()
     } catch (err) {
-      setError(errMsg(err))
+      setError(errMsg(err, t))
     } finally {
       setSaving(false)
     }
@@ -198,9 +201,9 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700 shrink-0">
           <h2 id="backup-job-modal-title" className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isEdit ? `Backup-Job bearbeiten – ${job.id}` : 'Backup-Job anlegen'}
+            {isEdit ? t('backup_jobs.modal_title_edit', { id: job.id }) : t('backup_jobs.modal_title_new')}
           </h2>
-          <button onClick={onClose} aria-label="Schließen" className="btn-ghost">
+          <button onClick={onClose} aria-label={t('backup_jobs.aria_close')} className="btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -210,7 +213,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
         {/* Body */}
         <form id="backup-job-form" onSubmit={handleSubmit} className="overflow-y-auto px-5 py-5 space-y-5 flex-1">
           {error && (
-            <div className="text-sm text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 rounded">
+            <div className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">
               {error}
             </div>
           )}
@@ -218,7 +221,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
           {/* Schedule */}
           <div className={fieldCls}>
             <BackupSchedulePicker
-              label="Zeitplan"
+              label={t('backup_jobs.field_schedule')}
               value={form.schedule}
               onChange={setVal('schedule')}
             />
@@ -226,10 +229,10 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
 
           {/* Storage */}
           <div className={fieldCls}>
-            <label className={labelCls} htmlFor="bj-storage">Storage <span className="text-red-400">*</span></label>
+            <label className={labelCls} htmlFor="bj-storage">{t('backup_jobs.field_storage')} <span className="text-portal-danger">*</span></label>
             {storages.length > 0 ? (
               <select id="bj-storage" value={form.storage} onChange={set('storage')} className={inputCls}>
-                <option value="">– Storage auswählen –</option>
+                <option value="">{t('backup_jobs.storage_select')}</option>
                 {storages.map(s => {
                   const sid = s.storage ?? s
                   return (
@@ -240,7 +243,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
                 })}
                 {/* Keep an unknown existing value selectable on edit */}
                 {form.storage && !storages.some(s => (s.storage ?? s) === form.storage) && (
-                  <option value={form.storage}>{form.storage} (nicht in Liste)</option>
+                  <option value={form.storage}>{t('backup_jobs.storage_not_in_list', { storage: form.storage })}</option>
                 )}
               </select>
             ) : (
@@ -249,16 +252,16 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
                 type="text"
                 value={form.storage}
                 onChange={set('storage')}
-                placeholder="z.B. local, nas-backup"
+                placeholder={t('backup_jobs.storage_ph')}
                 className={inputCls}
               />
             )}
-            <p className={smallCls}>Backup-fähiger Ziel-Storage</p>
+            <p className={smallCls}>{t('backup_jobs.storage_hint')}</p>
           </div>
 
           {/* VM-Auswahl */}
           <div className={fieldCls}>
-            <label className={labelCls}>VM-Auswahl <span className="text-red-400">*</span></label>
+            <label className={labelCls}>{t('backup_jobs.field_vm_selection')} <span className="text-portal-danger">*</span></label>
             <div className="flex gap-2 flex-wrap">
               {VM_SEL_MODES.map(m => (
                 <button
@@ -267,11 +270,11 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
                   onClick={() => setForm(prev => ({ ...prev, vmSelMode: m.value }))}
                   className={`px-3 py-1.5 text-xs rounded border transition-colors ${
                     form.vmSelMode === m.value
-                      ? 'bg-orange-500 border-orange-500 text-white'
-                      : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-orange-400'
+                      ? 'bg-portal-accent border-portal-accent text-white'
+                      : 'border-gray-300 dark:border-zinc-600 text-gray-600 dark:text-zinc-400 hover:border-portal-accent'
                   }`}
                 >
-                  {m.label}
+                  {t(`backup_jobs.${m.labelKey}`)}
                 </button>
               ))}
             </div>
@@ -283,7 +286,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
                   pveNode={node}
                   value={form.vmids}
                   onChange={setVal('vmids')}
-                  emptyHint="Keine VMs/LXCs gefunden – ggf. VMIDs manuell im Pool/Exclude-Modus pflegen."
+                  emptyHint={t('backup_jobs.vmids_empty_hint')}
                 />
               </div>
             )}
@@ -291,7 +294,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
               <div className="mt-2">
                 {pools.length > 0 ? (
                   <select value={form.pool} onChange={set('pool')} className={inputCls}>
-                    <option value="">– Pool auswählen –</option>
+                    <option value="">{t('backup_jobs.pool_select')}</option>
                     {pools.map(p => (
                       <option key={p.poolid ?? p} value={p.poolid ?? p}>
                         {p.poolid ?? p}{p.comment ? ` – ${p.comment}` : ''}
@@ -303,7 +306,7 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
                     type="text"
                     value={form.pool}
                     onChange={set('pool')}
-                    placeholder="Pool-Name"
+                    placeholder={t('backup_jobs.pool_ph')}
                     className={inputCls}
                   />
                 )}
@@ -311,12 +314,12 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
             )}
             {form.vmSelMode === 'exclude' && (
               <div className="mt-2">
-                <p className={`${smallCls} mb-2`}>Alle Gäste werden gesichert – die hier markierten ausgenommen:</p>
+                <p className={`${smallCls} mb-2`}>{t('backup_jobs.exclude_hint')}</p>
                 <VmMultiSelect
                   pveNode={node}
                   value={form.exclude}
                   onChange={setVal('exclude')}
-                  emptyHint="Keine VMs/LXCs gefunden."
+                  emptyHint={t('backup_jobs.exclude_empty_hint')}
                 />
               </div>
             )}
@@ -325,18 +328,18 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
           {/* Row: Mode + Compress */}
           <div className="grid grid-cols-2 gap-4">
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="bj-mode">Backup-Modus</label>
+              <label className={labelCls} htmlFor="bj-mode">{t('backup_jobs.field_mode')}</label>
               <select id="bj-mode" value={form.mode} onChange={set('mode')} className={inputCls}>
                 {MODE_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>{t(`backup_jobs.${o.labelKey}`)}</option>
                 ))}
               </select>
             </div>
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="bj-compress">Kompression</label>
+              <label className={labelCls} htmlFor="bj-compress">{t('backup_jobs.field_compress')}</label>
               <select id="bj-compress" value={form.compress} onChange={set('compress')} className={inputCls}>
                 {COMPRESS_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>{t(`backup_jobs.${o.labelKey}`)}</option>
                 ))}
               </select>
             </div>
@@ -344,13 +347,13 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
 
           {/* Retention */}
           <div>
-            <p className={labelCls}>Aufbewahrung (leer = nicht gesetzt)</p>
+            <p className={labelCls}>{t('backup_jobs.field_retention')}</p>
             <div className="grid grid-cols-4 gap-3">
               {[
-                { key: 'keepLast',    label: 'Letzten N', id: 'bj-keep-last'    },
-                { key: 'keepDaily',   label: 'Täglich',   id: 'bj-keep-daily'   },
-                { key: 'keepWeekly',  label: 'Wöchentl.', id: 'bj-keep-weekly'  },
-                { key: 'keepMonthly', label: 'Monatl.',   id: 'bj-keep-monthly' },
+                { key: 'keepLast',    label: t('backup_jobs.ret_label_keep_last'),    id: 'bj-keep-last'    },
+                { key: 'keepDaily',   label: t('backup_jobs.ret_label_keep_daily'),   id: 'bj-keep-daily'   },
+                { key: 'keepWeekly',  label: t('backup_jobs.ret_label_keep_weekly'),  id: 'bj-keep-weekly'  },
+                { key: 'keepMonthly', label: t('backup_jobs.ret_label_keep_monthly'), id: 'bj-keep-monthly' },
               ].map(({ key, label, id }) => (
                 <div key={key} className={fieldCls}>
                   <label className={labelCls} htmlFor={id}>{label}</label>
@@ -371,24 +374,24 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
           {/* Mail + Comment */}
           <div className="grid grid-cols-2 gap-4">
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="bj-mailto">E-Mail (optional)</label>
+              <label className={labelCls} htmlFor="bj-mailto">{t('backup_jobs.field_mailto')}</label>
               <input
                 id="bj-mailto"
                 type="text"
                 value={form.mailto}
                 onChange={set('mailto')}
-                placeholder="admin@example.com"
+                placeholder={t('backup_jobs.mailto_ph')}
                 className={inputCls}
               />
             </div>
             <div className={fieldCls}>
-              <label className={labelCls} htmlFor="bj-comment">Kommentar (optional)</label>
+              <label className={labelCls} htmlFor="bj-comment">{t('backup_jobs.field_comment')}</label>
               <input
                 id="bj-comment"
                 type="text"
                 value={form.comment}
                 onChange={set('comment')}
-                placeholder="z.B. Nachtliches Backup"
+                placeholder={t('backup_jobs.comment_ph')}
                 className={inputCls}
               />
             </div>
@@ -401,10 +404,10 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
               type="checkbox"
               checked={form.enabled}
               onChange={setBool('enabled')}
-              className="w-4 h-4 rounded accent-orange-500"
+              className="w-4 h-4 rounded accent-portal-accent"
             />
             <label htmlFor="bj-enabled" className="text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-              Job aktiv (Zeitplan ausführen)
+              {t('backup_jobs.enabled_label')}
             </label>
           </div>
         </form>
@@ -412,10 +415,10 @@ export default function BackupJobFormModal({ node, job, onClose, onSuccess }) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-end gap-2 bg-gray-50/50 dark:bg-zinc-900/40 rounded-b-xl shrink-0">
           <button type="button" onClick={onClose} disabled={saving} className="btn-secondary">
-            Abbrechen
+            {t('backup_jobs.btn_cancel')}
           </button>
           <button type="submit" form="backup-job-form" disabled={saving} className="btn-primary">
-            {saving ? '…' : isEdit ? 'Speichern' : 'Job anlegen'}
+            {saving ? '…' : isEdit ? t('backup_jobs.btn_save') : t('backup_jobs.btn_save_new')}
           </button>
         </div>
 

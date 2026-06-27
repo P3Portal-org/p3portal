@@ -112,13 +112,13 @@ export default function GroupDetailModal({ groupId, users, onClose }) {
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
             {loading && <p className="text-sm text-gray-400 dark:text-zinc-500 text-center py-8">{t('common.loading')}</p>}
-            {error   && <p className="text-sm text-red-400 py-4">{error}</p>}
+            {error   && <p className="text-sm text-portal-danger py-4">{error}</p>}
 
             {!loading && !error && group && (
               <>
                 {/* Owner-not-member banner */}
                 {ownerIsNotMember && (
-                  <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-xs text-portal-warn bg-portal-warn/10 border border-portal-warn/30 rounded-lg px-3 py-2">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 shrink-0">
                       <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                       <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -131,7 +131,7 @@ export default function GroupDetailModal({ groupId, users, onClose }) {
                 {group.tags?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {group.tags.map(tag => (
-                      <span key={tag} className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">
+                      <span key={tag} className="text-xs bg-portal-accent/10 text-portal-accent px-2 py-0.5 rounded-full">
                         {tag}
                       </span>
                     ))}
@@ -151,14 +151,14 @@ export default function GroupDetailModal({ groupId, users, onClose }) {
                     <select
                       value={addUserId}
                       onChange={e => setAddUserId(e.target.value)}
-                      className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent"
                     >
                       <option value="">{t('groups.add_member_select_placeholder')}</option>
                       {availableAdd.map(u => (
                         <option key={u.id} value={u.id}>{u.username}</option>
                       ))}
                     </select>
-                    {addError && <p className="text-xs text-red-400 mt-1">{addError}</p>}
+                    {addError && <p className="text-xs text-portal-danger mt-1">{addError}</p>}
                   </div>
                   <button
                     type="submit"
@@ -176,7 +176,7 @@ export default function GroupDetailModal({ groupId, users, onClose }) {
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder={t('groups.member_search_placeholder')}
-                    className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent"
                   />
                 )}
 
@@ -189,11 +189,11 @@ export default function GroupDetailModal({ groupId, users, onClose }) {
                   <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="bg-gray-50 dark:bg-zinc-800/50 text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-                          <th className="px-4 py-2 text-left">{t('groups.col_username')}</th>
-                          <th className="px-4 py-2 text-left">{t('groups.col_role')}</th>
-                          <th className="px-4 py-2 text-left">{t('groups.col_added_by')}</th>
-                          <th className="px-4 py-2 text-left">{t('groups.col_added_at')}</th>
+                        <tr className="border-b border-gray-200 dark:border-zinc-700">
+                          <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('groups.col_username')}</th>
+                          <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('groups.col_role')}</th>
+                          <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('groups.col_added_by')}</th>
+                          <th className="text-left px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('groups.col_added_at')}</th>
                           <th className="px-4 py-2" />
                         </tr>
                       </thead>
@@ -210,7 +210,7 @@ export default function GroupDetailModal({ groupId, users, onClose }) {
                             <td className="px-4 py-2.5 text-right">
                               <button
                                 onClick={() => handleRemoveMember(m)}
-                                className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                                className="text-xs text-portal-danger hover:text-portal-danger transition-colors"
                                 title={t('groups.remove_member_btn')}
                               >
                                 {t('groups.remove_member_btn')}

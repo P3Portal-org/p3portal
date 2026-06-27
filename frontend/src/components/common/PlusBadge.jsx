@@ -8,7 +8,7 @@
  * privaten PlusBadge in pages/v2/SystemSettingsPage.jsx (beide nutzen
  * dieselbe geöffnete Schloss-Form).
  */
-export default function PlusBadge({ className = "w-4 h-4 ml-1.5 text-green-500 dark:text-green-400 inline-block align-text-bottom" }) {
+export default function PlusBadge({ className = "w-4 h-4 ml-1.5 text-portal-success inline-block align-text-bottom" }) {
   return (
     <svg
       viewBox="0 0 20 20"

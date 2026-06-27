@@ -1,9 +1,11 @@
 // p3portal.org
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { removeDisk } from '../../../api/vms'
 import { diskErrMsg, modalInputCls } from './diskHelpers'
 
 export default function RemoveDiskModal({ vmid, node, disk, confirmToken, vmName, onClose, onSaved }) {
+  const { t } = useTranslation()
   // The backend expects the VM name (or vmid as string) as confirmation token.
   const expected = confirmToken
   const [typed, setTyped] = useState('')
@@ -14,7 +16,7 @@ export default function RemoveDiskModal({ vmid, node, disk, confirmToken, vmName
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!matches) {
-      setError('Bestätigung stimmt nicht überein.')
+      setError(t('vm_disks.remove_validate_mismatch'))
       return
     }
     setSaving(true)
@@ -24,7 +26,7 @@ export default function RemoveDiskModal({ vmid, node, disk, confirmToken, vmName
       onSaved?.()
       onClose()
     } catch (err) {
-      setError(diskErrMsg(err))
+      setError(diskErrMsg(err, t))
     } finally {
       setSaving(false)
     }
@@ -38,11 +40,11 @@ export default function RemoveDiskModal({ vmid, node, disk, confirmToken, vmName
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-zinc-700 shrink-0">
           <div>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Festplatte <span className="font-mono">{disk}</span> entfernen
+              {t('vm_disks.remove_title', { disk })}
             </h2>
             {vmName && <p className="text-xs text-gray-500 dark:text-zinc-500 mt-0.5">{vmName}</p>}
           </div>
-          <button onClick={onClose} aria-label="Schließen" className="btn-ghost">
+          <button onClick={onClose} aria-label={t('vm_disks.close')} className="btn-ghost">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
@@ -57,16 +59,17 @@ export default function RemoveDiskModal({ vmid, node, disk, confirmToken, vmName
           )}
 
           <div className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded px-3 py-2.5">
-            <p className="font-medium mb-1">Achtung – unwiderruflicher Datenverlust</p>
+            <p className="font-medium mb-1">{t('vm_disks.remove_warn_title')}</p>
             <p className="text-xs opacity-90">
-              Die Festplatte <span className="font-mono">{disk}</span> wird abgehängt und das Volume
-              <strong> endgültig vom Storage gelöscht</strong>. Alle Daten darauf gehen verloren.
+              {t('vm_disks.remove_warn_body_pre', { disk })}
+              <strong>{t('vm_disks.remove_warn_body_strong')}</strong>
+              {t('vm_disks.remove_warn_body_post')}
             </p>
           </div>
 
           <div>
             <label htmlFor="remove-confirm" className="block text-xs text-gray-500 dark:text-zinc-500 mb-1">
-              Zur Bestätigung den VM-Namen eingeben: <span className="font-mono text-gray-700 dark:text-zinc-200">{expected}</span>
+              {t('vm_disks.remove_label_confirm', { name: expected })}
             </label>
             <input id="remove-confirm" type="text" autoComplete="off" value={typed}
               onChange={(e) => { setError(''); setTyped(e.target.value) }} className={modalInputCls} />
@@ -74,9 +77,9 @@ export default function RemoveDiskModal({ vmid, node, disk, confirmToken, vmName
         </form>
 
         <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-zinc-700 shrink-0">
-          <button type="button" onClick={onClose} className="btn-secondary">Abbrechen</button>
+          <button type="button" onClick={onClose} className="btn-secondary">{t('vm_disks.cancel')}</button>
           <button type="button" onClick={handleSubmit} disabled={saving || !matches} className="btn-danger">
-            {saving ? 'Entferne…' : 'Endgültig entfernen'}
+            {saving ? t('vm_disks.remove_btn_saving') : t('vm_disks.remove_btn_remove')}
           </button>
         </div>
 

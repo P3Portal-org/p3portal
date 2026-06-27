@@ -183,7 +183,7 @@ function SourceBadge({ source, t }) {
   if (source === 'none') return null
   const map = {
     user:   { label: t('help.source.user'),   cls: 'bg-portal-warn/10 text-portal-warn border-portal-warn/30' },
-    global: { label: t('help.source.global'), cls: 'bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/40' },
+    global: { label: t('help.source.global'), cls: 'bg-portal-info/10 text-portal-info border-portal-info/30' },
     repo:   { label: t('help.source.repo'),   cls: 'bg-gray-50 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400 border-gray-200 dark:border-zinc-700' },
   }
   const { label, cls } = map[source] || map.repo

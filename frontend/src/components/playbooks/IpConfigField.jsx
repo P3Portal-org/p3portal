@@ -37,13 +37,13 @@ export default function IpConfigField({ param, value, onChange, error }) {
   const base =
     'border px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 ' +
     'text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 ' +
-    'focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition'
+    'focus:outline-none focus:ring-1 focus:ring-portal-accent focus:border-portal-accent transition'
 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">
         {param.label}
-        {param.required && <span className="text-red-500 ml-1">*</span>}
+        {param.required && <span className="text-portal-danger ml-1">*</span>}
       </label>
 
       <select
@@ -64,7 +64,7 @@ export default function IpConfigField({ param, value, onChange, error }) {
               value={ip}
               onChange={e => { setIp(e.target.value); update(mode, e.target.value, prefix, gateway) }}
               placeholder="192.168.1.100"
-              className={`w-full ${base} ${error ? 'border-red-500' : ''}`}
+              className={`w-full ${base} ${error ? 'border-portal-danger' : ''}`}
             />
           </div>
           <div className="col-span-2 space-y-1">
@@ -91,7 +91,7 @@ export default function IpConfigField({ param, value, onChange, error }) {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-portal-danger">{error}</p>}
     </div>
   )
 }

@@ -41,11 +41,11 @@ describe('ComputeEventsTab', () => {
     const { container } = render(<ComputeEventsTab nodeName="pve1" active={true} />)
     await screen.findByText('qmstart')
     // green dot for OK
-    expect(container.querySelector('.bg-green-500')).not.toBeNull()
+    expect(container.querySelector('.bg-portal-success')).not.toBeNull()
     // orange dot for RUNNING
-    expect(container.querySelector('.bg-orange-400')).not.toBeNull()
+    expect(container.querySelector('.bg-portal-accent')).not.toBeNull()
     // red dot for ERROR
-    expect(container.querySelector('.bg-red-500')).not.toBeNull()
+    expect(container.querySelector('.bg-portal-danger')).not.toBeNull()
   })
 
   it('AC-13: shows loading skeleton before data arrives', () => {

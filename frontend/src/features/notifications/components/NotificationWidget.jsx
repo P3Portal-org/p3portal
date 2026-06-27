@@ -71,7 +71,7 @@ export default function NotificationWidget({ source }) {
       <div className="absolute top-2.5 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={handleNavClick}
-          className="text-xs text-orange-500 bg-white dark:bg-zinc-900 px-2 py-0.5 border border-orange-200 dark:border-orange-800 hover:bg-orange-50 dark:hover:bg-zinc-800 transition-colors"
+          className="text-xs text-portal-accent bg-white dark:bg-zinc-900 px-2 py-0.5 border border-portal-accent/30 hover:bg-portal-accent/10 dark:hover:bg-zinc-800 transition-colors"
         >
           {t('notifications.widget_more')}
         </button>

@@ -1,14 +1,15 @@
 // p3portal.org
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getNodeBackups } from '../../api/cluster'
 
 const STATUS_STYLE = {
-  OK:      { dot: 'bg-green-500',  text: 'text-green-700 dark:text-green-400',  label: 'OK' },
-  ok:      { dot: 'bg-green-500',  text: 'text-green-700 dark:text-green-400',  label: 'OK' },
-  RUNNING: { dot: 'bg-orange-400', text: 'text-orange-700 dark:text-orange-400', label: 'Running' },
-  running: { dot: 'bg-orange-400', text: 'text-orange-700 dark:text-orange-400', label: 'Running' },
-  ERROR:   { dot: 'bg-red-500',    text: 'text-red-700 dark:text-red-400',       label: 'ERROR' },
-  error:   { dot: 'bg-red-500',    text: 'text-red-700 dark:text-red-400',       label: 'ERROR' },
+  OK:      { dot: 'bg-portal-success',  text: 'text-portal-success',  label: 'OK' },
+  ok:      { dot: 'bg-portal-success',  text: 'text-portal-success',  label: 'OK' },
+  RUNNING: { dot: 'bg-portal-accent', text: 'text-portal-accent', label: 'Running' },
+  running: { dot: 'bg-portal-accent', text: 'text-portal-accent', label: 'Running' },
+  ERROR:   { dot: 'bg-portal-danger',    text: 'text-portal-danger',       label: 'ERROR' },
+  error:   { dot: 'bg-portal-danger',    text: 'text-portal-danger',       label: 'ERROR' },
 }
 
 function getStatusStyle(status) {
@@ -32,6 +33,7 @@ function formatDuration(seconds) {
 }
 
 export default function ComputeBackupsTab({ nodeName, active }) {
+  const { t } = useTranslation()
   const [backups, setBackups] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError]    = useState(null)
@@ -45,9 +47,9 @@ export default function ComputeBackupsTab({ nodeName, active }) {
     setError(null)
     getNodeBackups(nodeName)
       .then(data => setBackups(data))
-      .catch(err => setError(err?.response?.status === 403 ? '403' : 'Backup-Liste konnte nicht geladen werden.'))
+      .catch(err => setError(err?.response?.status === 403 ? '403' : t('backup_jobs.backups_load_error')))
       .finally(() => setLoading(false))
-  }, [active, nodeName])
+  }, [active, nodeName, t])
 
   useEffect(() => {
     loadedFor.current = null
@@ -68,9 +70,9 @@ export default function ComputeBackupsTab({ nodeName, active }) {
   if (error === '403') {
     return (
       <div className="rounded-lg border border-portal-border bg-portal-bg px-4 py-6 text-center">
-        <p className="text-sm font-medium text-portal-text">Kein Zugriff</p>
+        <p className="text-sm font-medium text-portal-text">{t('backup_jobs.backups_no_access_title')}</p>
         <p className="mt-1 text-xs text-gray-400 dark:text-zinc-500">
-          Du hast keine Berechtigung, die Backups dieser Node zu sehen.
+          {t('backup_jobs.backups_no_access_body')}
         </p>
       </div>
     )
@@ -78,7 +80,7 @@ export default function ComputeBackupsTab({ nodeName, active }) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+      <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
         {error}
       </div>
     )
@@ -87,7 +89,7 @@ export default function ComputeBackupsTab({ nodeName, active }) {
   if (backups.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-gray-400 dark:text-zinc-500">
-        Keine Backups für diese Node gefunden
+        {t('backup_jobs.backups_empty')}
       </div>
     )
   }
@@ -96,11 +98,11 @@ export default function ComputeBackupsTab({ nodeName, active }) {
     <div className="rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
       <table className="w-full">
         <thead>
-          <tr className="bg-gray-50 dark:bg-zinc-800/60 border-b border-gray-200 dark:border-zinc-700">
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">VMID</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Startzeit</th>
-            <th className="px-4 py-2 text-left text-[10px] font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">Dauer</th>
+          <tr className="border-b border-gray-200 dark:border-zinc-700">
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.backups_col_vmid')}</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.backups_col_status')}</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.backups_col_starttime')}</th>
+            <th className="text-left px-4 py-2 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wider">{t('backup_jobs.backups_col_duration')}</th>
           </tr>
         </thead>
         <tbody className="bg-white dark:bg-zinc-900">

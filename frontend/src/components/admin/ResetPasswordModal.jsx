@@ -53,7 +53,7 @@ export default function ResetPasswordModal({ user, onClose, onSuccess }) {
                 required
                 autoFocus
                 minLength={10}
-                className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 px-3 py-2 pr-10 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition"
+                className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-zinc-100 px-3 py-2 pr-10 text-sm focus:outline-none focus:border-portal-accent focus:ring-1 focus:ring-portal-accent transition"
               />
               <button
                 type="button"
@@ -80,7 +80,7 @@ export default function ResetPasswordModal({ user, onClose, onSuccess }) {
           </div>
 
           {error && (
-            <p className="text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2">
+            <p className="text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2">
               {error}
             </p>
           )}

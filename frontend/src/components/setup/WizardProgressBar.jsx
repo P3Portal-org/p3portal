@@ -25,9 +25,9 @@ export default function WizardProgressBar({ current }) {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
                   done
-                    ? 'bg-orange-500 border-orange-500 text-white'
+                    ? 'bg-portal-accent border-portal-accent text-white'
                     : active
-                    ? 'bg-white dark:bg-zinc-900 border-orange-500 text-orange-500'
+                    ? 'bg-white dark:bg-zinc-900 border-portal-accent text-portal-accent'
                     : 'bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-400'
                 }`}
               >
@@ -41,7 +41,7 @@ export default function WizardProgressBar({ current }) {
               </div>
               <span
                 className={`text-xs mt-1 whitespace-nowrap hidden sm:block ${
-                  active ? 'text-orange-500 font-medium' : done ? 'text-zinc-500' : 'text-zinc-400'
+                  active ? 'text-portal-accent font-medium' : done ? 'text-zinc-500' : 'text-zinc-400'
                 }`}
               >
                 {label}
@@ -50,7 +50,7 @@ export default function WizardProgressBar({ current }) {
             {i < STEPS.length - 1 && (
               <div
                 className={`flex-1 h-0.5 mx-1 min-w-0 transition-colors ${
-                  done ? 'bg-orange-500' : 'bg-zinc-200 dark:bg-zinc-700'
+                  done ? 'bg-portal-accent' : 'bg-zinc-200 dark:bg-zinc-700'
                 }`}
               />
             )}

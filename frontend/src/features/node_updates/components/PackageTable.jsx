@@ -38,7 +38,7 @@ export default function PackageTable({ packages, showNodeColumn = false }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={t('nodeUpdates.search_placeholder')}
-            className="w-full max-w-xs pl-8 pr-3 py-1.5 text-xs rounded border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-orange-400"
+            className="w-full max-w-xs pl-8 pr-3 py-1.5 text-xs rounded border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-portal-accent"
           />
         </div>
       )}
@@ -51,22 +51,22 @@ export default function PackageTable({ packages, showNodeColumn = false }) {
         <div className={`rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden ${hasManyRows ? 'max-h-[480px] overflow-y-auto' : ''}`}>
           <table className="w-full text-xs">
             <thead className="sticky top-0 z-10">
-              <tr className="bg-gray-50 dark:bg-zinc-800/80 border-b border-gray-200 dark:border-zinc-700">
+              <tr className="border-b border-gray-200 dark:border-zinc-700">
                 {showNodeColumn && (
-                  <th className="px-3 py-2 text-left font-semibold text-[10px] uppercase tracking-wider text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+                  <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500 whitespace-nowrap">
                     {t('nodeUpdates.col_node')}
                   </th>
                 )}
-                <th className="px-3 py-2 text-left font-semibold text-[10px] uppercase tracking-wider text-gray-500 dark:text-zinc-400">
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">
                   {t('nodeUpdates.col_package')}
                 </th>
-                <th className="px-3 py-2 text-left font-semibold text-[10px] uppercase tracking-wider text-gray-500 dark:text-zinc-400">
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">
                   {t('nodeUpdates.col_old_version')}
                 </th>
-                <th className="px-3 py-2 text-left font-semibold text-[10px] uppercase tracking-wider text-gray-500 dark:text-zinc-400">
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">
                   {t('nodeUpdates.col_new_version')}
                 </th>
-                <th className="px-3 py-2 text-left font-semibold text-[10px] uppercase tracking-wider text-gray-500 dark:text-zinc-400">
+                <th className="text-left px-3 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">
                   {t('nodeUpdates.col_security')}
                 </th>
               </tr>
@@ -75,7 +75,7 @@ export default function PackageTable({ packages, showNodeColumn = false }) {
               {filtered.map((pkg, i) => (
                 <tr
                   key={`${pkg.node_name ?? ''}-${pkg.name}-${i}`}
-                  className={`hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors ${pkg.is_security ? 'bg-yellow-50/40 dark:bg-yellow-950/10' : ''}`}
+                  className={`hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors ${pkg.is_security ? 'bg-portal-warn/10' : ''}`}
                 >
                   {showNodeColumn && (
                     <td className="px-3 py-2 font-mono text-gray-500 dark:text-zinc-400 whitespace-nowrap">

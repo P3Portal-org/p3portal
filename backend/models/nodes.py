@@ -109,6 +109,11 @@ class NodeResponse(BaseModel):
     tofu_token_id: str = ""  # PROJ-76 Phase 2a (secret never returned)
     cluster_nodes: list[str] = []  # PROJ-26
     poll_interval: int = 30        # PROJ-33
+    position: int = 0              # globale Node-Reihenfolge
     is_default: bool
     created_at: str
     created_by: str
+
+
+class NodeReorderRequest(BaseModel):
+    node_ids: list[int]  # alle Node-IDs in gewünschter Reihenfolge

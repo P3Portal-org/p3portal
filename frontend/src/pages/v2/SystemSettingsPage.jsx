@@ -102,7 +102,7 @@ function PortalTab({ navigate }) {
   const subCls = (id) =>
     `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
       activeSub === id
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -215,7 +215,7 @@ function UsersTab() {
   const subTabCls = (id) =>
     `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
       activeSubTab === id
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -328,7 +328,7 @@ function UsersTab() {
                 {panel === 'create' && userLimit && !userLimit.unlimited && (
                   <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
                     userAtLimit
-                      ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                      ? 'bg-portal-danger/10 text-portal-danger'
                       : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'
                   }`}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3 shrink-0">
@@ -407,7 +407,7 @@ function NodesTab() {
           </button>
         </div>
       )}
-      {fetchError && <p className="text-sm text-red-500">{fetchError}</p>}
+      {fetchError && <p className="text-sm text-portal-danger">{fetchError}</p>}
       {loading
         ? <div className="h-32 bg-gray-100 dark:bg-zinc-800 animate-pulse rounded" />
         : <NodeTable
@@ -461,7 +461,7 @@ function DeleteConfirmButton({ onDelete }) {
     }
   }
 
-  if (error) return <span className="text-xs text-red-500">{error}</span>
+  if (error) return <span className="text-xs text-portal-danger">{error}</span>
 
   return (
     <div className="flex items-center gap-1">
@@ -478,8 +478,8 @@ function DeleteConfirmButton({ onDelete }) {
         disabled={loading}
         className={`text-xs px-2 py-1 rounded transition-colors ${
           confirm
-            ? 'bg-red-600 hover:bg-red-700 text-white'
-            : 'border border-gray-200 dark:border-zinc-700 text-gray-400 dark:text-zinc-500 hover:border-red-400 hover:text-red-500'
+            ? 'bg-portal-danger hover:bg-portal-danger text-white'
+            : 'border border-gray-200 dark:border-zinc-700 text-gray-400 dark:text-zinc-500 hover:border-portal-danger/50 hover:text-portal-danger'
         }`}
       >
         {loading ? '…' : confirm ? 'Bestätigen' : 'Löschen'}
@@ -501,7 +501,7 @@ function IntegrationsTab() {
   const subTabCls = (id) =>
     `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
       activeSub === id
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -769,7 +769,7 @@ export default function SystemSettingsPage() {
   const tabCls = (id) =>
     `px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
       activeTab === id
-        ? 'border-orange-500 text-gray-900 dark:text-zinc-100'
+        ? 'border-portal-accent/50 text-gray-900 dark:text-zinc-100'
         : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
     }`
 
@@ -898,7 +898,7 @@ export default function SystemSettingsPage() {
 function PlusBadge() {
   return (
     <div className="flex items-center justify-end mb-3">
-      <SharedPlusBadge className="w-3.5 h-3.5 text-green-500 dark:text-green-400 shrink-0" />
+      <SharedPlusBadge className="w-3.5 h-3.5 text-portal-success shrink-0" />
     </div>
   )
 }

@@ -54,7 +54,7 @@ export default function PinListRow({ pin, isFirst, isLast, onMoveUp, onMoveDown,
               onChange={e => setLabel(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t('account.favorites.label_placeholder')}
-              className="flex-1 text-sm px-2 py-1 border border-orange-400 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-400"
+              className="flex-1 text-sm px-2 py-1 border border-portal-accent/50 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent"
             />
             <button
               onClick={handleSave}
@@ -73,7 +73,7 @@ export default function PinListRow({ pin, isFirst, isLast, onMoveUp, onMoveDown,
         ) : (
           <button
             onClick={() => { setLabel(pin.label ?? ''); setEditing(true) }}
-            className="text-sm text-left text-gray-900 dark:text-zinc-100 hover:text-orange-600 dark:hover:text-orange-400 transition-colors group flex items-center gap-1.5"
+            className="text-sm text-left text-gray-900 dark:text-zinc-100 hover:text-portal-accent transition-colors group flex items-center gap-1.5"
             title={t('account.favorites.click_to_edit_label')}
           >
             <span>{pin.label || <span className="text-gray-400 dark:text-zinc-500 italic">{t('account.favorites.no_custom_label')}</span>}</span>
@@ -83,7 +83,7 @@ export default function PinListRow({ pin, isFirst, isLast, onMoveUp, onMoveDown,
             </svg>
           </button>
         )}
-        {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
+        {error && <p className="text-xs text-portal-danger mt-0.5">{error}</p>}
       </td>
 
       {/* Route */}
@@ -118,7 +118,7 @@ export default function PinListRow({ pin, isFirst, isLast, onMoveUp, onMoveDown,
           </button>
           <button
             onClick={() => onDelete(pin.id)}
-            className="p-1 rounded text-gray-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            className="p-1 rounded text-gray-400 dark:text-zinc-500 hover:text-portal-danger transition-colors"
             title={t('account.favorites.delete')}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">

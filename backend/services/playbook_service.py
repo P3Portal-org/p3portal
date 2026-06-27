@@ -105,6 +105,19 @@ def get_sensitive_param_ids(playbook_id: str) -> set[str]:
     return {p.id for p in detail.parameters if p.type in ("ssh_key", "password")}
 
 
+# Code-Review (Befund 5): Variablen, die der Backend-Runner selbst injiziert
+# (ansible_runner_service._build_extravars). Ein User darf sie NICHT als Extra-
+# Param mitschicken – sonst ließe sich versuchen, Backend-Vars/Credentials zu
+# überschreiben. Geblockt nur, wenn UNDEKLARIERT (ein Playbook, das einen solchen
+# Param bewusst deklariert, bleibt erlaubt → kein Bruch bestehender meta.yaml).
+_RESERVED_RUNNER_VARS: frozenset[str] = frozenset({
+    "proxmox_api_host", "proxmox_api_base_url",
+    "api_user", "api_password",
+    "proxmox_portal_user", "proxmox_portal_realm",
+    "proxmox_portal_token_name", "proxmox_portal_token_secret",
+})
+
+
 def validate_params(playbook_id: str, params: dict) -> list[str]:
     """Validate params against meta.yaml constraints. Returns list of error messages."""
     detail = get_playbook(playbook_id)
@@ -112,6 +125,10 @@ def validate_params(playbook_id: str, params: dict) -> list[str]:
         return [f"Playbook '{playbook_id}' not found"]
 
     errors: list[str] = []
+    declared_ids = {p.id for p in detail.parameters}
+    for key in params:
+        if key in _RESERVED_RUNNER_VARS and key not in declared_ids:
+            errors.append(f"Parameter '{key}' ist reserviert und darf nicht gesetzt werden")
     for p in detail.parameters:
         if p.type in ("vm_access", "ssh_key"):
             continue

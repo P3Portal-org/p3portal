@@ -40,6 +40,7 @@ class NodeRow:
     created_by: str
     cluster_nodes: list[str] = field(default_factory=list)  # PROJ-26
     poll_interval: int = 30                                  # PROJ-33
+    position: int = 0                                        # globale Node-Reihenfolge
 
 
 def _safe_decrypt(value: str | None) -> str:
@@ -92,13 +93,18 @@ def _to_node(row) -> NodeRow:
         created_by=row["created_by"],
         cluster_nodes=_parse_cluster_nodes(_col("cluster_nodes")),
         poll_interval=int(row["poll_interval"]) if row.get("poll_interval") is not None else 30,
+        position=int(row["position"]) if row.get("position") is not None else 0,
     )
 
 
 async def list_nodes() -> list[NodeRow]:
     async with get_db() as session:
+        # position primär (Admin-Reihenfolge). Solange alle 0 sind (noch nie
+        # sortiert), greift der Fallback is_default DESC, id ASC = bisheriges
+        # Verhalten. Diese Reihenfolge propagiert in alle Node-Ansichten
+        # (Topbar/Dashboard/Compute) über das Fan-out in routers/cluster.py.
         result = await session.execute(
-            text("SELECT * FROM nodes ORDER BY is_default DESC, id ASC")
+            text("SELECT * FROM nodes ORDER BY position ASC, is_default DESC, id ASC")
         )
         rows = result.mappings().fetchall()
     return [_to_node(r) for r in rows]
@@ -342,6 +348,28 @@ async def set_default_node(node_id: int) -> bool:
         )
         await session.commit()
     return True
+
+
+async def reorder_nodes(node_ids: list[int]) -> list[NodeRow]:
+    """Set the global node order atomically (position = index in node_ids).
+
+    node_ids muss exakt alle existierenden Node-IDs enthalten (Muster PROJ-54
+    Sidebar-Pin-Reorder) – sonst ValueError (→ HTTP 409 im Router).
+    """
+    async with get_db() as session:
+        result = await session.execute(text("SELECT id FROM nodes"))
+        existing = {row[0] for row in result.fetchall()}
+        if set(node_ids) != existing:
+            raise ValueError(
+                "node_ids must contain exactly all existing node ids"
+            )
+        for pos, nid in enumerate(node_ids):
+            await session.execute(
+                text("UPDATE nodes SET position = :pos WHERE id = :id"),
+                {"pos": pos, "id": nid},
+            )
+        await session.commit()
+    return await list_nodes()
 
 
 async def test_connection(

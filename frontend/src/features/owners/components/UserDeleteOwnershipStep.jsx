@@ -29,11 +29,11 @@ export default function UserDeleteOwnershipStep({
   if (!ownerCount) return null
 
   return (
-    <div className="mb-3 rounded border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-3">
-      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+    <div className="mb-3 rounded border border-portal-warn/30 bg-portal-warn/10 p-4 space-y-3">
+      <p className="text-sm font-semibold text-portal-warn">
         {t('owners.user_delete_step_title')}
       </p>
-      <p className="text-xs text-amber-700 dark:text-amber-400">
+      <p className="text-xs text-portal-warn">
         {t('owners.user_delete_step_body', { count: ownerCount, username })}
       </p>
 
@@ -45,7 +45,7 @@ export default function UserDeleteOwnershipStep({
             value="orphan"
             checked={action === 'orphan'}
             onChange={() => { setAction('orphan'); setTransferToId('') }}
-            className="accent-orange-500"
+            className="accent-portal-accent"
           />
           {t('owners.user_delete_orphan')}
         </label>
@@ -57,7 +57,7 @@ export default function UserDeleteOwnershipStep({
             value="transfer"
             checked={action === 'transfer'}
             onChange={() => setAction('transfer')}
-            className="accent-orange-500"
+            className="accent-portal-accent"
           />
           {t('owners.user_delete_transfer')}
         </label>
@@ -66,7 +66,7 @@ export default function UserDeleteOwnershipStep({
           <select
             value={transferToId}
             onChange={e => setTransferToId(e.target.value)}
-            className="w-full mt-1 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full mt-1 border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-portal-accent"
           >
             <option value="">– {t('owners.user_delete_transfer_to')} –</option>
             {allUsers.map(u => (
@@ -81,7 +81,7 @@ export default function UserDeleteOwnershipStep({
           type="button"
           onClick={onConfirm}
           disabled={disabled}
-          className="text-xs px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white transition-colors"
+          className="text-xs px-3 py-1.5 bg-portal-danger hover:bg-portal-danger disabled:opacity-40 text-white transition-colors"
         >
           {t('admin.user_table.confirm_yes')}
         </button>

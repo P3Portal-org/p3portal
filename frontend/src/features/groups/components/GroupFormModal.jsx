@@ -100,7 +100,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
             {!isEdit && groupLimit && !groupLimit.unlimited && (
               <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
                 groupLimit.current >= groupLimit.max
-                  ? 'bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                  ? 'bg-portal-danger/10 text-portal-danger'
                   : 'bg-gray-100 dark:bg-zinc-800 text-gray-500 dark:text-zinc-400'
               }`}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3 shrink-0">
@@ -124,7 +124,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
         {/* Body */}
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-lg px-3 py-2">
+            <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -132,7 +132,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1">
-              {t('groups.field_name')} <span className="text-red-400">*</span>
+              {t('groups.field_name')} <span className="text-portal-danger">*</span>
             </label>
             <input
               type="text"
@@ -142,7 +142,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
               minLength={2}
               maxLength={64}
               placeholder={t('groups.field_name_placeholder')}
-              className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent"
             />
           </div>
 
@@ -156,7 +156,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
               onChange={e => setDescription(e.target.value)}
               rows={2}
               placeholder={t('groups.field_description_placeholder')}
-              className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+              className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent resize-none"
             />
           </div>
 
@@ -171,9 +171,9 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
               className="flex flex-wrap gap-1.5 min-h-[2.25rem] px-2 py-1.5 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 cursor-text"
             >
               {tags.map((tag, idx) => (
-                <span key={idx} className="flex items-center gap-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">
+                <span key={idx} className="flex items-center gap-1 text-xs bg-portal-accent/10 text-portal-accent px-2 py-0.5 rounded-full">
                   {tag}
-                  <button type="button" onClick={() => removeTag(idx)} className="text-orange-400 hover:text-orange-600 leading-none">×</button>
+                  <button type="button" onClick={() => removeTag(idx)} className="text-portal-accent hover:text-portal-accent leading-none">×</button>
                 </span>
               ))}
               <input
@@ -211,7 +211,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
             <select
               value={clearOwner ? '' : ownerId}
               onChange={e => { setClearOwner(false); setOwnerId(e.target.value) }}
-              className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full text-sm px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-portal-accent"
             >
               <option value="">{t('groups.field_owner_none')}</option>
               {localUsers.map(u => (
@@ -224,7 +224,7 @@ export default function GroupFormModal({ group, users, groupLimit, onSuccess, on
                   type="checkbox"
                   checked={clearOwner}
                   onChange={e => { setClearOwner(e.target.checked); if (e.target.checked) setOwnerId('') }}
-                  className="rounded border-gray-300 dark:border-zinc-600 text-orange-500 focus:ring-orange-400"
+                  className="rounded border-gray-300 dark:border-zinc-600 text-portal-accent focus:ring-portal-accent"
                 />
                 <span className="text-xs text-gray-500 dark:text-zinc-400">{t('groups.field_owner_clear')}</span>
               </label>

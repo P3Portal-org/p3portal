@@ -28,7 +28,7 @@ const OS_LABELS = {
 function BoolBadge({ value }) {
   if (value === null || value === undefined) return <span className="text-xs font-mono text-gray-400 dark:text-zinc-600">–</span>
   return value
-    ? <span className="text-xs font-mono text-green-600 dark:text-green-400">Ja</span>
+    ? <span className="text-xs font-mono text-portal-success">Ja</span>
     : <span className="text-xs font-mono text-gray-400 dark:text-zinc-500">Nein</span>
 }
 

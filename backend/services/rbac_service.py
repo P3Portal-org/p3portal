@@ -296,13 +296,26 @@ async def has_any_assignments(user_id: int) -> bool:
 
 
 async def check_permission(
-    user_id: int, resource_id: int, resource_type: str, action: str
+    user_id: int,
+    resource_id: int,
+    resource_type: str,
+    action: str,
+    portal_node_id: int | None = None,
 ) -> bool:
-    """Returns True if user has the given action on the resource."""
+    """Returns True if user has the given action on the resource.
+
+    Code-Review-Fix: unioniert über *alle* passenden Assignments (vorher nur die
+    erste Zeile → das großzügigste Preset gewann nicht) und ist node-bewusst:
+    - ``portal_node_id is None`` → Verhalten wie bisher (Match nur per VMID, alle
+      Zeilen unioniert) — rückwärtskompatibel für Aufrufer ohne Node-Kontext.
+    - ``portal_node_id`` gesetzt → ein node-scoped Assignment greift nur auf
+      genau diesem Portal-Node; ``portal_node_id IS NULL`` gilt weiterhin überall
+      (Legacy). Schließt den Cross-Installation-Leak (kollidierende VMIDs).
+    """
     async with get_db() as session:
         result = await session.execute(
             text("""
-                SELECT p.permissions
+                SELECT p.permissions, a.portal_node_id
                   FROM resource_assignments a
                   JOIN role_presets p ON p.id = a.preset_id
                  WHERE a.user_id = :user_id
@@ -311,10 +324,15 @@ async def check_permission(
             """),
             {"user_id": user_id, "resource_id": resource_id, "resource_type": resource_type},
         )
-        row = result.mappings().fetchone()
-    if row is None:
-        return False
-    return action in json.loads(row["permissions"])
+        rows = result.mappings().fetchall()
+    for row in rows:
+        row_node = row["portal_node_id"]
+        # node-scoped assignment greift nur auf seinem Node (NULL = überall)
+        if portal_node_id is not None and row_node is not None and row_node != portal_node_id:
+            continue
+        if action in json.loads(row["permissions"]):
+            return True
+    return False
 
 
 # ── Seed ─────────────────────────────────────────────────────────────────────

@@ -56,7 +56,7 @@ export default function FavoritesPage() {
   }
 
   if (error) {
-    return <p className="text-sm text-red-500">{error}</p>
+    return <p className="text-sm text-portal-danger">{error}</p>
   }
 
   if (pins.length === 0) {
@@ -77,11 +77,11 @@ export default function FavoritesPage() {
       <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 dark:bg-zinc-800/50 text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
-              <th className="px-3 py-2.5 text-center w-8">#</th>
-              <th className="px-3 py-2.5 text-left">{t('account.favorites.col_label')}</th>
-              <th className="px-3 py-2.5 text-left hidden md:table-cell">{t('account.favorites.col_route')}</th>
-              <th className="px-3 py-2.5 text-right">{t('account.favorites.col_actions')}</th>
+            <tr className="border-b border-gray-200 dark:border-zinc-700">
+              <th className="text-center px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500 w-8">#</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('account.favorites.col_label')}</th>
+              <th className="text-left px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500 hidden md:table-cell">{t('account.favorites.col_route')}</th>
+              <th className="text-right px-2 py-2.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-zinc-500">{t('account.favorites.col_actions')}</th>
             </tr>
           </thead>
           <tbody>

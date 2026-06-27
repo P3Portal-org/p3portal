@@ -15,27 +15,15 @@
  * separately and emits an incompatible cron format.
  */
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
-const SCHEDULE_TYPES = [
-  { value: 'daily',   label: 'Täglich' },
-  { value: 'weekly',  label: 'Wöchentlich' },
-  { value: 'hourly',  label: 'Stündlich' },
-  { value: 'every15', label: 'Alle 15 Minuten' },
-  { value: 'custom',  label: 'Eigener Calendar-Event…' },
-]
+// Schedule type option keys (labels resolved via i18n in render)
+const SCHEDULE_TYPES = ['daily', 'weekly', 'hourly', 'every15', 'custom']
 
-// Proxmox/systemd weekday tokens (lowercase 3-letter)
-const WEEKDAYS = [
-  { value: 'mon', short: 'Mo', label: 'Montag' },
-  { value: 'tue', short: 'Di', label: 'Dienstag' },
-  { value: 'wed', short: 'Mi', label: 'Mittwoch' },
-  { value: 'thu', short: 'Do', label: 'Donnerstag' },
-  { value: 'fri', short: 'Fr', label: 'Freitag' },
-  { value: 'sat', short: 'Sa', label: 'Samstag' },
-  { value: 'sun', short: 'So', label: 'Sonntag' },
-]
+// Proxmox/systemd weekday tokens (lowercase 3-letter); labels via i18n
+const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
-const WD_ORDER = WEEKDAYS.map(d => d.value)
+const WD_ORDER = WEEKDAYS
 
 const pad = n => String(parseInt(n, 10) || 0).padStart(2, '0')
 
@@ -82,25 +70,26 @@ export function buildScheduleFromState(type, time, weekdays, custom) {
   return (custom || '').trim()
 }
 
-function humanLabel(type, time, weekdays) {
-  const t = time || '02:00'
-  if (type === 'every15') return 'alle 15 Minuten'
-  if (type === 'hourly')  return `jede Stunde, Minute ${parseInt(t.split(':')[1], 10) || 0}`
-  if (type === 'daily')   return `täglich um ${t} Uhr`
+function humanLabel(type, time, weekdays, t) {
+  const ti = time || '02:00'
+  if (type === 'every15') return t('backup_jobs.human_every15')
+  if (type === 'hourly')  return t('backup_jobs.human_hourly', { minute: parseInt(ti.split(':')[1], 10) || 0 })
+  if (type === 'daily')   return t('backup_jobs.human_daily', { time: ti })
   if (type === 'weekly') {
-    if (!weekdays || weekdays.length === 0) return `um ${t} Uhr`
+    if (!weekdays || weekdays.length === 0) return t('backup_jobs.human_weekly_notime', { time: ti })
     const names = [...weekdays]
       .sort((a, b) => WD_ORDER.indexOf(a) - WD_ORDER.indexOf(b))
-      .map(v => WEEKDAYS.find(d => d.value === v)?.label ?? v)
+      .map(v => WEEKDAYS.includes(v) ? t(`backup_jobs.wd_${v}`) : v)
       .join(', ')
-    return `${names} um ${t} Uhr`
+    return t('backup_jobs.human_weekly_days', { names, time: ti })
   }
   return ''
 }
 
-const cls = 'text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-orange-500'
+const cls = 'text-sm border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-portal-accent'
 
 export default function BackupSchedulePicker({ value, onChange, label }) {
+  const { t } = useTranslation()
   const init = parseScheduleToState(value)
   const [type,     setType]     = useState(init.type)
   const [time,     setTime]     = useState(init.time)
@@ -123,20 +112,20 @@ export default function BackupSchedulePicker({ value, onChange, label }) {
   }
 
   const schedule = buildScheduleFromState(type, time, weekdays, custom)
-  const human    = humanLabel(type, time, weekdays)
+  const human    = humanLabel(type, time, weekdays, t)
   const minute   = parseInt((time || '00:00').split(':')[1], 10) || 0
 
   return (
     <div className="space-y-2">
       {label && (
         <label className="block text-xs font-medium text-gray-600 dark:text-zinc-400 mb-1">
-          {label} <span className="text-red-400">*</span>
+          {label} <span className="text-portal-danger">*</span>
         </label>
       )}
 
       <div className="flex flex-wrap gap-2 items-center">
         <select value={type} onChange={e => onType(e.target.value)} className={`${cls} flex-1 min-w-[150px]`}>
-          {SCHEDULE_TYPES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {SCHEDULE_TYPES.map(o => <option key={o} value={o}>{t(`backup_jobs.sched_${o}`)}</option>)}
         </select>
 
         {(type === 'daily' || type === 'weekly') && (
@@ -150,7 +139,7 @@ export default function BackupSchedulePicker({ value, onChange, label }) {
 
         {type === 'hourly' && (
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400">
-            <span>Minute:</span>
+            <span>{t('backup_jobs.minute_label')}</span>
             <input
               type="number"
               min={0}
@@ -166,20 +155,20 @@ export default function BackupSchedulePicker({ value, onChange, label }) {
       {type === 'weekly' && (
         <div className="flex flex-wrap gap-1.5">
           {WEEKDAYS.map(d => {
-            const activeDay = weekdays.includes(d.value)
+            const activeDay = weekdays.includes(d)
             return (
               <button
-                key={d.value}
+                key={d}
                 type="button"
-                onClick={() => toggleDay(d.value)}
-                title={d.label}
+                onClick={() => toggleDay(d)}
+                title={t(`backup_jobs.wd_${d}`)}
                 className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
                   activeDay
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-portal-accent text-white'
                     : 'bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-600'
                 }`}
               >
-                {d.short}
+                {t(`backup_jobs.wd_short_${d}`)}
               </button>
             )
           })}
@@ -191,7 +180,7 @@ export default function BackupSchedulePicker({ value, onChange, label }) {
           type="text"
           value={custom}
           onChange={e => onCustom(e.target.value)}
-          placeholder="z.B. mon..fri 21:00 oder sat 03:30"
+          placeholder={t('backup_jobs.custom_ph')}
           className={`${cls} w-full font-mono`}
         />
       )}

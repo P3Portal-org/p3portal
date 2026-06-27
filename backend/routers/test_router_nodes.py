@@ -480,3 +480,70 @@ async def test_poll_interval_max_boundary_via_update(client_with_node: AsyncClie
     )
     assert resp.status_code == 200
     assert resp.json()["poll_interval"] == 300
+
+
+# ── PUT /api/admin/nodes/reorder + reorder_nodes service ──────────────────────
+
+_RN_KW = dict(verify_ssl=False, token_id="user@pam!t", token_secret="s", created_by="t")
+
+
+@pytest.mark.asyncio
+async def test_reorder_nodes_service():
+    """Service setzt position=index und list_nodes liefert die neue Reihenfolge."""
+    from backend.services.nodes_service import create_node, list_nodes, reorder_nodes
+    await init_db()
+    a = await create_node(name="A", url="https://a:8006", proxmox_node="a", **_RN_KW)
+    b = await create_node(name="B", url="https://b:8006", proxmox_node="b", **_RN_KW)
+    c = await create_node(name="C", url="https://c:8006", proxmox_node="c", **_RN_KW)
+    await reorder_nodes([c.id, a.id, b.id])
+    nodes = await list_nodes()
+    assert [n.id for n in nodes] == [c.id, a.id, b.id]
+    assert [n.position for n in nodes] == [0, 1, 2]
+
+
+@pytest.mark.asyncio
+async def test_reorder_nodes_default_order_preserved_when_unsorted():
+    """position alle 0 → Fallback is_default DESC, id ASC (bisheriges Verhalten)."""
+    from backend.services.nodes_service import create_node, list_nodes
+    await init_db()
+    a = await create_node(name="A", url="https://a:8006", proxmox_node="a", **_RN_KW)
+    b = await create_node(name="B", url="https://b:8006", proxmox_node="b", **_RN_KW)
+    nodes = await list_nodes()
+    # a ist Default (erster Node) → bleibt vorne
+    assert [n.id for n in nodes] == [a.id, b.id]
+
+
+@pytest.mark.asyncio
+async def test_reorder_nodes_validation_rejects_incomplete():
+    from backend.services.nodes_service import create_node, reorder_nodes
+    await init_db()
+    a = await create_node(name="A", url="https://a:8006", proxmox_node="a", **_RN_KW)
+    b = await create_node(name="B", url="https://b:8006", proxmox_node="b", **_RN_KW)
+    with pytest.raises(ValueError):
+        await reorder_nodes([a.id])           # b fehlt
+    with pytest.raises(ValueError):
+        await reorder_nodes([a.id, b.id, 9999])  # fremde id
+
+
+@pytest.mark.asyncio
+async def test_reorder_endpoint_forbidden_for_operator(client_with_node: AsyncClient):
+    resp = await client_with_node.put(
+        "/api/admin/nodes/reorder", json={"node_ids": [1]}, headers=_auth(_OP_TOKEN)
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_reorder_endpoint_admin_ok_and_conflict(client_with_node: AsyncClient):
+    from backend.services.nodes_service import list_nodes
+    ids = [n.id for n in await list_nodes()]
+    resp = await client_with_node.put(
+        "/api/admin/nodes/reorder", json={"node_ids": ids}, headers=_auth(_ADMIN_TOKEN)
+    )
+    assert resp.status_code == 200
+    assert [n["id"] for n in resp.json()] == ids
+    # falsche Menge → 409
+    resp2 = await client_with_node.put(
+        "/api/admin/nodes/reorder", json={"node_ids": ids + [9999]}, headers=_auth(_ADMIN_TOKEN)
+    )
+    assert resp2.status_code == 409

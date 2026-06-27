@@ -54,7 +54,7 @@ export default function GroupsPage({ embedded = false }) {
 
       {/* Limit banner (Core edition) */}
       {atLimit && (
-        <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-lg px-4 py-2.5">
+        <div className="flex items-center gap-2 text-xs text-portal-warn bg-portal-warn/10 border border-portal-warn/30 rounded-lg px-4 py-2.5">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 shrink-0">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
@@ -92,7 +92,7 @@ export default function GroupsPage({ embedded = false }) {
           value={filters.search}
           onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
           placeholder={t('groups.search_placeholder')}
-          className="flex-1 min-w-[160px] text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-400"
+          className="flex-1 min-w-[160px] text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent"
         />
         <div className="flex gap-1">
           <input
@@ -101,7 +101,7 @@ export default function GroupsPage({ embedded = false }) {
             onChange={e => setTagFilterInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') applyTagFilter() }}
             placeholder={t('groups.tag_filter_placeholder')}
-            className="text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-orange-400 w-28"
+            className="text-xs px-2.5 py-1.5 border border-gray-200 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-portal-accent w-28"
           />
           <button
             onClick={applyTagFilter}
@@ -115,7 +115,7 @@ export default function GroupsPage({ embedded = false }) {
             type="checkbox"
             checked={filters.no_owner}
             onChange={e => setFilters(f => ({ ...f, no_owner: e.target.checked }))}
-            className="rounded border-gray-300 dark:border-zinc-600 text-orange-500 focus:ring-orange-400"
+            className="rounded border-gray-300 dark:border-zinc-600 text-portal-accent focus:ring-portal-accent"
           />
           {t('groups.filter_no_owner')}
         </label>
@@ -134,7 +134,7 @@ export default function GroupsPage({ embedded = false }) {
         {loading ? (
           <p className="text-sm text-gray-500 dark:text-zinc-500 py-10 text-center">{t('common.loading')}</p>
         ) : error ? (
-          <p className="text-sm text-red-400 py-10 text-center">{error}</p>
+          <p className="text-sm text-portal-danger py-10 text-center">{error}</p>
         ) : groups.length === 0 ? (
           <div className="py-14 text-center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.25} className="w-10 h-10 mx-auto text-gray-300 dark:text-zinc-600 mb-3">
@@ -149,7 +149,7 @@ export default function GroupsPage({ embedded = false }) {
             {!hasActiveFilter && !atLimit && (
               <button
                 onClick={openCreate}
-                className="mt-3 text-sm text-orange-500 hover:text-orange-700 transition-colors"
+                className="mt-3 text-sm text-portal-accent hover:text-portal-accent transition-colors"
               >
                 {t('groups.create_first')}
               </button>
@@ -182,7 +182,7 @@ export default function GroupsPage({ embedded = false }) {
                   <td className="py-2.5 px-3 hidden sm:table-cell">
                     <div className="flex flex-wrap gap-1">
                       {(g.tags ?? []).slice(0, 3).map(tag => (
-                        <span key={tag} className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full">{tag}</span>
+                        <span key={tag} className="text-xs bg-portal-accent/10 text-portal-accent px-1.5 py-0.5 rounded-full">{tag}</span>
                       ))}
                       {(g.tags ?? []).length > 3 && (
                         <span className="text-xs text-gray-400 dark:text-zinc-500">+{g.tags.length - 3}</span>
@@ -195,7 +195,7 @@ export default function GroupsPage({ embedded = false }) {
                   <td className="py-2.5 px-3 text-center">
                     <button
                       onClick={() => setModal({ mode: 'detail', group: g })}
-                      className="text-xs text-orange-500 hover:text-orange-700 dark:hover:text-orange-300 font-medium transition-colors"
+                      className="text-xs text-portal-accent hover:text-portal-accent font-medium transition-colors"
                     >
                       {g.member_count}
                     </button>

@@ -52,7 +52,7 @@ function ErrorBanner({ error }) {
     ? 'Authentifizierung fehlgeschlagen.'
     : 'Fehler beim Laden der Cluster-Daten.'
   return (
-    <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+    <div className="rounded-lg border border-portal-danger/30 bg-portal-danger/10 px-4 py-3 text-sm text-portal-danger">
       {msg}
     </div>
   )
@@ -153,7 +153,7 @@ export default function ComputeNodesPage() {
         <button
           onClick={refresh}
           disabled={loading}
-          className="text-xs text-orange-600 dark:text-orange-400 hover:underline disabled:opacity-40 transition-colors"
+          className="text-xs text-portal-accent hover:underline disabled:opacity-40 transition-colors"
         >
           {loading ? 'Lädt…' : '↻ Aktualisieren'}
         </button>
@@ -174,7 +174,7 @@ export default function ComputeNodesPage() {
             {selectedNodeKey && (
               <button
                 onClick={() => setSearchParams({})}
-                className="text-[10px] text-orange-500 hover:underline"
+                className="text-[10px] text-portal-accent hover:underline"
               >
                 Auswahl aufheben ×
               </button>
@@ -229,7 +229,7 @@ export default function ComputeNodesPage() {
                       onClick={() => handleTabChange(tab.id)}
                       className={`px-4 py-2.5 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap flex items-center gap-1.5 ${
                         isActive
-                          ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                          ? 'border-portal-accent/50 text-portal-accent'
                           : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200'
                       }`}
                     >
@@ -245,7 +245,7 @@ export default function ComputeNodesPage() {
                         </span>
                       )}
                       {tab.capKey && (caps[tab.capKey] ?? false) && (
-                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-green-500 shrink-0" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-portal-success shrink-0" aria-hidden="true">
                           <rect x="4" y="9" width="12" height="10" rx="2" />
                           <path d="M7 9V6a3 3 0 0 1 5.83-1" />
                           <circle cx="10" cy="14" r="1" fill="currentColor" stroke="none" />

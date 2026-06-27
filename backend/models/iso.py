@@ -32,6 +32,7 @@ class StorageInfo(BaseModel):
 
 class IsoDownloadRequest(BaseModel):
     node: str | None = None  # optional – defaults to PROXMOX_NODE from config
+    storage: str | None = None  # optional – Ziel-Storage (default: 'local')
     filename: str
     url: str
     checksum_algorithm: str | None = None  # None | "md5" | "sha1" | "sha224" | "sha256" | "sha384" | "sha512"

@@ -150,7 +150,7 @@ export default function VmSnapshotSection({ vmid, node, snapshots, isOperator, i
       </div>
 
       {actionErr && (
-        <div className="mb-3 text-xs text-red-400 bg-red-950/40 border border-red-800 px-3 py-2 rounded">
+        <div className="mb-3 text-xs text-portal-danger bg-portal-danger/10 border border-portal-danger/30 px-3 py-2 rounded">
           {actionErr}
           <button onClick={() => setActionErr('')} className="btn-ghost ml-2">✕</button>
         </div>
@@ -165,10 +165,10 @@ export default function VmSnapshotSection({ vmid, node, snapshots, isOperator, i
               placeholder="snapshot-name"
               value={form.name}
               onChange={(e) => { setNameError(''); setForm(f => ({ ...f, name: e.target.value })) }}
-              className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-mono rounded"
+              className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent font-mono rounded"
             />
             {nameError
-              ? <p className="mt-1 text-xs text-red-400">{nameError}</p>
+              ? <p className="mt-1 text-xs text-portal-danger">{nameError}</p>
               : <p className="mt-1 text-xs text-gray-400 dark:text-zinc-600">Buchstaben, Zahlen, _ und - · max. 40 Zeichen</p>
             }
           </div>
@@ -177,7 +177,7 @@ export default function VmSnapshotSection({ vmid, node, snapshots, isOperator, i
             placeholder="Beschreibung (optional)"
             value={form.description}
             onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
-            className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded"
+            className="w-full bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 px-3 py-1.5 text-xs placeholder-gray-400 dark:placeholder-zinc-500 focus:outline-none focus:border-portal-accent/50 focus:ring-1 focus:ring-portal-accent rounded"
           />
           <button
             type="submit"

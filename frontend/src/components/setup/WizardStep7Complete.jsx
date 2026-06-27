@@ -129,11 +129,11 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
       )}
 
       {/* Sicherheits-Hinweis */}
-      <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 flex gap-3">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5">
+      <div className="bg-portal-success/10 border border-portal-success/30 rounded-lg p-4 flex gap-3">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-5 h-5 text-portal-success shrink-0 mt-0.5">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
-        <p className="text-sm text-green-700 dark:text-green-300">
+        <p className="text-sm text-portal-success">
           {t('setup.s7_security_hint')}
         </p>
       </div>
@@ -150,7 +150,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
           <button
             type="button"
             onClick={() => { if (!uploadLic) setStartTrialOn(false); setUploadLic((v) => !v); setLicenseError('') }}
-            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${uploadLic ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${uploadLic ? 'bg-portal-accent' : 'bg-zinc-300 dark:bg-zinc-600'}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${uploadLic ? 'translate-x-5' : ''}`} />
           </button>
@@ -162,7 +162,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
               {t('setup.s7_lic_file_label')} <span className="text-zinc-400 font-normal">(.lic)</span>
             </label>
             <div
-              className="border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg p-4 text-center cursor-pointer hover:border-orange-400 transition-colors"
+              className="border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg p-4 text-center cursor-pointer hover:border-portal-accent transition-colors"
               onClick={() => fileRef.current?.click()}
             >
               {licenseFile ? (
@@ -179,7 +179,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
               onChange={(e) => { setLicenseFile(e.target.files?.[0] ?? null); setLicenseError('') }}
             />
             {licenseError && (
-              <p className="text-xs text-red-500">{licenseError}</p>
+              <p className="text-xs text-portal-danger">{licenseError}</p>
             )}
           </div>
         )}
@@ -197,7 +197,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
           <button
             type="button"
             onClick={() => { if (!startTrialOn) { setUploadLic(false); setLicenseFile(null) } setStartTrialOn((v) => !v); setLicenseError('') }}
-            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${startTrialOn ? 'bg-orange-500' : 'bg-zinc-300 dark:bg-zinc-600'}`}
+            className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${startTrialOn ? 'bg-portal-accent' : 'bg-zinc-300 dark:bg-zinc-600'}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${startTrialOn ? 'translate-x-5' : ''}`} />
           </button>
@@ -205,7 +205,7 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
       </div>
 
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+        <p className="text-sm text-portal-danger bg-portal-danger/10 border border-portal-danger/30 rounded-lg px-3 py-2">
           {error}
         </p>
       )}

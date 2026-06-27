@@ -1,7 +1,11 @@
 // p3portal.org
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { I18nextProvider } from 'react-i18next'
+import i18n from '../../i18n'
 import SdnManagementTab from './SdnManagementTab'
+
+const Wrap = ({ children }) => <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 
 vi.mock('../../api/sdn', () => ({
   listSdnZones: vi.fn(),
@@ -54,7 +58,7 @@ describe('SdnManagementTab', () => {
 
   it('AC-LIST-1: lists zones, vnets and subnets', async () => {
     mockOk()
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText('zone1')
     // vlanz appears in the Zones table (id) and the VNets table (zone col)
     expect(screen.getAllByText('vlanz').length).toBeGreaterThanOrEqual(1)
@@ -65,7 +69,7 @@ describe('SdnManagementTab', () => {
 
   it('AC-APPLY-1: shows cluster-wide pending banner with apply/revert', async () => {
     mockOk()
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText('zone1')
     expect(screen.getByText(/Übernehmen \(cluster-weit\)/)).toBeInTheDocument()
     expect(screen.getByText('Verwerfen')).toBeInTheDocument()
@@ -73,14 +77,14 @@ describe('SdnManagementTab', () => {
 
   it('AC-LIST-2: pending zone shows a "neu" state badge', async () => {
     mockOk()
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText('zone1')
     expect(screen.getByText('neu')).toBeInTheDocument()
   })
 
   it('AC-LIST-3: search filters across entities', async () => {
     mockOk()
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText('zone1')
     // "simple" matches only zone1 (its type); vlanz/vnet/subnet drop out.
     fireEvent.change(screen.getByPlaceholderText(/Suche/), { target: { value: 'simple' } })
@@ -93,7 +97,7 @@ describe('SdnManagementTab', () => {
     listSdnZones.mockResolvedValue({ items: [], sdn_unavailable: true })
     listSdnVnets.mockResolvedValue({ items: [] })
     listSdnSubnets.mockResolvedValue({ items: [] })
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText(/SDN ist auf diesem Cluster nicht verfügbar/)
   })
 
@@ -101,13 +105,13 @@ describe('SdnManagementTab', () => {
     listSdnZones.mockResolvedValue({ items: [], permission_denied: true })
     listSdnVnets.mockResolvedValue({ items: [] })
     listSdnSubnets.mockResolvedValue({ items: [] })
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText(/Kein Zugriff in Proxmox/)
   })
 
   it('AC-CZ-1: opens the zone create modal', async () => {
     mockOk()
-    render(<SdnManagementTab />)
+    render(<SdnManagementTab />, { wrapper: Wrap })
     await screen.findByText('zone1')
     fireEvent.click(screen.getByText('+ Zone anlegen'))
     await waitFor(() => expect(screen.getByText('SDN-Zone anlegen')).toBeInTheDocument())
