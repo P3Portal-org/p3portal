@@ -202,6 +202,11 @@ export default function WizardStep7Complete({ data, onBack, onComplete }) {
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${startTrialOn ? 'translate-x-5' : ''}`} />
           </button>
         </div>
+        {startTrialOn && (
+          <p className="text-xs text-portal-warn mt-2">
+            {t('setup.s7_trial_plus_image_note')}
+          </p>
+        )}
       </div>
 
       {error && (

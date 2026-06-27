@@ -1,3 +1,12 @@
+# p3portal.org
+# Container-Image-Registry (GHCR):
+#   Core (AGPLv3, voll quelloffen): ghcr.io/p3portal-org/p3portal:latest
+#   Plus (Source-Available, freischaltbar via Lizenz/30-Tage-Test):
+#                                   ghcr.io/p3portal-org/p3portal-plus:latest
+# Die meisten Plus-Funktionen (Stacks, Topologie, Auto-Snapshots, Firewall-Deklaration, …)
+# laufen NUR mit dem Plus-Image. Zum Wechseln die `image:`-Zeilen der Dienste
+# `portal` und `celery-worker` auf das Plus-Image umstellen (siehe Kommentar dort).
+
 networks:
   portal-net:
     driver: bridge
@@ -13,6 +22,7 @@ services:
     mem_limit: 256m
 
   celery-worker:
+    # Core-Image. Für Plus stattdessen: ghcr.io/p3portal-org/p3portal-plus:latest
     image: ghcr.io/p3portal-org/p3portal:latest
     restart: unless-stopped
     networks:
@@ -35,6 +45,7 @@ services:
       - valkey
 
   portal:
+    # Core-Image. Für Plus stattdessen: ghcr.io/p3portal-org/p3portal-plus:latest
     image: ghcr.io/p3portal-org/p3portal:latest
     restart: unless-stopped
     networks:

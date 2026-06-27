@@ -223,6 +223,9 @@ export default function LicenseSectionAdmin() {
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 {t('admin.license.trial_start_hint')}
               </p>
+              <p className="text-xs text-portal-warn mt-1 max-w-prose">
+                {t('admin.license.trial_plus_image_note')}
+              </p>
               {trialMsg && (
                 <p className={`mt-1 text-xs ${trialMsg.ok ? 'text-portal-success' : 'text-portal-danger'}`}>
                   {trialMsg.text}

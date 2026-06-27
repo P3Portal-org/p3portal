@@ -41,3 +41,5 @@ frontend/.env
 *.swp
 *.swo
 frontend/test-results/
+.claude/worktrees/
+.kimi/worktrees/
