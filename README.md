@@ -5,19 +5,23 @@
 
 > This is the **Core repository** (100 % AGPLv3). The Plus Edition source moved out of this repository with `v1.75.0-beta` and lives at https://github.com/P3Portal-org/p3portal-plus. See [Core vs. Plus](#core-vs-plus) below.
 
-**P3 Portal** is a self-contained Docker/Podman container that provides a web GUI for managing Proxmox clusters. Users are managed locally in the portal; Proxmox API tokens are used by the backend to execute operations on the cluster.
+**P3 Portal** is a self-hosted web platform for managing Proxmox VE — a live cluster dashboard, Ansible/Packer automation, networking & firewall management, VM/LXC lifecycle and fine-grained access control. It runs as a single Docker/Podman container; users are managed locally in the portal, and Proxmox API tokens are used by the backend to execute operations on the cluster. An optional **Plus** edition extends it with declarative *Stacks* (infrastructure as code via OpenTofu) and more — see [Core vs. Plus](#core-vs-plus).
 
 ![Cluster dashboard](docs/screenshots/dashboard.png)
 
-### What it does
+### What it does (Core)
 
-- **Cluster Dashboard** — live overview of nodes, VMs, LXC containers, CPU/RAM/storage
-- **Ansible Playbook Runner** — parametrised playbook execution with live log streaming
-- **Packer Template Builder** — build Proxmox VM templates from `.pkr.hcl` definitions
-- **Job History** — all runs logged with full output, filterable and searchable
-- **Permission-aware UI** — users see only what their Proxmox role permits
+- **Cluster dashboard** — live overview of nodes, VMs, LXC containers, CPU/RAM/storage
+- **Automation** — parametrised Ansible playbooks with live logs plus in-guest runs via dynamic inventory; Packer template builds from `.pkr.hcl`
+- **Networking & firewall** — Linux bridges/VLANs, SDN (zones / VNets / subnets), datacenter / node / VM firewall rules, security groups, IP sets
+- **VM/LXC lifecycle** — detail pages, power & snapshots, disk attach/resize, backup-job management, ISO & LXC template management (Image Factory)
+- **Access control** — fine-grained per-VM/LXC RBAC with custom role presets, resource ownership (incl. adopting externally-created VMs), teams and granular admin delegation; permission-aware UI throughout
+- **Job history & API** — every run logged with full output, filterable and searchable; scoped API keys, external jobs API, webhooks
+- **Notifications, theming & i18n** — notification hub, built-in themes, DE/EN
 
-Everything needed to run (Python, Ansible, Packer, the React frontend) is bundled in the image. Nothing needs to be installed on the host.
+> The **Plus** edition adds declarative **Stacks** (VMs / LXC / networks / firewall as code via OpenTofu), an interactive **topology** view, **scheduled jobs & auto-snapshots**, **config snapshots**, resource **pools with quotas**, a **4-eyes approval** workflow, **multi-cluster** dashboards, **Git-sync**, alert presets (SMTP / webhook), a theme editor, and **visual editors** for Packer & Ansible. Full breakdown: [Core vs. Plus](#core-vs-plus).
+
+Everything needed to run (Python, Ansible, Packer, the React frontend — plus OpenTofu in the Plus image) is bundled. Nothing needs to be installed on the host.
 
 | | |
 |---|---|
